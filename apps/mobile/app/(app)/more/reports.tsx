@@ -91,11 +91,22 @@ export default function ReportsScreen() {
         {due.isPending ? <LoadingView label={t('common.loading')} /> : null}
         {due.data ? (
           <>
-            <InfoRow label={`${t('reports.due')} (${due.data.count})`} value={due.data.total} />
-            <InfoRow
-              label={`${t('reports.overdue')} (${due.data.overdueCount})`}
-              value={due.data.overdueTotal}
-            />
+            {/* One line per currency: a single total mixing shekels and
+                dollars would be a number that means nothing. */}
+            {due.data.byCurrency.map((entry) => (
+              <InfoRow
+                key={entry.currency}
+                label={`${t('reports.due')} (${entry.count})`}
+                value={money(entry.total, entry.currency)}
+              />
+            ))}
+            {due.data.overdueByCurrency.map((entry) => (
+              <InfoRow
+                key={`overdue-${entry.currency}`}
+                label={`${t('reports.overdue')} (${entry.count})`}
+                value={money(entry.total, entry.currency)}
+              />
+            ))}
             {due.data.cheques.slice(0, 10).map((cheque) => (
               <InfoRow
                 key={cheque.id}
@@ -114,12 +125,16 @@ export default function ReportsScreen() {
           cashFlow.data.periods.length === 0 ? (
             <Body muted>{t('reports.empty')}</Body>
           ) : (
-            cashFlow.data.periods.map((period) => (
-              <Text key={period.period} style={styles.flowRow}>
-                {period.period} — {t('reports.expectedInflow')}: {period.inflow} · {'  '}
-                {t('reports.expectedOutflow')}: {period.outflow} · {t('reports.net')}: {period.net}
-              </Text>
-            ))
+            cashFlow.data.periods.map((period) =>
+              period.byCurrency.map((entry) => (
+                <Text key={`${period.period}-${entry.currency}`} style={styles.flowRow}>
+                  {period.period} · {entry.currency} — {t('reports.expectedInflow')}:{' '}
+                  {money(entry.inflow, entry.currency)} · {t('reports.expectedOutflow')}:{' '}
+                  {money(entry.outflow, entry.currency)} · {t('reports.net')}:{' '}
+                  {money(entry.net, entry.currency)}
+                </Text>
+              )),
+            )
           )
         ) : null}
       </Section>
@@ -134,7 +149,9 @@ export default function ReportsScreen() {
               <InfoRow
                 key={`${entry.locationName ?? ''}-${entry.holderName ?? ''}-${index}`}
                 label={[entry.holderName, entry.locationName].filter(Boolean).join(' — ') || '—'}
-                value={`${entry.count} — ${entry.total}`}
+                value={entry.byCurrency
+                  .map((bucket) => money(bucket.total, bucket.currency))
+                  .join(' · ')}
               />
             ))
           )

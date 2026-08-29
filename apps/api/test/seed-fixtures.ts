@@ -43,8 +43,8 @@ export async function seedFixtures(prisma: PrismaService): Promise<Fixtures> {
   const organization = await db.organization.create({
     data: {
       name: `E2E Org ${Date.now()}`,
-      country: 'SA',
-      defaultCurrency: 'SAR',
+      country: 'PS',
+      defaultCurrency: 'USD',
       timezone: 'Asia/Riyadh',
     },
   });
@@ -127,9 +127,9 @@ export async function seedFixtures(prisma: PrismaService): Promise<Fixtures> {
   });
 
   const bank = await db.bank.upsert({
-    where: { country_code: { country: 'SA', code: 'E2E' } },
+    where: { country_code: { country: 'PS', code: 'E2E' } },
     update: {},
-    create: { country: 'SA', code: 'E2E', name: 'E2E Bank' },
+    create: { country: 'PS', code: 'E2E', name: 'E2E Bank' },
   });
 
   return {

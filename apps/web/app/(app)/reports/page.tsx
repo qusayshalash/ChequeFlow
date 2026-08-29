@@ -47,7 +47,12 @@ export default function ReportsPage() {
               <StatCard label={t('common.count')} value={String(custody.data.count)} />
               <StatCard
                 label={t('common.total')}
-                value={money(locale, custody.data.total, 'SAR')}
+                // Per currency: the sum of shekels and dollars is not a total.
+                value={
+                  custody.data.byCurrency
+                    .map((entry) => money(locale, entry.total, entry.currency))
+                    .join(' · ') || '—'
+                }
               />
             </div>
             <Card>
@@ -74,7 +79,11 @@ export default function ReportsPage() {
                       <td className="p-2">{entry.locationName ?? t('common.unknown')}</td>
                       <td className="p-2">{entry.holderName ?? t('common.unknown')}</td>
                       <td className="p-2 tabular-nums">{entry.count}</td>
-                      <td className="p-2 tabular-nums">{money(locale, entry.total, 'SAR')}</td>
+                      <td className="p-2 tabular-nums">
+                        {entry.byCurrency
+                          .map((bucket) => money(locale, bucket.total, bucket.currency))
+                          .join(' · ')}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -107,16 +116,24 @@ export default function ReportsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {cashFlow.data.periods.map((period) => (
-                  <tr key={period.period}>
-                    <td className="p-2 tabular-nums" dir="ltr">
-                      {period.period}
-                    </td>
-                    <td className="p-2 tabular-nums">{money(locale, period.inflow, 'SAR')}</td>
-                    <td className="p-2 tabular-nums">{money(locale, period.outflow, 'SAR')}</td>
-                    <td className="p-2 tabular-nums">{money(locale, period.net, 'SAR')}</td>
-                  </tr>
-                ))}
+                {cashFlow.data.periods.flatMap((period) =>
+                  period.byCurrency.map((entry) => (
+                    <tr key={`${period.period}-${entry.currency}`}>
+                      <td className="p-2 tabular-nums" dir="ltr">
+                        {period.period} · {entry.currency}
+                      </td>
+                      <td className="p-2 tabular-nums">
+                        {money(locale, entry.inflow, entry.currency)}
+                      </td>
+                      <td className="p-2 tabular-nums">
+                        {money(locale, entry.outflow, entry.currency)}
+                      </td>
+                      <td className="p-2 tabular-nums">
+                        {money(locale, entry.net, entry.currency)}
+                      </td>
+                    </tr>
+                  )),
+                )}
               </tbody>
             </table>
           </Card>

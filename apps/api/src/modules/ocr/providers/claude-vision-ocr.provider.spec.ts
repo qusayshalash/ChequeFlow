@@ -14,7 +14,7 @@ function fullExtraction(overrides: Record<string, unknown> = {}) {
     chequeNumber: field('00123456'),
     numericAmount: field('1500.50'),
     writtenAmount: field('فقط ألف وخمسمائة ريال وخمسون هللة لا غير', 0.62),
-    currency: field('SAR'),
+    currency: field('USD'),
     issueDate: field('2026-08-01'),
     dueDate: field('2026-10-28'),
     drawerName: field('مؤسسة النخبة للتجارة', 0.81),
@@ -66,7 +66,7 @@ const input: OcrChequeInput = {
     },
   ],
   languageHints: ['ar', 'en'],
-  expectedCurrency: 'SAR',
+  expectedCurrency: 'USD',
 };
 
 describe('ClaudeVisionOcrProvider', () => {
@@ -142,9 +142,9 @@ describe('ClaudeVisionOcrProvider', () => {
   });
 
   it('uppercases a lowercase currency code', async () => {
-    const { provider } = buildProvider(successResponse(fullExtraction({ currency: field('sar') })));
+    const { provider } = buildProvider(successResponse(fullExtraction({ currency: field('usd') })));
     const result = await provider.processCheque(input);
-    expect(result.fields.currency.value).toBe('SAR');
+    expect(result.fields.currency.value).toBe('USD');
   });
 
   it('forces confidence to zero for a field it could not read', async () => {

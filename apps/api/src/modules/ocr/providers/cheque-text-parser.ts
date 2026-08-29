@@ -35,20 +35,21 @@ const ARABIC_INDIC_DIGITS = /[٠-٩]/g;
 const ARABIC_DECIMAL_SEPARATOR = /٫/g;
 const ARABIC_THOUSANDS_SEPARATOR = /٬/g;
 
-/** Currency words and codes seen on Gulf cheques. */
+/**
+ * Currency words and codes that appear on cheques, most likely first.
+ *
+ * The shekel is listed first because it is the common case here and was
+ * previously missing altogether — a shekel cheque came back with no currency
+ * at all. `₪` and the NIS code are included because both are printed.
+ */
 const CURRENCY_PATTERNS: ReadonlyArray<{ code: string; pattern: RegExp }> = [
-  { code: 'SAR', pattern: /\bSAR\b|ريال\s*سعودي|ر\.?\s*س\b/i },
+  { code: 'ILS', pattern: /\bILS\b|\bNIS\b|₪|شيكل|شيقل|ش\.?\s*ج\b/i },
+  { code: 'JOD', pattern: /\bJOD\b|دينار\s*أردني|د\.?\s*أ\b/i },
+  { code: 'USD', pattern: /\bUSD\b|دولار|\$/i },
+  { code: 'EUR', pattern: /\bEUR\b|يورو|€/i },
+  { code: 'EGP', pattern: /\bEGP\b|جنيه/i },
   { code: 'AED', pattern: /\bAED\b|درهم|د\.?\s*إ\b/i },
   { code: 'KWD', pattern: /\bKWD\b|دينار\s*كويتي/i },
-  { code: 'QAR', pattern: /\bQAR\b|ريال\s*قطري/i },
-  { code: 'BHD', pattern: /\bBHD\b|دينار\s*بحريني/i },
-  { code: 'OMR', pattern: /\bOMR\b|ريال\s*عماني/i },
-  { code: 'EGP', pattern: /\bEGP\b|جنيه/i },
-  { code: 'JOD', pattern: /\bJOD\b|دينار\s*أردني/i },
-  { code: 'USD', pattern: /\bUSD\b|دولار/i },
-  { code: 'EUR', pattern: /\bEUR\b|يورو/i },
-  // Bare "ريال" is ambiguous across markets, so it is matched last.
-  { code: 'SAR', pattern: /ريال/i },
 ];
 
 const DUE_DATE_LABELS = /استحقاق|يستحق|due\s*date|payable\s*on/i;

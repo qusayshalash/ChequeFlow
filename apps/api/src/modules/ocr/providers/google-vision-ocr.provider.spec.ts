@@ -40,7 +40,7 @@ const input: OcrChequeInput = {
     },
   ],
   languageHints: ['ar', 'en'],
-  expectedCurrency: 'SAR',
+  expectedCurrency: 'USD',
   knownBankNames: ['مصرف الراجحي'],
 };
 

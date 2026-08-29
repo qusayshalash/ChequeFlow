@@ -33,6 +33,7 @@ describeWithDb('phase 2 surface (e2e)', () => {
 
   /** A suffix so re-runs against a persistent database never collide. */
   const unique = Date.now().toString().slice(-6);
+  let sequence = 0;
 
   beforeAll(async () => {
     const context = await createTestApp();
@@ -64,9 +65,9 @@ describeWithDb('phase 2 surface (e2e)', () => {
       .set(auth())
       .send({
         direction: 'INCOMING',
-        chequeNumber: `${unique}${Math.floor(Math.random() * 1000)}`,
+        chequeNumber: `${unique}${(sequence += 1)}`,
         amount: '100.00',
-        currency: 'SAR',
+        currency: 'USD',
         dueDate: nextYear(),
         originalSourceId: fixtures.customerId,
         currentLocationId: fixtures.safeLocationId,
@@ -205,7 +206,9 @@ describeWithDb('phase 2 surface (e2e)', () => {
 
   describe('dashboard', () => {
     it('keeps each currency separate and reports a currency with only drafts', async () => {
-      await createCheque({ currency: 'USD', amount: '50.00' });
+      // EUR is used by nothing else here, so every EUR cheque is a draft —
+      // which is exactly the case that used to vanish from the dashboard.
+      await createCheque({ currency: 'EUR', amount: '50.00' });
 
       const response = await request(app.getHttpServer())
         .get(`${API}/dashboard`)
@@ -215,20 +218,24 @@ describeWithDb('phase 2 surface (e2e)', () => {
       const currencies: string[] = response.body.currencies.map(
         (entry: { currency: string }) => entry.currency,
       );
-      expect(currencies).toContain('SAR');
+      expect(currencies).toContain('USD');
       // The regression this guards: a currency whose cheques are all DRAFT used
       // to vanish from the dashboard entirely, so the page showed zeros while
       // the cheque list was full.
-      expect(currencies).toContain('USD');
+      expect(currencies).toContain('EUR');
 
       // Reporting currency first.
       expect(currencies[0]).toBe(response.body.defaultCurrency);
 
-      const usd = response.body.currencies.find(
-        (entry: { currency: string }) => entry.currency === 'USD',
+      const eur = response.body.currencies.find(
+        (entry: { currency: string }) => entry.currency === 'EUR',
       );
-      expect(usd.draft.count).toBeGreaterThan(0);
-      expect(usd.draft.total).toBe('50.00');
+      expect(eur.draft.count).toBe(1);
+      expect(eur.draft.total).toBe('50.00');
+      // Nothing else in this suite moves a EUR cheque, so every other bucket
+      // must be empty — which proves the split is real, not cosmetic.
+      expect(eur.inHand).toEqual({ count: 0, total: '0.00' });
+      expect(eur.cleared).toEqual({ count: 0, total: '0.00' });
 
       // Every bucket the UI renders must be present, not just the ones with data.
       for (const bucket of [
@@ -245,7 +252,7 @@ describeWithDb('phase 2 surface (e2e)', () => {
         'incoming',
         'outgoing',
       ]) {
-        expect(usd[bucket]).toEqual({ count: expect.any(Number), total: expect.any(String) });
+        expect(eur[bucket]).toEqual({ count: expect.any(Number), total: expect.any(String) });
       }
     });
 
@@ -322,7 +329,7 @@ describeWithDb('phase 2 surface (e2e)', () => {
       expect(Array.isArray(response.body.cheques)).toBe(true);
 
       const sar = response.body.currencies.find(
-        (entry: { currency: string }) => entry.currency === 'SAR',
+        (entry: { currency: string }) => entry.currency === 'USD',
       );
       expect(sar.pending.count).toBeGreaterThan(0);
       // The cheque bounced earlier in this suite came from this contact, so

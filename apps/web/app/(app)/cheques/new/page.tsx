@@ -29,7 +29,7 @@ const EMPTY: FormState = {
   direction: ChequeDirection.INCOMING,
   chequeNumber: '',
   amount: '',
-  currency: 'SAR',
+  currency: 'USD',
   issueDate: '',
   dueDate: '',
   bankId: '',

@@ -1,6 +1,15 @@
 import type { ChequeFlowApiClient } from '@cheque-flow/api-client';
 import { ChequeDirection } from '@cheque-flow/shared-types';
 
+/**
+ * Currency stamped on a cheque that has only been photographed.
+ *
+ * A placeholder, not a guess: nothing has been read yet, so the cheque sits in
+ * DRAFT and counts as nothing on the dashboard until a reviewer sets the real
+ * currency on the next screen.
+ */
+const PLACEHOLDER_CURRENCY = 'USD';
+
 export interface CapturedImage {
   side: string;
   uri: string;
@@ -30,7 +39,7 @@ export async function uploadCapturedCheque(
       chequeNumber: `TMP-${Date.now().toString().slice(-8)}`,
       amountInWords: null,
       amount: '1.00',
-      currency: 'SAR',
+      currency: PLACEHOLDER_CURRENCY,
       dueDate: today,
       issueDate: null,
       receivedDate: today,

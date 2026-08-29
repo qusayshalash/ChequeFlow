@@ -10,7 +10,7 @@ const input: OcrChequeInput = {
   chequeId: '11111111-1111-4111-8111-111111111111',
   organizationId: 'org-1',
   images: [{ side: 'FRONT', storageKey: 'k/front.jpg', mimeType: 'image/jpeg' }],
-  expectedCurrency: 'SAR',
+  expectedCurrency: 'USD',
 };
 
 describe('MockOcrProvider', () => {

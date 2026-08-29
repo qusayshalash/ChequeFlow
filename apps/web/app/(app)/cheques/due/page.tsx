@@ -57,12 +57,18 @@ export default function DueChequesPage() {
             <StatCard
               label={t('common.count')}
               value={String(query.data.count)}
-              hint={money(locale, query.data.total, 'SAR')}
+              // One line per currency. This used to render the sum of every
+              // currency and label it SAR, which looked correct and was not.
+              hint={query.data.byCurrency
+                .map((entry) => money(locale, entry.total, entry.currency))
+                .join(' · ')}
             />
             <StatCard
               label={t('reports.overdue')}
               value={String(query.data.overdueCount)}
-              hint={money(locale, query.data.overdueTotal, 'SAR')}
+              hint={query.data.overdueByCurrency
+                .map((entry) => money(locale, entry.total, entry.currency))
+                .join(' · ')}
               tone="danger"
             />
           </div>

@@ -63,7 +63,7 @@ const SYSTEM_PROMPT = [
   '- If the numeric and written amounts disagree, report both as printed and lower both confidences.',
   '- issueDate and dueDate: ISO format YYYY-MM-DD. A Hijri date must be converted to Gregorian;',
   '  put the original text in rawText and lower the confidence.',
-  '- currency: the ISO-4217 code (SAR, AED, USD, ...).',
+  '- currency: the ISO-4217 code (ILS, JOD, USD, ...).',
   '- micr: the magnetic character line along the bottom edge, transcribed verbatim.',
   '- signatureDetected: whether a signature is visibly present, not whether it is valid.',
   '- rawText: the exact characters you read for that field, before any normalisation. Use null',

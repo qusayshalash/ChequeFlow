@@ -70,7 +70,7 @@ export class MockOcrProvider implements OcrProvider {
         `فقط ${amountMajor} ريال و${amountMinor} هللة لا غير`,
         0.55 + rng() * 0.2,
       ),
-      currency: field(input.expectedCurrency ?? 'SAR', 0.97),
+      currency: field(input.expectedCurrency ?? 'USD', 0.97),
       issueDate: field(issue.toISOString().slice(0, 10), 0.8 + rng() * 0.15),
       dueDate: field(due.toISOString().slice(0, 10), 0.82 + rng() * 0.15),
       drawerName: field(pick(drawers, rng), 0.7 + rng() * 0.25),

@@ -93,7 +93,7 @@ describeWithDb('cheque lifecycle (e2e)', () => {
         direction: 'INCOMING',
         chequeNumber: 'E2E-0001',
         amount: '1500.50',
-        currency: 'SAR',
+        currency: 'USD',
         dueDate: '2026-12-31',
         bankId: fixtures.bankId,
         originalSourceId: fixtures.customerId,
@@ -122,7 +122,7 @@ describeWithDb('cheque lifecycle (e2e)', () => {
         direction: 'INCOMING',
         chequeNumber: 'E2E-0001',
         amount: '1500.50',
-        currency: 'SAR',
+        currency: 'USD',
         dueDate: '2026-12-31',
         bankId: fixtures.bankId,
       })
@@ -138,7 +138,7 @@ describeWithDb('cheque lifecycle (e2e)', () => {
         direction: 'INCOMING',
         chequeNumber: 'E2E-0001',
         amount: '1500.50',
-        currency: 'SAR',
+        currency: 'USD',
         dueDate: '2026-12-31',
         bankId: fixtures.bankId,
       })
@@ -204,7 +204,7 @@ describeWithDb('cheque lifecycle (e2e)', () => {
       .post(`${API}/cheques/${chequeId}/review`)
       .set(auth(ownerToken))
       .send({
-        confirmed: { chequeNumber: 'E2E-0001', amount: '1500.50', currency: 'SAR' },
+        confirmed: { chequeNumber: 'E2E-0001', amount: '1500.50', currency: 'USD' },
         rejectedFields: [],
         version,
       })

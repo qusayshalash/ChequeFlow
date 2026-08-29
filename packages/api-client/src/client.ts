@@ -63,6 +63,19 @@ interface RequestOptions {
   formData?: FormData;
 }
 
+/**
+ * A count and total belonging to one currency.
+ *
+ * Report figures are always shaped this way: a single total across currencies
+ * would be a number with no meaning, and one labelled with a single currency
+ * would be actively misleading.
+ */
+export interface CurrencyTotal {
+  currency: string;
+  count: number;
+  total: string;
+}
+
 export interface ReminderRow {
   id: string;
   type: string;
@@ -317,10 +330,11 @@ export class ChequeFlowApiClient {
     return this.request<{
       from: string;
       to: string;
+      /** Counts are safe to add across currencies; money is not. */
       count: number;
-      total: string;
       overdueCount: number;
-      overdueTotal: string;
+      byCurrency: CurrencyTotal[];
+      overdueByCurrency: CurrencyTotal[];
       cheques: ChequeSummaryView[];
     }>('/reports/due', { query });
   }
@@ -330,7 +344,15 @@ export class ChequeFlowApiClient {
       from: string;
       to: string;
       granularity: string;
-      periods: Array<{ period: string; inflow: string; outflow: string; net: string }>;
+      periods: Array<{
+        period: string;
+        byCurrency: Array<{
+          currency: string;
+          inflow: string;
+          outflow: string;
+          net: string;
+        }>;
+      }>;
     }>('/reports/cash-flow', { query });
   }
 
@@ -340,10 +362,10 @@ export class ChequeFlowApiClient {
         locationName: string | null;
         holderName: string | null;
         count: number;
-        total: string;
+        byCurrency: CurrencyTotal[];
       }>;
       count: number;
-      total: string;
+      byCurrency: CurrencyTotal[];
     }>('/reports/custody', { query });
   }
 

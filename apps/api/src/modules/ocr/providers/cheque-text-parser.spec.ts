@@ -2,14 +2,14 @@ import { findMicrLine, normalizeDigits, parseChequeText, parseDate } from './che
 
 /** A realistic Arabic cheque as a text engine would return it. */
 const ARABIC_CHEQUE = [
-  'مصرف الراجحي',
-  'Al Rajhi Bank',
+  'بنك فلسطين',
+  'Bank of Palestine',
   'رقم الشيك: 0012345',
   'التاريخ 28/10/2026',
   'ادفعوا لأمر: شركة الأفق المحدودة',
   'مبلغ وقدره 1,500.50',
-  'فقط ألف وخمسمائة ريال وخمسون هللة لا غير',
-  'ريال سعودي',
+  'فقط ألف وخمسمائة شيكل وخمسون أغورة لا غير',
+  'شيكل',
   'الساحب: مؤسسة النخبة للتجارة',
   '⑈0012345⑈ ⑆123456789012⑆',
 ].join('\n');
@@ -80,8 +80,8 @@ describe('findMicrLine', () => {
 describe('parseChequeText — Arabic cheque', () => {
   const fields = parseChequeText({
     text: ARABIC_CHEQUE,
-    knownBankNames: ['مصرف الراجحي', 'بنك الرياض'],
-    expectedCurrency: 'SAR',
+    knownBankNames: ['بنك فلسطين', 'بنك القدس'],
+    expectedCurrency: 'ILS',
   });
 
   it('reads the cheque number from its label', () => {
@@ -98,7 +98,7 @@ describe('parseChequeText — Arabic cheque', () => {
   });
 
   it('reads the currency', () => {
-    expect(fields.currency.value).toBe('SAR');
+    expect(fields.currency.value).toBe('ILS');
   });
 
   it('reads the due date', () => {
@@ -114,7 +114,7 @@ describe('parseChequeText — Arabic cheque', () => {
   });
 
   it('matches a bank the organization already has on file', () => {
-    expect(fields.bankName.value).toBe('مصرف الراجحي');
+    expect(fields.bankName.value).toBe('بنك فلسطين');
     expect(fields.bankName.confidence).toBeGreaterThan(0.8);
   });
 
@@ -155,13 +155,13 @@ describe('parseChequeText — honesty about what it cannot read', () => {
   });
 
   it('flags a currency it only assumed from the organization default', () => {
-    const fields = parseChequeText({ text: 'شيك بدون عملة', expectedCurrency: 'SAR' });
-    expect(fields.currency.value).toBe('SAR');
+    const fields = parseChequeText({ text: 'شيك بدون عملة', expectedCurrency: 'ILS' });
+    expect(fields.currency.value).toBe('ILS');
     expect(fields.currency.confidence).toBeLessThan(0.5);
   });
 
   it('does not invent a bank when none is recognisable', () => {
-    const fields = parseChequeText({ text: '1,500.50', knownBankNames: ['مصرف الراجحي'] });
+    const fields = parseChequeText({ text: '1,500.50', knownBankNames: ['بنك فلسطين'] });
     expect(fields.bankName.value).toBeNull();
   });
 });
@@ -191,12 +191,12 @@ describe('parseChequeText — dates', () => {
 describe('parseChequeText — English cheque', () => {
   const fields = parseChequeText({
     text: [
-      'Riyad Bank',
+      'Bank of Palestine',
       'Cheque No. 887766',
       'Date 15/12/2026',
       'Pay to the order of Modern Supply Company',
       '2,750.00',
-      'SAR',
+      'USD',
     ].join('\n'),
   });
 
@@ -210,12 +210,12 @@ describe('parseChequeText — English cheque', () => {
 
   it('reads the amount and the ISO currency code', () => {
     expect(fields.numericAmount.value).toBe('2750.00');
-    expect(fields.currency.value).toBe('SAR');
+    expect(fields.currency.value).toBe('USD');
     expect(fields.currency.confidence).toBeGreaterThan(0.8);
   });
 
   it('falls back to a line containing "bank" when none is on file', () => {
-    expect(fields.bankName.value).toBe('Riyad Bank');
+    expect(fields.bankName.value).toBe('Bank of Palestine');
   });
 });
 
@@ -235,5 +235,33 @@ describe('parseChequeText — engine confidence', () => {
   it('leaves unread fields at zero', () => {
     const blurry = parseChequeText({ text: 'لا شيء', engineConfidence: 0.5 });
     expect(blurry.payeeName.confidence).toBe(0);
+  });
+});
+
+describe('parseChequeText — currency detection', () => {
+  it('recognises the shekel however it is written', () => {
+    // Previously the shekel was missing from the table entirely, so the most
+    // common cheque here came back with no currency at all.
+    for (const text of [
+      '1,000.00 شيكل',
+      '1,000.00 شيقل',
+      '₪ 1,000.00',
+      'ILS 1,000.00',
+      'NIS 1,000.00',
+    ]) {
+      expect(parseChequeText({ text }).currency.value).toBe('ILS');
+    }
+  });
+
+  it('recognises the dinar and the dollar', () => {
+    expect(parseChequeText({ text: '500 دينار أردني' }).currency.value).toBe('JOD');
+    expect(parseChequeText({ text: 'JOD 500' }).currency.value).toBe('JOD');
+    expect(parseChequeText({ text: '500 دولار' }).currency.value).toBe('USD');
+  });
+
+  it('no longer claims a riyal', () => {
+    // The riyal was removed from the product; text mentioning it must not
+    // silently produce a currency the organization does not use.
+    expect(parseChequeText({ text: '1,500.50 ريال سعودي' }).currency.value).not.toBe('SAR');
   });
 });

@@ -42,7 +42,7 @@ describeWithDb('tenant isolation (e2e)', () => {
         direction: 'INCOMING',
         chequeNumber: 'ORG-B-1',
         amount: '10.00',
-        currency: 'SAR',
+        currency: 'USD',
         dueDate: '2026-12-31',
       })
       .expect(201);
@@ -80,7 +80,7 @@ describeWithDb('tenant isolation (e2e)', () => {
         direction: 'INCOMING',
         chequeNumber: 'CROSS-1',
         amount: '10.00',
-        currency: 'SAR',
+        currency: 'USD',
         dueDate: '2026-12-31',
         originalSourceId: orgB.customerId,
       })

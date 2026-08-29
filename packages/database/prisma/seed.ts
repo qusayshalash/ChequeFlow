@@ -26,12 +26,21 @@ import { createPrismaClient } from '../src/client.js';
 
 loadEnv({ path: path.resolve(__dirname, '../../../.env'), quiet: true });
 
+/**
+ * Banks offered in the picker out of the box.
+ *
+ * A starting point, not a closed list: `bankNameRaw` accepts any name typed by
+ * hand, so a cheque from a bank that is not here is still recordable.
+ */
 const DEMO_BANKS = [
-  { country: 'SA', code: 'RJHI', name: 'مصرف الراجحي' },
-  { country: 'SA', code: 'NCBK', name: 'البنك الأهلي السعودي' },
-  { country: 'SA', code: 'RIBL', name: 'بنك الرياض' },
-  { country: 'SA', code: 'BSFR', name: 'البنك السعودي الفرنسي' },
-  { country: 'SA', code: 'ALBI', name: 'بنك البلاد' },
+  { country: 'PS', code: 'PALS', name: 'بنك فلسطين' },
+  { country: 'PS', code: 'QUDS', name: 'بنك القدس' },
+  { country: 'PS', code: 'NBNK', name: 'البنك الوطني' },
+  { country: 'PS', code: 'PIBC', name: 'البنك الإسلامي الفلسطيني' },
+  { country: 'PS', code: 'AIBA', name: 'البنك الإسلامي العربي' },
+  { country: 'PS', code: 'ARAB', name: 'البنك العربي' },
+  { country: 'PS', code: 'CAIR', name: 'بنك القاهرة عمان' },
+  { country: 'PS', code: 'JOBA', name: 'بنك الأردن' },
 ] as const;
 
 const DEMO_CONTACTS = [
@@ -99,9 +108,9 @@ async function main(): Promise<void> {
       (await prisma.organization.create({
         data: {
           name: organizationName,
-          country: requireEnv('SEED_ORG_COUNTRY', 'SA'),
-          defaultCurrency: requireEnv('SEED_ORG_CURRENCY', 'SAR'),
-          timezone: requireEnv('SEED_ORG_TIMEZONE', 'Asia/Riyadh'),
+          country: requireEnv('SEED_ORG_COUNTRY', 'PS'),
+          defaultCurrency: requireEnv('SEED_ORG_CURRENCY', 'USD'),
+          timezone: requireEnv('SEED_ORG_TIMEZONE', 'Asia/Hebron'),
           settingsJson: {
             reminderOffsetDays: [7, 3, 1, 0],
             overdueReminderDays: 1,

@@ -8,7 +8,7 @@ import {
   type DashboardSummary,
   type Paginated,
 } from '@cheque-flow/shared-types';
-import { Prisma, moneyToString, sumMoney } from '@cheque-flow/database';
+import { Prisma, moneyToString, sumMoney, toMoney } from '@cheque-flow/database';
 import type {
   AuditLogQuery,
   CashFlowReportQuery,
@@ -29,6 +29,37 @@ import { chequeSummarySelect, toChequeSummary } from '../cheques/cheque.mapper';
 const OUTSTANDING = OUTSTANDING_CHEQUE_STATUSES;
 
 const EMPTY_BUCKET: Bucket = { count: 0, total: '0.00' };
+
+/** A count and total that belong to one currency. */
+export interface CurrencyBucket extends Bucket {
+  currency: string;
+}
+
+/**
+ * Groups amounts by currency.
+ *
+ * Every report figure goes through this. Summing across currencies produces a
+ * number that means nothing, and labelling that number with one currency —
+ * which these reports used to do — is worse, because it looks correct.
+ */
+function bucketByCurrency(
+  rows: ReadonlyArray<{ currency: string; amount: Prisma.Decimal }>,
+): CurrencyBucket[] {
+  const groups = new Map<string, Prisma.Decimal[]>();
+  for (const row of rows) {
+    const amounts = groups.get(row.currency) ?? [];
+    amounts.push(row.amount);
+    groups.set(row.currency, amounts);
+  }
+
+  return [...groups.entries()]
+    .map(([currency, amounts]) => ({
+      currency,
+      count: amounts.length,
+      total: moneyToString(sumMoney(amounts)),
+    }))
+    .sort((a, b) => a.currency.localeCompare(b.currency));
+}
 
 function todayUtc(): Date {
   const now = new Date();
@@ -209,13 +240,19 @@ export class ReportsService {
     const cheques = rows.map((row) => toChequeSummary(row, todayIso));
     const overdue = cheques.filter((cheque) => cheque.isOverdue);
 
+    // Counts are safe to add across currencies — a cheque is a cheque. Money
+    // is not, so only the totals are split.
     return {
       from: from.toISOString().slice(0, 10),
       to: to.toISOString().slice(0, 10),
       count: cheques.length,
-      total: moneyToString(sumMoney(cheques.map((cheque) => cheque.amount))),
       overdueCount: overdue.length,
-      overdueTotal: moneyToString(sumMoney(overdue.map((cheque) => cheque.amount))),
+      byCurrency: bucketByCurrency(
+        cheques.map((cheque) => ({ currency: cheque.currency, amount: toMoney(cheque.amount) })),
+      ),
+      overdueByCurrency: bucketByCurrency(
+        overdue.map((cheque) => ({ currency: cheque.currency, amount: toMoney(cheque.amount) })),
+      ),
       cheques,
     };
   }
@@ -235,31 +272,42 @@ export class ReportsService {
         dueDate: { gte: toDateOnly(query.from), lte: toDateOnly(query.to) },
         ...(query.branchId ? { branchId: query.branchId } : {}),
       },
-      select: { amount: true, dueDate: true, direction: true },
+      select: { amount: true, currency: true, dueDate: true, direction: true },
       orderBy: { dueDate: 'asc' },
     });
 
-    const buckets = new Map<string, { inflow: Prisma.Decimal[]; outflow: Prisma.Decimal[] }>();
+    // Bucketed by period *and* currency: a month holding shekel and dollar
+    // cheques has two lines, not one meaningless sum.
+    type Flow = { inflow: Prisma.Decimal[]; outflow: Prisma.Decimal[] };
+    const buckets = new Map<string, Map<string, Flow>>();
+
     for (const row of rows) {
-      const key = ReportsService.bucketKey(row.dueDate, query.granularity);
-      const bucket = buckets.get(key) ?? { inflow: [], outflow: [] };
+      const period = ReportsService.bucketKey(row.dueDate, query.granularity);
+      const byCurrency = buckets.get(period) ?? new Map<string, Flow>();
+      const bucket = byCurrency.get(row.currency) ?? { inflow: [], outflow: [] };
       if (row.direction === 'OUTGOING') bucket.outflow.push(row.amount);
       else bucket.inflow.push(row.amount);
-      buckets.set(key, bucket);
+      byCurrency.set(row.currency, bucket);
+      buckets.set(period, byCurrency);
     }
 
     const periods = [...buckets.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([period, bucket]) => {
-        const inflow = sumMoney(bucket.inflow);
-        const outflow = sumMoney(bucket.outflow);
-        return {
-          period,
-          inflow: moneyToString(inflow),
-          outflow: moneyToString(outflow),
-          net: moneyToString(inflow.minus(outflow)),
-        };
-      });
+      .map(([period, byCurrency]) => ({
+        period,
+        byCurrency: [...byCurrency.entries()]
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([currency, bucket]) => {
+            const inflow = sumMoney(bucket.inflow);
+            const outflow = sumMoney(bucket.outflow);
+            return {
+              currency,
+              inflow: moneyToString(inflow),
+              outflow: moneyToString(outflow),
+              net: moneyToString(inflow.minus(outflow)),
+            };
+          }),
+      }));
 
     return { from: query.from, to: query.to, granularity: query.granularity, periods };
   }
@@ -286,6 +334,7 @@ export class ReportsService {
       },
       select: {
         amount: true,
+        currency: true,
         currentLocation: { select: { id: true, name: true, type: true } },
         currentHolder: { select: { id: true, name: true } },
       },
@@ -293,7 +342,11 @@ export class ReportsService {
 
     const groups = new Map<
       string,
-      { locationName: string | null; holderName: string | null; amounts: Prisma.Decimal[] }
+      {
+        locationName: string | null;
+        holderName: string | null;
+        rows: Array<{ currency: string; amount: Prisma.Decimal }>;
+      }
     >();
 
     for (const row of rows) {
@@ -301,9 +354,9 @@ export class ReportsService {
       const group = groups.get(key) ?? {
         locationName: row.currentLocation?.name ?? null,
         holderName: row.currentHolder?.name ?? null,
-        amounts: [],
+        rows: [],
       };
-      group.amounts.push(row.amount);
+      group.rows.push({ currency: row.currency, amount: row.amount });
       groups.set(key, group);
     }
 
@@ -311,11 +364,11 @@ export class ReportsService {
       entries: [...groups.values()].map((group) => ({
         locationName: group.locationName,
         holderName: group.holderName,
-        count: group.amounts.length,
-        total: moneyToString(sumMoney(group.amounts)),
+        count: group.rows.length,
+        byCurrency: bucketByCurrency(group.rows),
       })),
       count: rows.length,
-      total: moneyToString(sumMoney(rows.map((row) => row.amount))),
+      byCurrency: bucketByCurrency(rows),
     };
   }
 

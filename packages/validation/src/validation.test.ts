@@ -76,13 +76,13 @@ describe('createChequeSchema', () => {
     direction: 'INCOMING',
     chequeNumber: 'CHQ-001',
     amount: '1500.00',
-    currency: 'sar',
+    currency: 'usd',
     dueDate: '2026-09-30',
   };
 
   it('normalises the currency and fills nullable fields', () => {
     const parsed = createChequeSchema.parse(base);
-    expect(parsed.currency).toBe('SAR');
+    expect(parsed.currency).toBe('USD');
     expect(parsed.issueDate).toBeNull();
     expect(parsed.notes).toBeNull();
   });
