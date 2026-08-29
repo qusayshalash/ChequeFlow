@@ -1,4 +1,5 @@
 import { csvField, toCsv } from './csv';
+import { ExportService } from './export.service';
 
 describe('csvField', () => {
   it('leaves ordinary values alone', () => {
@@ -51,5 +52,51 @@ describe('toCsv', () => {
 
   it('handles an empty row set', () => {
     expect(toCsv(['a'], [])).toBe(`${BOM}a\r\n`);
+  });
+});
+
+describe('ExportService', () => {
+  const service = new ExportService();
+
+  const cheque = {
+    id: 'c1',
+    direction: 'INCOMING' as const,
+    chequeNumber: '900001',
+    amount: '1500.00',
+    currency: 'ILS',
+    dueDate: '2026-09-30',
+    status: 'IN_HAND' as const,
+    isOverdue: false,
+    drawerName: 'شركة النور',
+    bankName: 'بنك الاختبار',
+    originalSourceName: null,
+    currentRecipientName: null,
+    currentLocationName: null,
+    branchName: null,
+    createdAt: '2026-08-29T10:00:00.000Z',
+  };
+
+  it('writes amounts as bare decimals a spreadsheet can add up', () => {
+    const csv = service.chequesToCsv([cheque], 'en');
+    // No thousands separator and no currency symbol: the currency has its own
+    // column, and "ILS 1,500.00" would not parse as a number.
+    expect(csv).toContain('1500.00');
+    expect(csv).not.toContain('1,500.00');
+    expect(csv).toContain('ILS');
+  });
+
+  it('says in the file itself when the export is partial', () => {
+    // Whoever opens the spreadsheet next week never sees the HTTP headers, so
+    // a truncated financial export has to admit it in its own last row.
+    const csv = service.chequesToCsv([cheque], 'en', {
+      truncated: { limit: 5000, total: 8123 },
+    });
+    expect(csv).toContain('5000');
+    expect(csv).toContain('8123');
+  });
+
+  it('says nothing extra when the export is complete', () => {
+    const csv = service.chequesToCsv([cheque], 'en');
+    expect(csv.trimEnd().split('\r\n')).toHaveLength(2);
   });
 });

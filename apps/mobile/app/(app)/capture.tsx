@@ -4,12 +4,12 @@ import { useRef, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ApiClientError } from '@cheque-flow/api-client';
-import { ChequeDirection } from '@cheque-flow/shared-types';
 import { colors, radius, spacing } from '@cheque-flow/ui/tokens';
 
 import { useApi, useTranslator } from '@/components/providers';
 import { Body, Button, Card, Heading, Screen } from '@/components/ui';
 import { checkCaptureQuality } from '@/lib/image-quality';
+import { uploadCapturedCheque } from '@/lib/cheque-upload';
 import { saveDraft } from '@/lib/draft-store';
 
 type Side = 'FRONT' | 'BACK';
@@ -89,60 +89,18 @@ export default function CaptureScreen() {
 
     setBusy(true);
     setError(null);
+
+    const images = Object.entries(shots).map(([key, shot]) => ({ side: key, uri: shot.uri }));
+
     try {
-      // Phase 1 creates a draft cheque, then attaches the images to it; the
-      // reviewer fills in the real values on the next screen.
-      const today = new Date().toISOString().slice(0, 10);
-      const created = await api.createCheque(
-        {
-          direction: ChequeDirection.INCOMING,
-          chequeNumber: `TMP-${Date.now().toString().slice(-8)}`,
-          amountInWords: null,
-          amount: '1.00',
-          currency: 'SAR',
-          dueDate: today,
-          issueDate: null,
-          receivedDate: today,
-          branchId: null,
-          bankId: null,
-          bankNameRaw: null,
-          bankBranchRaw: null,
-          accountNumber: null,
-          drawerName: null,
-          originalSourceId: null,
-          originalPayeeName: null,
-          currentLocationId: null,
-          purpose: null,
-          referenceNumber: null,
-          notes: null,
-        },
-        true,
-      );
-
-      for (const currentSide of ['FRONT', 'BACK'] as const) {
-        const shot = shots[currentSide];
-        if (!shot) continue;
-        const form = new FormData();
-        // React Native's FormData accepts this file descriptor shape.
-        form.append('file', {
-          uri: shot.uri,
-          name: `${currentSide.toLowerCase()}.jpg`,
-          type: 'image/jpeg',
-        } as unknown as Blob);
-        form.append('side', currentSide);
-        form.append('capturedAt', new Date().toISOString());
-        await api.uploadChequeImage(created.cheque.id, form, true);
-      }
-
-      await api.processOcr(created.cheque.id);
-      router.replace(`/(app)/cheques/${created.cheque.id}/review`);
+      const chequeId = await uploadCapturedCheque(api, images);
+      router.replace(`/(app)/cheques/${chequeId}/review`);
     } catch (caught) {
-      // Keep the capture locally so a flaky connection never loses work.
-      await saveDraft({
-        createdAt: new Date().toISOString(),
-        images: Object.entries(shots).map(([key, shot]) => ({ side: key, uri: shot.uri })),
-      });
-      setError(caught instanceof ApiClientError ? t(caught.messageKey) : t('errors.offline'));
+      // Keep the capture locally so a flaky connection never loses work. The
+      // draft is uploaded by `syncDrafts` as soon as the API is reachable
+      // again — it is a real queue, not a record of what was lost.
+      await saveDraft({ createdAt: new Date().toISOString(), images });
+      setError(caught instanceof ApiClientError ? t(caught.messageKey) : t('errors.queuedOffline'));
     } finally {
       setBusy(false);
     }

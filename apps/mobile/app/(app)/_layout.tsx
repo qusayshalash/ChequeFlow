@@ -4,6 +4,7 @@ import { Text } from 'react-native';
 
 import { colors } from '@cheque-flow/ui/tokens';
 
+import { BiometricGate } from '@/components/biometric-gate';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { LoadingView } from '@/components/ui';
 
@@ -41,52 +42,54 @@ export default function AppLayout() {
   if (session.isError) return <Redirect href="/login" />;
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: colors.brand,
-        tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
-        tabBarLabelStyle: { fontSize: 12 },
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: t('common.home'),
-          tabBarIcon: ({ focused }) => <TabIcon glyph="🏠" focused={focused} />,
+    <BiometricGate>
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarActiveTintColor: colors.brand,
+          tabBarInactiveTintColor: colors.textMuted,
+          tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
+          tabBarLabelStyle: { fontSize: 12 },
         }}
-      />
-      <Tabs.Screen
-        name="cheques"
-        options={{
-          title: t('nav.cheques'),
-          tabBarIcon: ({ focused }) => <TabIcon glyph="🧾" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="add"
-        options={{
-          title: t('common.add'),
-          tabBarIcon: ({ focused }) => <TabIcon glyph="➕" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="contacts"
-        options={{
-          title: t('contact.title'),
-          tabBarIcon: ({ focused }) => <TabIcon glyph="👥" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="more"
-        options={{
-          title: t('common.more'),
-          tabBarIcon: ({ focused }) => <TabIcon glyph="☰" focused={focused} />,
-        }}
-      />
-      {/* Reached from the "add" tab, not a destination of its own. */}
-      <Tabs.Screen name="capture" options={{ href: null }} />
-    </Tabs>
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: t('common.home'),
+            tabBarIcon: ({ focused }) => <TabIcon glyph="🏠" focused={focused} />,
+          }}
+        />
+        <Tabs.Screen
+          name="cheques"
+          options={{
+            title: t('nav.cheques'),
+            tabBarIcon: ({ focused }) => <TabIcon glyph="🧾" focused={focused} />,
+          }}
+        />
+        <Tabs.Screen
+          name="add"
+          options={{
+            title: t('common.add'),
+            tabBarIcon: ({ focused }) => <TabIcon glyph="➕" focused={focused} />,
+          }}
+        />
+        <Tabs.Screen
+          name="contacts"
+          options={{
+            title: t('contact.title'),
+            tabBarIcon: ({ focused }) => <TabIcon glyph="👥" focused={focused} />,
+          }}
+        />
+        <Tabs.Screen
+          name="more"
+          options={{
+            title: t('common.more'),
+            tabBarIcon: ({ focused }) => <TabIcon glyph="☰" focused={focused} />,
+          }}
+        />
+        {/* Reached from the "add" tab, not a destination of its own. */}
+        <Tabs.Screen name="capture" options={{ href: null }} />
+      </Tabs>
+    </BiometricGate>
   );
 }

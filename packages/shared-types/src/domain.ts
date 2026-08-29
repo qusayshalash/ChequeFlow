@@ -238,6 +238,14 @@ export interface ContactStatementView {
   currencies: ContactStatementCurrency[];
   /** Most recent cheques involving this contact, newest first. */
   cheques: ChequeSummaryView[];
+  /**
+   * How many cheques this contact has in total.
+   *
+   * `cheques` is capped, so without this the reader cannot tell a contact with
+   * exactly 50 cheques from one with 500 — and the per-currency totals above,
+   * which cover everything, would look inconsistent with the list below them.
+   */
+  totalCheques: number;
 }
 
 export interface DuplicateChequeMatch {

@@ -283,6 +283,18 @@ describeWithDb('phase 2 surface (e2e)', () => {
       expect(audits).toBeGreaterThan(0);
     });
 
+    it('reports the true cheque count on a statement, not just what fits', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`${API}/contacts/${fixtures.supplierId}/statement`)
+        .set(auth())
+        .expect(200);
+
+      // The per-currency figures cover every cheque while the list is capped,
+      // so the count has to be reported or the two look contradictory.
+      expect(typeof response.body.totalCheques).toBe('number');
+      expect(response.body.totalCheques).toBeGreaterThanOrEqual(response.body.cheques.length);
+    });
+
     it('neutralises a formula smuggled in through a drawer name', async () => {
       await createCheque({ drawerName: '=cmd|/c calc' });
 

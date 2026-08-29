@@ -8,7 +8,7 @@ import {
   type ReminderChannel,
   type ReminderStatus,
 } from '@cheque-flow/shared-types';
-import { moneyToString } from '@cheque-flow/database';
+import { moneyToString, type Prisma } from '@cheque-flow/database';
 
 import { AppConfigService } from '../../config/app-config.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -45,6 +45,46 @@ export interface ReminderView {
     dueDate: string;
     status: ChequeStatus;
     direction: ChequeDirection;
+  };
+}
+
+/** Everything a reminder view needs from the cheque it belongs to. */
+const reminderInclude = {
+  cheque: {
+    select: {
+      id: true,
+      chequeNumber: true,
+      amount: true,
+      currency: true,
+      dueDate: true,
+      status: true,
+      direction: true,
+    },
+  },
+} satisfies Prisma.ReminderInclude;
+
+type ReminderRow = Prisma.ReminderGetPayload<{ include: typeof reminderInclude }>;
+
+function toReminderView(row: ReminderRow, now: number): ReminderView {
+  return {
+    id: row.id,
+    type: row.type,
+    channel: row.channel,
+    status: row.status,
+    remindAt: row.remindAt.toISOString(),
+    isDue: row.remindAt.getTime() <= now,
+    custom: row.custom,
+    note: row.note,
+    acknowledgedAt: row.acknowledgedAt?.toISOString() ?? null,
+    cheque: {
+      id: row.cheque.id,
+      chequeNumber: row.cheque.chequeNumber,
+      amount: moneyToString(row.cheque.amount),
+      currency: row.cheque.currency,
+      dueDate: row.cheque.dueDate.toISOString().slice(0, 10),
+      status: row.cheque.status,
+      direction: row.cheque.direction,
+    },
   };
 }
 
@@ -184,44 +224,13 @@ export class RemindersService {
         acknowledgedAt: null,
         cheque: { deletedAt: null },
       },
-      include: {
-        cheque: {
-          select: {
-            id: true,
-            chequeNumber: true,
-            amount: true,
-            currency: true,
-            dueDate: true,
-            status: true,
-            direction: true,
-          },
-        },
-      },
+      include: reminderInclude,
       orderBy: { remindAt: 'asc' },
       take: limit,
     });
 
     const now = Date.now();
-    const views = rows.map((row) => ({
-      id: row.id,
-      type: row.type,
-      channel: row.channel,
-      status: row.status,
-      remindAt: row.remindAt.toISOString(),
-      isDue: row.remindAt.getTime() <= now,
-      custom: row.custom,
-      note: row.note,
-      acknowledgedAt: row.acknowledgedAt?.toISOString() ?? null,
-      cheque: {
-        id: row.cheque.id,
-        chequeNumber: row.cheque.chequeNumber,
-        amount: moneyToString(row.cheque.amount),
-        currency: row.cheque.currency,
-        dueDate: row.cheque.dueDate.toISOString().slice(0, 10),
-        status: row.cheque.status,
-        direction: row.cheque.direction,
-      },
-    }));
+    const views = rows.map((row) => toReminderView(row, now));
 
     // Due first (most overdue at the top), then everything still upcoming.
     return views.sort((a, b) => {
@@ -250,10 +259,19 @@ export class RemindersService {
       data: { remindAt: new Date(base + minutes * 60_000), status: 'SCHEDULED' },
     });
 
-    const [view] = await this.listForUser(userId, 100).then((rows) =>
-      rows.filter((row) => row.id === reminderId),
-    );
-    return view ?? null;
+    // Read the one row back directly. Going through `listForUser` meant a
+    // successful snooze reported 404 whenever the reminder fell outside that
+    // feed — an acknowledged one, or one whose cheque was soft-deleted.
+    return this.viewById(reminderId);
+  }
+
+  /** One reminder, mapped exactly as the feed maps it. */
+  private async viewById(reminderId: string): Promise<ReminderView | null> {
+    const row = await this.prisma.db.reminder.findUnique({
+      where: { id: reminderId },
+      include: reminderInclude,
+    });
+    return row ? toReminderView(row, Date.now()) : null;
   }
 
   /** Marks a reminder as dealt with, removing it from the feed. */

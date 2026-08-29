@@ -25,6 +25,7 @@ import {
 
 import { API_URL, defaultLocale } from '@/lib/config';
 import { DEFAULT_SETTINGS, loadSettings, saveSettings, type AppSettings } from '@/lib/app-settings';
+import { syncDrafts } from '@/lib/draft-sync';
 import { SecureTokenStore } from '@/lib/secure-token-store';
 
 /** How often the app re-checks whether the API is reachable. */
@@ -39,8 +40,10 @@ interface AppContextValue {
   ready: boolean;
   online: boolean;
   checkConnection: () => Promise<boolean>;
+  biometricLock: boolean;
   setLocale: (locale: Locale) => void;
   setCalendar: (calendar: CalendarPreference) => void;
+  setBiometricLock: (enabled: boolean) => void;
   /** Formatters bound to the current preferences, so screens never pass them. */
   money: (amount: string, currency: string) => string;
   date: (isoDate: string) => string;
@@ -122,7 +125,20 @@ export function Providers({ children }: { children: ReactNode }) {
   const checkConnection = useCallback(async (): Promise<boolean> => {
     try {
       await api.health();
-      setOnline(true);
+      setOnline((wasOnline) => {
+        // Coming back from offline is the moment anything captured in the
+        // meantime should be sent. Doing it here means the user never has to
+        // know a queue exists.
+        if (!wasOnline) {
+          void syncDrafts(api).then((result) => {
+            if (result.uploaded > 0) {
+              void queryClient.invalidateQueries({ queryKey: ['cheques'] });
+              void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+            }
+          });
+        }
+        return true;
+      });
       onlineManager.setOnline(true);
       return true;
     } catch {
@@ -130,7 +146,7 @@ export function Providers({ children }: { children: ReactNode }) {
       onlineManager.setOnline(false);
       return false;
     }
-  }, [api]);
+  }, [api, queryClient]);
 
   useEffect(() => {
     void checkConnection();
@@ -154,24 +170,34 @@ export function Providers({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const setBiometricLock = useCallback((biometricLock: boolean) => {
+    setSettings((current) => {
+      const next = { ...current, biometricLock };
+      void saveSettings(next);
+      return next;
+    });
+  }, []);
+
   const value = useMemo<AppContextValue>(() => {
-    const { locale, calendar } = settings;
+    const { locale, calendar, biometricLock } = settings;
     return {
       api,
       locale,
       calendar,
+      biometricLock,
       t: createTranslator(locale),
       ready,
       online,
       checkConnection,
       setLocale,
       setCalendar,
+      setBiometricLock,
       money: (amount, currency) => formatMoneyRaw(locale, amount, currency),
       date: (isoDate) => formatDateRaw(locale, isoDate, calendar),
       dateTime: (isoDateTime) => formatDateTimeRaw(locale, isoDateTime, { calendar }),
       dueDistance: (isoDate, today) => formatDueDistanceRaw(locale, isoDate, today),
     };
-  }, [api, settings, ready, online, checkConnection, setLocale, setCalendar]);
+  }, [api, settings, ready, online, checkConnection, setLocale, setCalendar, setBiometricLock]);
 
   return (
     <QueryClientProvider client={queryClient}>

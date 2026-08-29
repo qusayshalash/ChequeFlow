@@ -303,7 +303,7 @@ export class ContactsService {
       OR: [{ originalSourceId: id }, { currentRecipientId: id }],
     };
 
-    const [grouped, rows] = await Promise.all([
+    const [grouped, rows, totalCheques] = await Promise.all([
       this.prisma.db.cheque.groupBy({
         by: ['currency', 'status'],
         where: involved,
@@ -316,6 +316,10 @@ export class ContactsService {
         orderBy: { dueDate: 'desc' },
         take: limit,
       }),
+      // The per-currency figures cover every cheque, but the list is capped.
+      // Reporting the true count lets the client say so instead of implying
+      // the contact has only as many cheques as happen to fit.
+      this.prisma.db.cheque.count({ where: involved }),
     ]);
 
     const byCurrency = new Map<string, ContactStatementCurrency>();
@@ -347,6 +351,7 @@ export class ContactsService {
       contact,
       currencies: [...byCurrency.values()].sort((a, b) => a.currency.localeCompare(b.currency)),
       cheques: rows.map((row) => toChequeSummary(row, today)),
+      totalCheques,
     };
   }
 

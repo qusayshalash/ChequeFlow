@@ -86,6 +86,12 @@ interface UploadedImageFile {
 @ApiBearerAuth()
 @Controller('cheques')
 export class ChequeController {
+  /**
+   * Most rows one export may serialize. Beyond this the caller is told the
+   * file is partial rather than handed a silently trimmed one.
+   */
+  private static readonly EXPORT_ROW_LIMIT = 5000;
+
   constructor(
     private readonly cheques: ChequeService,
     private readonly actions: ChequeActionsService,
@@ -140,6 +146,13 @@ export class ChequeController {
   @RequirePermissions(Permission.CHEQUE_EXPORT)
   @ApiOperation({ summary: 'Export the filtered cheque list as CSV' })
   @ApiQuery({ name: 'locale', required: false, example: 'ar' })
+  @ApiResponse({
+    status: 200,
+    description:
+      'CSV. When the result exceeds the row ceiling the response carries ' +
+      'X-Export-Truncated and X-Export-Total, and the file itself ends with a ' +
+      'warning row.',
+  })
   async exportCsv(
     @CurrentUser() user: RequestUser,
     @Query(zodQuery(listChequesQuerySchema)) query: ListChequesQuery,
@@ -149,12 +162,18 @@ export class ChequeController {
   ): Promise<void> {
     // Export the whole filtered set, not just the caller's current page, but
     // keep a hard ceiling so one request cannot try to serialize the database.
-    const page = await this.cheques.list(user, { ...query, page: 1, pageSize: 5000 });
+    const page = await this.cheques.list(user, {
+      ...query,
+      page: 1,
+      pageSize: ChequeController.EXPORT_ROW_LIMIT,
+    });
 
-    const csv = this.exporter.chequesToCsv(
-      page.data,
-      locale !== undefined && isLocale(locale) ? locale : DEFAULT_LOCALE,
-    );
+    const truncated = page.meta.total > page.data.length;
+    const resolvedLocale = locale !== undefined && isLocale(locale) ? locale : DEFAULT_LOCALE;
+
+    const csv = this.exporter.chequesToCsv(page.data, resolvedLocale, {
+      ...(truncated ? { truncated: { limit: page.data.length, total: page.meta.total } } : {}),
+    });
 
     await this.cheques.recordExport(
       user,
@@ -165,6 +184,15 @@ export class ChequeController {
     const filename = `cheques-${new Date().toISOString().slice(0, 10)}.csv`;
     response.setHeader('Content-Type', 'text/csv; charset=utf-8');
     response.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    // A partial financial export that does not announce itself is how a
+    // reconciliation gets closed against incomplete data. Say so in the
+    // headers for clients, and in the file for whoever opens it.
+    if (truncated) {
+      response.setHeader('X-Export-Truncated', 'true');
+      response.setHeader('X-Export-Total', String(page.meta.total));
+    }
+
     response.send(csv);
   }
 

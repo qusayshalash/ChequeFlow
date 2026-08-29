@@ -93,7 +93,7 @@ export default function ContactStatementScreen() {
     );
   }
 
-  const { contact, currencies, cheques } = query.data;
+  const { contact, currencies, cheques, totalCheques } = query.data;
 
   /** Opens the phone dialler or WhatsApp for this contact. */
   async function reach(scheme: 'tel' | 'whatsapp'): Promise<void> {
@@ -174,6 +174,11 @@ export default function ContactStatementScreen() {
 
       <Card>
         <Text style={styles.sectionTitle}>{t('cheque.listTitle')}</Text>
+        {/* The totals above cover everything; this list does not. Saying so
+            stops the two looking like they disagree. */}
+        {totalCheques > cheques.length ? (
+          <Body muted>{t('contact.statementLimited', { count: cheques.length })}</Body>
+        ) : null}
         {cheques.length === 0 ? (
           <Body muted>{t('cheque.emptyList')}</Body>
         ) : (

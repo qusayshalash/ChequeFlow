@@ -2,26 +2,38 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
 
 import { CALENDARS, CALENDAR_LABELS, LOCALES, LOCALE_LABELS } from '@cheque-flow/localization';
 import { colors, spacing } from '@cheque-flow/ui/tokens';
 
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { Banner, Body, Button, Card, InfoRow, Picker, Section } from '@/components/ui';
-import { clearDrafts, listDrafts } from '@/lib/draft-store';
+import { clearDrafts, listDrafts, type CaptureDraft } from '@/lib/draft-store';
+import { syncDrafts } from '@/lib/draft-sync';
 
 export default function SettingsScreen() {
   const api = useApi();
   const t = useTranslator();
-  const { locale, calendar, setLocale, setCalendar, online, checkConnection, date } = useApp();
+  const {
+    locale,
+    calendar,
+    setLocale,
+    setCalendar,
+    biometricLock,
+    setBiometricLock,
+    online,
+    checkConnection,
+    date,
+    dateTime,
+  } = useApp();
   const router = useRouter();
   const queryClient = useQueryClient();
 
   const [biometricAvailable, setBiometricAvailable] = useState(false);
-  const [biometricEnabled, setBiometricEnabled] = useState(false);
-  const [draftCount, setDraftCount] = useState(0);
+  const [drafts, setDrafts] = useState<CaptureDraft[]>([]);
   const [syncing, setSyncing] = useState(false);
+  const [syncNotice, setSyncNotice] = useState<string | null>(null);
 
   const session = useQuery({ queryKey: ['session'], queryFn: () => api.me() });
 
@@ -30,35 +42,71 @@ export default function SettingsScreen() {
       const hasHardware = await LocalAuthentication.hasHardwareAsync();
       const enrolled = await LocalAuthentication.isEnrolledAsync();
       setBiometricAvailable(hasHardware && enrolled);
-      setDraftCount((await listDrafts()).length);
+      setDrafts(await listDrafts());
     })();
   }, []);
 
   async function toggleBiometric(): Promise<void> {
-    // Enabling asks for a real biometric prompt so the user proves it works
-    // before we rely on it at launch.
+    // Turning the lock off asks for the same proof as turning it on. Otherwise
+    // anyone holding the unlocked phone could switch it off, which would make
+    // the lock decorative.
     const result = await LocalAuthentication.authenticateAsync({
       promptMessage: t('auth.biometricPrompt'),
     });
-    setBiometricEnabled(result.success);
+    if (result.success) setBiometricLock(!biometricLock);
   }
 
   /**
-   * "Sync now" re-checks the connection and refetches everything on screen.
-   * It is not a reset: nothing local is discarded, which is what the old
-   * button did and what made it frightening to press.
+   * "Sync now" sends anything captured while offline, then refreshes.
+   *
+   * It is not a reset: nothing local is discarded, which is what the button
+   * that used to live here did under a name that did not say so.
    */
   async function syncNow(): Promise<void> {
     setSyncing(true);
+    setSyncNotice(null);
     try {
-      await checkConnection();
+      const reachable = await checkConnection();
+      if (!reachable) {
+        setSyncNotice(t('common.offline'));
+        return;
+      }
+
+      // Upload before refetching, so the screens show the cheques that were
+      // just sent rather than the state from before them.
+      const result = await syncDrafts(api);
+      setDrafts(await listDrafts());
       await queryClient.refetchQueries();
+
+      if (result.lost > 0) {
+        // Said plainly: those photographs are gone from the device and the
+        // cheques were never recorded anywhere. Silence would be worse.
+        setSyncNotice(t('errors.draftsLost', { count: result.lost }));
+      } else if (result.uploaded > 0) {
+        setSyncNotice(t('errors.draftsUploaded', { count: result.uploaded }));
+      } else if (result.remaining > 0) {
+        setSyncNotice(t('errors.draftsStuck', { count: result.remaining }));
+      } else {
+        setSyncNotice(t('common.saved'));
+      }
     } finally {
       setSyncing(false);
     }
   }
 
   async function logout(): Promise<void> {
+    // Anything still queued belongs to this device, not to the account, and
+    // the next person to sign in must not inherit it.
+    if (drafts.length > 0) {
+      const confirmed = await new Promise<boolean>((resolve) => {
+        Alert.alert(t('common.logout'), t('errors.pendingSync', { count: drafts.length }), [
+          { text: t('common.cancel'), style: 'cancel', onPress: () => resolve(false) },
+          { text: t('common.logout'), style: 'destructive', onPress: () => resolve(true) },
+        ]);
+      });
+      if (!confirmed) return;
+    }
+
     try {
       await api.logout();
     } finally {
@@ -107,28 +155,63 @@ export default function SettingsScreen() {
           tone={online ? 'info' : 'warning'}
           text={online ? t('common.online') : t('common.offline')}
         />
-        {draftCount > 0 ? (
-          <Body muted>{t('errors.pendingSync', { count: draftCount })}</Body>
-        ) : null}
+
+        {drafts.length > 0 ? (
+          <>
+            <Body muted>{t('errors.pendingSync', { count: drafts.length })}</Body>
+            {/* Every queued capture is listed, so "3 waiting" is never an
+                unexplained number the user cannot act on. */}
+            {drafts.map((draft) => (
+              <InfoRow
+                key={draft.id}
+                label={dateTime(draft.createdAt)}
+                value={draft.lastError ? t(draft.lastError) : t('reminders.upcoming')}
+              />
+            ))}
+          </>
+        ) : (
+          <Body muted>{t('errors.nothingPending')}</Body>
+        )}
+
+        {syncNotice ? <Banner tone="info" text={syncNotice} /> : null}
+
         <Button label={t('common.syncNow')} onPress={() => void syncNow()} loading={syncing} />
-        {draftCount > 0 ? (
+
+        {drafts.length > 0 ? (
           <Button
-            label={t('common.clear')}
-            variant="secondary"
+            label={t('errors.discardDrafts')}
+            variant="danger"
             onPress={() => {
-              void clearDrafts().then(() => setDraftCount(0));
+              // Destructive and irreversible — these photographs exist nowhere
+              // else — so it is asked as a question, not offered as a tidy-up.
+              Alert.alert(
+                t('errors.discardDrafts'),
+                t('errors.discardDraftsWarning', { count: drafts.length }),
+                [
+                  { text: t('common.cancel'), style: 'cancel' },
+                  {
+                    text: t('common.delete'),
+                    style: 'destructive',
+                    onPress: () => {
+                      void clearDrafts().then(() => setDrafts([]));
+                    },
+                  },
+                ],
+              );
             }}
           />
         ) : null}
       </Section>
 
       <Section title={t('auth.biometricEnable')}>
+        <Body muted>{t('auth.biometricHint')}</Body>
         <Button
-          label={biometricEnabled ? t('common.yes') : t('common.no')}
+          label={biometricLock ? t('common.yes') : t('common.no')}
           variant="secondary"
           disabled={!biometricAvailable}
           onPress={() => void toggleBiometric()}
         />
+        {!biometricAvailable ? <Body muted>{t('auth.biometricUnavailable')}</Body> : null}
       </Section>
 
       <Button label={t('common.logout')} variant="danger" onPress={() => void logout()} large />

@@ -32,7 +32,11 @@ export class ExportService {
    * and no currency symbol — a spreadsheet must be able to parse them as
    * numbers, and the currency has its own column.
    */
-  chequesToCsv(cheques: readonly ChequeSummaryView[], locale: Locale): string {
+  chequesToCsv(
+    cheques: readonly ChequeSummaryView[],
+    locale: Locale,
+    options: { truncated?: { limit: number; total: number } } = {},
+  ): string {
     const headers = COLUMNS.map((key) => translate(locale, key));
 
     const rows = cheques.map((cheque) => [
@@ -51,6 +55,17 @@ export class ExportService {
       cheque.branchName,
       cheque.createdAt,
     ]);
+
+    if (options.truncated) {
+      // The warning goes in the file, not only in a header: whoever opens the
+      // spreadsheet a week later never sees the HTTP response.
+      rows.push([
+        translate(locale, 'errors.exportTruncated', {
+          limit: options.truncated.limit,
+          total: options.truncated.total,
+        }),
+      ]);
+    }
 
     return toCsv(headers, rows);
   }
