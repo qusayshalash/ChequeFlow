@@ -132,6 +132,16 @@ TEST_DATABASE_URL="postgresql://chequeflow:PASSWORD@localhost:5432/chequeflow_te
 
 > بدون `TEST_DATABASE_URL` تتخطى هذه المجموعات نفسها بدل أن تفشل.
 
+سيناريوهات القبول تُشغَّل مقابل API حيّة (لا محاكاة) بعد الـseed:
+
+```bash
+bash tests/acceptance-phase-1.sh
+```
+
+```bash
+bash tests/acceptance-phase-2.sh
+```
+
 ---
 
 ## هيكل المستودع
@@ -141,7 +151,7 @@ TEST_DATABASE_URL="postgresql://chequeflow:PASSWORD@localhost:5432/chequeflow_te
 ├── apps/
 │   ├── api/         NestJS 11 — REST API على /api/v1 + OpenAPI
 │   ├── web/         Next.js 16 (App Router) — لوحة تحكم عربية RTL
-│   └── mobile/      Expo SDK 57 + expo-router — Android و iOS
+│   └── mobile/      Expo SDK 54 + expo-router — Android و iOS
 ├── packages/
 │   ├── database/       مخطط Prisma + الترحيلات + البذور
 │   ├── shared-types/   الأنواع، الصلاحيات، وآلة حالات الشيك
@@ -152,8 +162,25 @@ TEST_DATABASE_URL="postgresql://chequeflow:PASSWORD@localhost:5432/chequeflow_te
 │   └── config/         إعدادات ESLint وTypeScript وPrettier المشتركة
 ├── infrastructure/  docker-compose (PostgreSQL, Redis, MinIO)
 ├── docs/            قرارات معمارية + توثيق API
-└── tests/           سيناريو قبول المرحلة الأولى
+└── tests/           سيناريوهات القبول (المرحلتان الأولى والثانية)
 ```
+
+### شاشات تطبيق الجوال
+
+التنقّل شريط سفلي بخمس وجهات، وداخل كل وجهة `Stack` خاص بها:
+
+```
+الرئيسية      لوحة بمؤشرات لكل عملة + إجراءات سريعة + آخر الحركات
+الشيكات       تبويبات (الكل/واردة/صادرة/مستحقة/متأخرة/مرتجعة) + بحث + ورقة تصفية
+              └── تفاصيل الشيك → إجراءات · تعديل · خط الحركة · مراجعة المسح · تنبيه
+إضافة         تصوير شيك · إضافة يدوية · جهة اتصال جديدة
+جهات الاتصال  بحث + تبويبات النوع
+              └── كشف حساب لكل عملة · اتصال/واتساب · تعديل · دمج · حذف
+المزيد        التنبيهات · التقارير والتصدير · المستخدمون · الإعدادات
+```
+
+الإعدادات تتيح تبديل اللغة والتقويم (ميلادي/هجري) و«مزامنة الآن» مع بيان حالة
+الاتصال. التقويم عرض فقط — التخزين يبقى ميلاديًا دائمًا.
 
 ---
 

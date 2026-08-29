@@ -23,6 +23,11 @@ export const AuditAction = {
   CHEQUE_EXPORTED: 'cheque.exported',
   CONTACT_CREATED: 'contact.created',
   CONTACT_UPDATED: 'contact.updated',
+  CONTACT_DELETED: 'contact.deleted',
+  CONTACT_MERGED: 'contact.merged',
+  USER_CREATED: 'user.created',
+  USER_UPDATED: 'user.updated',
+  USER_STATUS_CHANGED: 'user.status.changed',
   ROLE_CHANGED: 'user.role.changed',
   SETTINGS_CHANGED: 'settings.changed',
 } as const;

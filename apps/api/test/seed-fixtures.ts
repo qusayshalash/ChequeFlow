@@ -53,8 +53,11 @@ export async function seedFixtures(prisma: PrismaService): Promise<Fixtures> {
     data: { organizationId: organization.id, name: 'Main', code: 'MAIN' },
   });
 
+  // All seven roles, as the real seed script creates them. Seeding only the
+  // two the suites sign in as would make "assign a role" untestable and would
+  // let a broken role lookup pass unnoticed.
   const roleIds = new Map<string, string>();
-  for (const roleName of [SystemRole.OWNER, SystemRole.VIEWER]) {
+  for (const roleName of Object.values(SystemRole)) {
     const role = await db.role.create({
       data: { organizationId: organization.id, name: roleName, isSystem: true },
     });

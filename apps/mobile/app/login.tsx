@@ -26,7 +26,7 @@ export default function LoginScreen() {
     try {
       await api.login(email.trim(), password);
       await queryClient.invalidateQueries({ queryKey: ['session'] });
-      router.replace('/(app)/dashboard');
+      router.replace('/(app)');
     } catch (caught) {
       setError(caught instanceof ApiClientError ? t(caught.messageKey) : t('errors.network'));
     } finally {

@@ -10,6 +10,7 @@ import {
   Post,
   Query,
   Req,
+  Res,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -24,9 +25,10 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 
 import { ChequeAction, Permission } from '@cheque-flow/shared-types';
+import { DEFAULT_LOCALE, isLocale } from '@cheque-flow/localization';
 import {
   bounceChequeSchema,
   cancelChequeSchema,
@@ -34,6 +36,7 @@ import {
   createChequeSchema,
   depositChequeSchema,
   handoverChequeSchema,
+  createReminderSchema,
   listChequesQuerySchema,
   markLostChequeSchema,
   postponeChequeSchema,
@@ -46,6 +49,7 @@ import {
   type CancelChequeInput,
   type ClearChequeInput,
   type CreateChequeInput,
+  type CreateReminderInput,
   type DepositChequeInput,
   type HandoverChequeInput,
   type ListChequesQuery,
@@ -63,7 +67,10 @@ import { zodBody, zodQuery } from '../../common/pipes/zod-validation.pipe';
 import type { RequestUser } from '../../common/types/request-user';
 import { AuditService } from '../audit/audit.service';
 import { ChequeImagesService } from '../cheque-images/cheque-images.service';
+import { AppError } from '../../common/errors/app-error';
+import { ExportService } from '../export/export.service';
 import { OcrService } from '../ocr/ocr.service';
+import { RemindersService } from '../reminders/reminders.service';
 import { ChequeActionsService, type ChequeActionPayload } from './cheque-actions.service';
 import { ChequeService } from './cheque.service';
 
@@ -84,6 +91,8 @@ export class ChequeController {
     private readonly actions: ChequeActionsService,
     private readonly images: ChequeImagesService,
     private readonly ocr: OcrService,
+    private readonly exporter: ExportService,
+    private readonly reminders: RemindersService,
   ) {}
 
   @Get()
@@ -123,6 +132,42 @@ export class ChequeController {
     );
   }
 
+  /**
+   * Declared before `:id` on purpose — Nest matches routes in declaration
+   * order, and `@Get(':id')` would otherwise swallow `/cheques/export`.
+   */
+  @Get('export')
+  @RequirePermissions(Permission.CHEQUE_EXPORT)
+  @ApiOperation({ summary: 'Export the filtered cheque list as CSV' })
+  @ApiQuery({ name: 'locale', required: false, example: 'ar' })
+  async exportCsv(
+    @CurrentUser() user: RequestUser,
+    @Query(zodQuery(listChequesQuerySchema)) query: ListChequesQuery,
+    @Query('locale') locale: string | undefined,
+    @Req() request: Request,
+    @Res() response: Response,
+  ): Promise<void> {
+    // Export the whole filtered set, not just the caller's current page, but
+    // keep a hard ceiling so one request cannot try to serialize the database.
+    const page = await this.cheques.list(user, { ...query, page: 1, pageSize: 5000 });
+
+    const csv = this.exporter.chequesToCsv(
+      page.data,
+      locale !== undefined && isLocale(locale) ? locale : DEFAULT_LOCALE,
+    );
+
+    await this.cheques.recordExport(
+      user,
+      page.data.length,
+      AuditService.contextFromRequest(request),
+    );
+
+    const filename = `cheques-${new Date().toISOString().slice(0, 10)}.csv`;
+    response.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    response.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    response.send(csv);
+  }
+
   @Get(':id')
   @RequirePermissions(Permission.CHEQUE_VIEW)
   @ApiOperation({ summary: 'Cheque details, including the actions the caller may perform' })
@@ -141,6 +186,25 @@ export class ChequeController {
     @Req() request: Request,
   ) {
     return this.cheques.update(user, id, body, AuditService.contextFromRequest(request));
+  }
+
+  @Post(':id/reminders')
+  @RequirePermissions(Permission.CHEQUE_VIEW)
+  @ApiOperation({ summary: 'Set your own reminder on a cheque' })
+  async createReminder(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(zodBody(createReminderSchema)) body: CreateReminderInput,
+  ): Promise<{ id: string }> {
+    const created = await this.reminders.createCustom(
+      user.organizationId,
+      user.id,
+      id,
+      new Date(body.remindAt),
+      body.note ?? null,
+    );
+    if (!created) throw AppError.notFound('Cheque', id);
+    return created;
   }
 
   @Get(':id/events')
@@ -337,6 +401,7 @@ export class ChequeController {
   ) {
     return this.run(user, id, ChequeAction.BOUNCE, request, {
       reason: body.reason,
+      fee: body.fee,
       effectiveDate: body.bouncedDate,
       notes: body.notes,
       eventDate: body.eventDate,

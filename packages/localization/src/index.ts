@@ -89,29 +89,75 @@ export function createTranslator(locale: Locale) {
 
 export type Translator = ReturnType<typeof createTranslator>;
 
-/** Formats money for display. The value stays a decimal string end to end. */
+/**
+ * Calendars the interface can render dates in.
+ *
+ * Gregorian is the default because cheque due dates are legal dates written on
+ * the cheque itself, and banks work in Gregorian. Hijri is offered alongside it
+ * for readers who think in it — never instead of it.
+ */
+export const CALENDARS = ['gregory', 'islamic-umalqura'] as const;
+export type CalendarPreference = (typeof CALENDARS)[number];
+
+export const DEFAULT_CALENDAR: CalendarPreference = 'gregory';
+
+export const CALENDAR_LABELS: Readonly<Record<CalendarPreference, Record<Locale, string>>> = {
+  gregory: { ar: 'ميلادي', en: 'Gregorian' },
+  'islamic-umalqura': { ar: 'هجري', en: 'Hijri' },
+};
+
+export function isCalendar(value: string): value is CalendarPreference {
+  return (CALENDARS as readonly string[]).includes(value);
+}
+
+/** BCP-47 tag used for number and date formatting in each locale. */
+function intlLocale(locale: Locale): string {
+  return locale === 'ar' ? 'ar-SA' : 'en-GB';
+}
+
+/**
+ * Formats money for display. The value stays a decimal string end to end.
+ *
+ * The currency is rendered as its ISO code (`USD 4,000.00`) rather than as a
+ * symbol. In Arabic, `Intl` renders the USD symbol as `US$`, which a
+ * right-to-left line then displays as `$US` — a currency that does not exist.
+ * The three-letter code is unambiguous in both directions and is what finance
+ * staff read anyway.
+ */
 export function formatMoney(locale: Locale, amount: string, currency: string): string {
   const numeric = Number(amount);
-  const formatter = new Intl.NumberFormat(locale === 'ar' ? 'ar-SA' : 'en-US', {
+  if (!Number.isFinite(numeric)) return `${currency} ${amount}`;
+
+  return new Intl.NumberFormat(intlLocale(locale), {
     style: 'currency',
     currency,
+    currencyDisplay: 'code',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
     // Arabic-Indic digits hurt readability for finance staff scanning numbers.
     numberingSystem: 'latn',
-  });
-  return Number.isFinite(numeric) ? formatter.format(numeric) : `${amount} ${currency}`;
+  }).format(numeric);
 }
 
-/** Formats a `YYYY-MM-DD` calendar date without shifting it by timezone. */
-export function formatDate(locale: Locale, isoDate: string): string {
+/**
+ * Formats a `YYYY-MM-DD` calendar date without shifting it by timezone.
+ *
+ * `calendar` chooses the reckoning shown to the reader. The stored value never
+ * changes — only its presentation.
+ */
+export function formatDate(
+  locale: Locale,
+  isoDate: string,
+  calendar: CalendarPreference = DEFAULT_CALENDAR,
+): string {
   const [year, month, day] = isoDate.split('-').map(Number);
   if (!year || !month || !day) return isoDate;
-  return new Intl.DateTimeFormat(locale === 'ar' ? 'ar-SA' : 'en-GB', {
+
+  return new Intl.DateTimeFormat(intlLocale(locale), {
     year: 'numeric',
     month: 'short',
     day: '2-digit',
-    calendar: 'gregory',
+    calendar,
     numberingSystem: 'latn',
     // A calendar date has no timezone: format it in UTC so it never shifts
     // by a day depending on where the viewer is.
@@ -123,16 +169,47 @@ export function formatDate(locale: Locale, isoDate: string): string {
  * Formats a UTC instant. Timestamps are stored in UTC and rendered in the
  * viewer's timezone, or in `timeZone` when the organization pins one.
  */
-export function formatDateTime(locale: Locale, isoDateTime: string, timeZone?: string): string {
+export function formatDateTime(
+  locale: Locale,
+  isoDateTime: string,
+  options: { timeZone?: string; calendar?: CalendarPreference } = {},
+): string {
   const date = new Date(isoDateTime);
   if (Number.isNaN(date.getTime())) return isoDateTime;
-  return new Intl.DateTimeFormat(locale === 'ar' ? 'ar-SA' : 'en-GB', {
+
+  return new Intl.DateTimeFormat(intlLocale(locale), {
     dateStyle: 'medium',
     timeStyle: 'short',
-    calendar: 'gregory',
+    calendar: options.calendar ?? DEFAULT_CALENDAR,
     numberingSystem: 'latn',
-    ...(timeZone ? { timeZone } : {}),
+    ...(options.timeZone ? { timeZone: options.timeZone } : {}),
   }).format(date);
+}
+
+/**
+ * Whole days from `today` to `isoDate`; negative when the date has passed.
+ *
+ * Both arguments are calendar dates, so this counts days on the calendar
+ * rather than 24-hour periods — "due tomorrow" stays 1 regardless of the hour.
+ */
+export function daysUntil(isoDate: string, today: string): number {
+  const target = Date.parse(`${isoDate}T00:00:00.000Z`);
+  const from = Date.parse(`${today}T00:00:00.000Z`);
+  if (Number.isNaN(target) || Number.isNaN(from)) return 0;
+  return Math.round((target - from) / 86_400_000);
+}
+
+/**
+ * "Due today" / "in 3 days" / "5 days late", in the reader's language.
+ * Written against the message catalogue so neither app has to build it.
+ */
+export function formatDueDistance(locale: Locale, isoDate: string, today: string): string {
+  const days = daysUntil(isoDate, today);
+  if (days === 0) return translate(locale, 'due.today');
+  if (days === 1) return translate(locale, 'due.tomorrow');
+  if (days === -1) return translate(locale, 'due.yesterday');
+  if (days > 1) return translate(locale, 'due.inDays', { days });
+  return translate(locale, 'due.lateDays', { days: Math.abs(days) });
 }
 
 export { ar as arMessages, en as enMessages };

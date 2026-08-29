@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
   ChequeStatus,
   ReminderType,
+  type ChequeDirection,
   type MoneyString,
   type ReminderChannel,
   type ReminderStatus,
@@ -31,12 +32,19 @@ export interface ReminderView {
   channel: ReminderChannel;
   status: ReminderStatus;
   remindAt: string;
+  /** Its moment has arrived — the row is actionable now, not upcoming. */
+  isDue: boolean;
+  custom: boolean;
+  note: string | null;
+  acknowledgedAt: string | null;
   cheque: {
     id: string;
     chequeNumber: string;
     amount: MoneyString;
     currency: string;
     dueDate: string;
+    status: ChequeStatus;
+    direction: ChequeDirection;
   };
 }
 
@@ -117,8 +125,10 @@ export class RemindersService {
     });
     if (!cheque) return 0;
 
+    // Only the automatic schedule is rebuilt. A reminder someone set by hand
+    // is theirs to keep, and must not vanish because the cheque moved.
     await this.prisma.db.reminder.deleteMany({
-      where: { chequeId, status: 'SCHEDULED' },
+      where: { chequeId, status: 'SCHEDULED', custom: false },
     });
 
     if (!ACTIVE_STATUSES.includes(cheque.status)) {
@@ -159,32 +169,128 @@ export class RemindersService {
     return created.count;
   }
 
-  /** In-app notification feed for the current user. */
+  /**
+   * In-app notification feed for the current user.
+   *
+   * Reminders whose moment has arrived come first — those are the ones that
+   * need action today — followed by the upcoming ones in date order.
+   * Acknowledged reminders drop out of the feed entirely.
+   */
   async listForUser(userId: string, limit = 50): Promise<ReminderView[]> {
     const rows = await this.prisma.db.reminder.findMany({
-      where: { recipientUserId: userId, status: { in: ['SCHEDULED', 'SENT'] } },
+      where: {
+        recipientUserId: userId,
+        status: { in: ['SCHEDULED', 'SENT'] },
+        acknowledgedAt: null,
+        cheque: { deletedAt: null },
+      },
       include: {
         cheque: {
-          select: { id: true, chequeNumber: true, amount: true, currency: true, dueDate: true },
+          select: {
+            id: true,
+            chequeNumber: true,
+            amount: true,
+            currency: true,
+            dueDate: true,
+            status: true,
+            direction: true,
+          },
         },
       },
       orderBy: { remindAt: 'asc' },
       take: limit,
     });
 
-    return rows.map((row) => ({
+    const now = Date.now();
+    const views = rows.map((row) => ({
       id: row.id,
       type: row.type,
       channel: row.channel,
       status: row.status,
       remindAt: row.remindAt.toISOString(),
+      isDue: row.remindAt.getTime() <= now,
+      custom: row.custom,
+      note: row.note,
+      acknowledgedAt: row.acknowledgedAt?.toISOString() ?? null,
       cheque: {
         id: row.cheque.id,
         chequeNumber: row.cheque.chequeNumber,
         amount: moneyToString(row.cheque.amount),
         currency: row.cheque.currency,
         dueDate: row.cheque.dueDate.toISOString().slice(0, 10),
+        status: row.cheque.status,
+        direction: row.cheque.direction,
       },
     }));
+
+    // Due first (most overdue at the top), then everything still upcoming.
+    return views.sort((a, b) => {
+      if (a.isDue !== b.isDue) return a.isDue ? -1 : 1;
+      return a.remindAt.localeCompare(b.remindAt);
+    });
+  }
+
+  /**
+   * Pushes a reminder into the future.
+   *
+   * The row is reused rather than replaced so the reminder keeps its identity;
+   * snoozing is a postponement, not a new alert.
+   */
+  async snooze(userId: string, reminderId: string, minutes: number): Promise<ReminderView | null> {
+    const reminder = await this.prisma.db.reminder.findFirst({
+      where: { id: reminderId, recipientUserId: userId },
+    });
+    if (!reminder) return null;
+
+    // Snooze from now, not from the original time: snoozing an alert that is
+    // already three days late by "one day" must not leave it still in the past.
+    const base = Math.max(Date.now(), reminder.remindAt.getTime());
+    await this.prisma.db.reminder.update({
+      where: { id: reminderId },
+      data: { remindAt: new Date(base + minutes * 60_000), status: 'SCHEDULED' },
+    });
+
+    const [view] = await this.listForUser(userId, 100).then((rows) =>
+      rows.filter((row) => row.id === reminderId),
+    );
+    return view ?? null;
+  }
+
+  /** Marks a reminder as dealt with, removing it from the feed. */
+  async acknowledge(userId: string, reminderId: string): Promise<boolean> {
+    const result = await this.prisma.db.reminder.updateMany({
+      where: { id: reminderId, recipientUserId: userId, acknowledgedAt: null },
+      data: { acknowledgedAt: new Date(), status: 'READ' },
+    });
+    return result.count > 0;
+  }
+
+  /** A reminder a person set by hand on a specific cheque. */
+  async createCustom(
+    organizationId: string,
+    userId: string,
+    chequeId: string,
+    remindAt: Date,
+    note: string | null,
+  ): Promise<{ id: string } | null> {
+    const cheque = await this.prisma.db.cheque.findFirst({
+      where: { id: chequeId, organizationId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!cheque) return null;
+
+    const created = await this.prisma.db.reminder.create({
+      data: {
+        chequeId,
+        type: ReminderType.BEFORE_DUE,
+        remindAt,
+        channel: 'IN_APP',
+        recipientUserId: userId,
+        custom: true,
+        note,
+      },
+      select: { id: true },
+    });
+    return created;
   }
 }

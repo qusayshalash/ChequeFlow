@@ -41,6 +41,8 @@ export const createChequeSchema = z
     direction: chequeDirectionSchema,
     chequeNumber: chequeNumberSchema,
     amount: moneySchema,
+    /** The amount as written in letters; in a dispute it prevails over digits. */
+    amountInWords: optionalText(255),
     currency: currencySchema,
     issueDate: isoDateSchema.nullish().transform((v) => v ?? null),
     dueDate: isoDateSchema,
@@ -73,6 +75,7 @@ export type CreateChequeInput = z.infer<typeof createChequeSchema>;
 export const updateChequeSchema = z.object({
   chequeNumber: chequeNumberSchema.optional(),
   amount: moneySchema.optional(),
+  amountInWords: optionalText(255).optional(),
   currency: currencySchema.optional(),
   issueDate: isoDateSchema.nullish(),
   dueDate: isoDateSchema.optional(),
@@ -104,6 +107,15 @@ export const listChequesQuerySchema = paginationSchema.extend({
       value === undefined ? undefined : Array.isArray(value) ? value : [value],
     ),
   direction: chequeDirectionSchema.optional(),
+  currency: currencySchema.optional(),
+  /**
+   * Past due and still uncollected. Sent as a string because it arrives in a
+   * query string; `false` explicitly excludes overdue cheques.
+   */
+  overdue: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((v) => (v === undefined ? undefined : v === 'true')),
   branchId: uuidSchema.optional(),
   bankId: uuidSchema.optional(),
   sourceId: uuidSchema.optional(),
@@ -160,6 +172,8 @@ export type ClearChequeInput = z.infer<typeof clearChequeSchema>;
 
 export const bounceChequeSchema = actionBaseSchema.extend({
   reason: shortTextSchema,
+  /** Bank charge for the returned cheque, recorded against the cheque. */
+  fee: moneySchema.optional(),
   bouncedDate: isoDateSchema.optional(),
 });
 export type BounceChequeInput = z.infer<typeof bounceChequeSchema>;
@@ -202,6 +216,7 @@ export const reviewChequeSchema = z.object({
   confirmed: z.object({
     chequeNumber: chequeNumberSchema.optional(),
     amount: moneySchema.optional(),
+    amountInWords: optionalText(255).optional(),
     currency: currencySchema.optional(),
     issueDate: isoDateSchema.nullish(),
     dueDate: isoDateSchema.optional(),

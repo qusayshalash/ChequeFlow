@@ -8,7 +8,7 @@ import {
   type ChequeEventView,
   type TransitionDefinition,
 } from '@cheque-flow/shared-types';
-import { Prisma } from '@cheque-flow/database';
+import { Prisma, toMoney } from '@cheque-flow/database';
 
 import { AppError } from '../../common/errors/app-error';
 import { FieldEncryptionService } from '../../common/crypto/field-encryption.service';
@@ -38,6 +38,8 @@ export interface ChequeActionPayload {
   /** Applied to `receivedDate` / `dueDate` depending on the action. */
   effectiveDate?: string | undefined;
   reason?: string | undefined;
+  /** Bank charge, currently only meaningful for BOUNCE. */
+  fee?: string | undefined;
 }
 
 /**
@@ -197,6 +199,14 @@ export class ChequeActionsService {
         changes.currentRecipientId = payload.toContactId ?? null;
         changes.currentHolderId = payload.toUserId ?? user.id;
         if (payload.toLocationId) changes.currentLocationId = payload.toLocationId;
+        break;
+
+      case ChequeAction.BOUNCE:
+        // The bank's reason and charge stay on the cheque. They survive a
+        // later re-presentation, so the history of a bounced cheque is never
+        // lost when it moves on to another status.
+        changes.bounceReason = payload.reason ?? null;
+        if (payload.fee !== undefined) changes.bounceFee = toMoney(payload.fee);
         break;
 
       case ChequeAction.POSTPONE:

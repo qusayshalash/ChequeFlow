@@ -97,6 +97,7 @@ export default function CaptureScreen() {
         {
           direction: ChequeDirection.INCOMING,
           chequeNumber: `TMP-${Date.now().toString().slice(-8)}`,
+          amountInWords: null,
           amount: '1.00',
           currency: 'SAR',
           dueDate: today,

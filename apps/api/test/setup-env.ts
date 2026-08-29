@@ -18,6 +18,15 @@ process.env.S3_BUCKET ??= 'cheque-images-test';
 process.env.S3_ACCESS_KEY_ID ??= 'test-access-key';
 process.env.S3_SECRET_ACCESS_KEY ??= 'test-secret-key';
 process.env.S3_FORCE_PATH_STYLE ??= 'true';
+// The rate limits are a production concern; a suite that drives dozens of
+// requests through one process in two seconds is not the traffic they guard
+// against. Raised here rather than in the app so the real defaults still apply
+// everywhere else.
+process.env.RATE_LIMIT_DEFAULT_PER_MINUTE ??= '100000';
+process.env.RATE_LIMIT_AUTH_PER_MINUTE ??= '100000';
+process.env.RATE_LIMIT_UPLOAD_PER_MINUTE ??= '100000';
+process.env.RATE_LIMIT_OCR_PER_MINUTE ??= '100000';
+
 // Pinned on purpose: the suites must not depend on whatever the default
 // provider happens to be, and must never call a cloud service.
 process.env.OCR_PROVIDER = 'mock';

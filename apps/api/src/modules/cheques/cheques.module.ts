@@ -1,6 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 
 import { ChequeImagesModule } from '../cheque-images/cheque-images.module';
+import { ExportModule } from '../export/export.module';
 import { RemindersModule } from '../reminders/reminders.module';
 import { OcrModule } from '../ocr/ocr.module';
 import { ChequeActionsService } from './cheque-actions.service';
@@ -9,7 +10,7 @@ import { ChequeService } from './cheque.service';
 import { DuplicateDetectorService } from './duplicate-detector.service';
 
 @Module({
-  imports: [RemindersModule, ChequeImagesModule, forwardRef(() => OcrModule)],
+  imports: [RemindersModule, ChequeImagesModule, ExportModule, forwardRef(() => OcrModule)],
   controllers: [ChequeController],
   providers: [ChequeService, ChequeActionsService, DuplicateDetectorService],
   exports: [ChequeService, ChequeActionsService, DuplicateDetectorService],

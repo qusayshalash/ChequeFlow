@@ -4,7 +4,7 @@ import type {
   ChequeSummaryView,
   Permission,
 } from '@cheque-flow/shared-types';
-import { allowedActionsForUser } from '@cheque-flow/shared-types';
+import { allowedActionsForUser, isChequeOverdue, utcToday } from '@cheque-flow/shared-types';
 import { moneyToString, type Prisma } from '@cheque-flow/database';
 
 import { type FieldEncryptionService } from '../../common/crypto/field-encryption.service';
@@ -18,6 +18,8 @@ export const chequeSummarySelect = {
   currency: true,
   dueDate: true,
   status: true,
+  drawerName: true,
+  originalPayeeName: true,
   bankNameRaw: true,
   createdAt: true,
   bank: { select: { name: true } },
@@ -54,15 +56,27 @@ export function toIsoDate(value: Date | null): string | null {
   return value ? value.toISOString().slice(0, 10) : null;
 }
 
-export function toChequeSummary(row: ChequeSummaryRow): ChequeSummaryView {
+/**
+ * `today` is a required parameter, not a default, for two reasons: every row in
+ * one list must be judged against the same day (a list must not straddle
+ * midnight halfway through), and a required `string` makes the tempting
+ * `rows.map(toChequeSummary)` a compile error rather than a bug that silently
+ * passes the array index as the date.
+ */
+export function toChequeSummary(row: ChequeSummaryRow, today: string): ChequeSummaryView {
+  const dueDate = toIsoDate(row.dueDate) ?? '';
   return {
     id: row.id,
     direction: row.direction,
     chequeNumber: row.chequeNumber,
     amount: moneyToString(row.amount),
     currency: row.currency,
-    dueDate: toIsoDate(row.dueDate) ?? '',
+    dueDate,
     status: row.status,
+    isOverdue: isChequeOverdue(row.status, dueDate, today),
+    // Incoming cheques are identified by who wrote them, outgoing ones by who
+    // they were written to; the card shows whichever applies.
+    drawerName: row.direction === 'OUTGOING' ? row.originalPayeeName : row.drawerName,
     bankName: row.bank?.name ?? row.bankNameRaw,
     originalSourceName: row.originalSource?.name ?? null,
     currentRecipientName: row.currentRecipient?.name ?? null,
@@ -85,8 +99,9 @@ export function toChequeDetail(
   encryption: FieldEncryptionService,
 ): ChequeDetailView {
   return {
-    ...toChequeSummary(row),
+    ...toChequeSummary(row, utcToday()),
     branchId: row.branchId,
+    amountInWords: row.amountInWords,
     issueDate: toIsoDate(row.issueDate),
     receivedDate: toIsoDate(row.receivedDate),
     bankId: row.bankId,
@@ -101,6 +116,8 @@ export function toChequeDetail(
     purpose: row.purpose,
     referenceNumber: row.referenceNumber,
     notes: row.notes,
+    bounceReason: row.bounceReason,
+    bounceFee: row.bounceFee === null ? null : moneyToString(row.bounceFee),
     ocrStatus: row.ocrStatus,
     ocrOverallConfidence:
       row.ocrOverallConfidence === null ? null : Number(row.ocrOverallConfidence),
@@ -122,6 +139,8 @@ export function toChequeDetail(
 }
 
 export const chequeEventInclude = {
+  // The activity feed needs to name and open the cheque each event belongs to.
+  cheque: { select: { chequeNumber: true } },
   fromContact: { select: { name: true } },
   toContact: { select: { name: true } },
   fromUser: { select: { name: true } },
@@ -137,6 +156,8 @@ type ChequeEventRow = Prisma.ChequeEventGetPayload<{ include: typeof chequeEvent
 export function toChequeEventView(row: ChequeEventRow): ChequeEventView {
   return {
     id: row.id,
+    chequeId: row.chequeId,
+    chequeNumber: row.cheque.chequeNumber,
     eventType: row.eventType,
     fromStatus: row.fromStatus,
     toStatus: row.toStatus,

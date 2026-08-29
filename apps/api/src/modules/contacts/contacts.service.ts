@@ -1,10 +1,20 @@
 import { Injectable } from '@nestjs/common';
 
-import type { ContactView, Paginated } from '@cheque-flow/shared-types';
-import type { Prisma } from '@cheque-flow/database';
+import {
+  ChequeStatus,
+  OUTSTANDING_CHEQUE_STATUSES,
+  utcToday,
+  ApiErrorCode,
+  type ContactStatementCurrency,
+  type ContactStatementView,
+  type ContactView,
+  type Paginated,
+} from '@cheque-flow/shared-types';
+import { moneyToString, toMoney, type Prisma } from '@cheque-flow/database';
 import type {
   CreateContactInput,
   ListContactsQuery,
+  MergeContactsInput,
   UpdateContactInput,
 } from '@cheque-flow/validation';
 
@@ -12,6 +22,7 @@ import { AppError } from '../../common/errors/app-error';
 import type { RequestUser } from '../../common/types/request-user';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditAction, AuditService, type AuditContext } from '../audit/audit.service';
+import { chequeSummarySelect, toChequeSummary } from '../cheques/cheque.mapper';
 
 type ContactRow = Prisma.ContactGetPayload<Record<string, never>>;
 
@@ -24,6 +35,7 @@ function toView(contact: ContactRow): ContactView {
     phone: contact.phone,
     email: contact.email,
     taxNumber: contact.taxNumber,
+    nationalId: contact.nationalId,
     address: contact.address,
     notes: contact.notes,
     isActive: contact.isActive,
@@ -136,5 +148,229 @@ export class ContactsService {
     });
 
     return toView(contact);
+  }
+
+  /**
+   * Deactivates or deletes a contact.
+   *
+   * A contact that appears anywhere in cheque history is never removed from
+   * the database: deleting it would blank out the "received from" / "handed to"
+   * columns on cheques and events, silently rewriting the custody trail. Such a
+   * contact is deactivated instead, which hides it from pickers while keeping
+   * every past record intact. Only a contact with no history at all is deleted.
+   */
+  async remove(
+    user: RequestUser,
+    id: string,
+    auditMeta: Partial<AuditContext> = {},
+  ): Promise<{ deleted: boolean; contact: ContactView | null }> {
+    const existing = await this.prisma.db.contact.findFirst({
+      where: { id, organizationId: user.organizationId },
+    });
+    if (!existing) throw AppError.notFound('Contact', id);
+
+    const references = await this.countReferences(id);
+
+    if (references > 0) {
+      const contact = await this.prisma.db.contact.update({
+        where: { id },
+        data: { isActive: false },
+      });
+      await this.audit.record({
+        organizationId: user.organizationId,
+        userId: user.id,
+        action: AuditAction.CONTACT_UPDATED,
+        entityType: 'contact',
+        entityId: id,
+        before: { isActive: existing.isActive },
+        after: { isActive: false, deactivatedBecauseReferenced: references },
+        ipAddress: auditMeta.ipAddress ?? null,
+        deviceInfo: auditMeta.deviceInfo ?? null,
+      });
+      return { deleted: false, contact: toView(contact) };
+    }
+
+    await this.prisma.db.contact.delete({ where: { id } });
+    await this.audit.record({
+      organizationId: user.organizationId,
+      userId: user.id,
+      action: AuditAction.CONTACT_DELETED,
+      entityType: 'contact',
+      entityId: id,
+      before: { name: existing.name, type: existing.type },
+      ipAddress: auditMeta.ipAddress ?? null,
+      deviceInfo: auditMeta.deviceInfo ?? null,
+    });
+    return { deleted: true, contact: null };
+  }
+
+  /**
+   * Merges a duplicate contact into the one that should survive.
+   *
+   * The cheques that point at the duplicate are repointed at the target inside
+   * one transaction. The event ledger is left untouched on purpose (see below).
+   * The duplicate is deactivated rather than deleted, which keeps the merge
+   * reversible by hand and keeps old ledger rows resolvable to a name.
+   */
+  async merge(
+    user: RequestUser,
+    input: MergeContactsInput,
+    auditMeta: Partial<AuditContext> = {},
+  ): Promise<ContactView> {
+    if (input.sourceId === input.targetId) {
+      throw new AppError(ApiErrorCode.VALIDATION_ERROR, 'A contact cannot be merged into itself', {
+        fieldErrors: [{ path: 'sourceId', message: 'validation.contact.mergeSelf' }],
+      });
+    }
+
+    const [source, target] = await Promise.all([
+      this.prisma.db.contact.findFirst({
+        where: { id: input.sourceId, organizationId: user.organizationId },
+      }),
+      this.prisma.db.contact.findFirst({
+        where: { id: input.targetId, organizationId: user.organizationId },
+      }),
+    ]);
+    if (!source) throw AppError.notFound('Contact', input.sourceId);
+    if (!target) throw AppError.notFound('Contact', input.targetId);
+
+    const merged = await this.prisma.db.$transaction(async (tx) => {
+      await tx.cheque.updateMany({
+        where: { originalSourceId: source.id },
+        data: { originalSourceId: target.id },
+      });
+      await tx.cheque.updateMany({
+        where: { currentRecipientId: source.id },
+        data: { currentRecipientId: target.id },
+      });
+      // `cheque_events` is deliberately NOT rewritten. The ledger is
+      // append-only — a database trigger rejects UPDATE on it — and rewriting
+      // it would be wrong even if it were allowed: those rows record who the
+      // cheque actually came from at the time, which a later bookkeeping merge
+      // does not change. The duplicate row is kept (deactivated, not deleted)
+      // precisely so those historical events still resolve to a name.
+
+      // Fill in details the surviving record is missing rather than
+      // overwriting what it already has.
+      const filled = await tx.contact.update({
+        where: { id: target.id },
+        data: {
+          phone: target.phone ?? source.phone,
+          email: target.email ?? source.email,
+          taxNumber: target.taxNumber ?? source.taxNumber,
+          nationalId: target.nationalId ?? source.nationalId,
+          address: target.address ?? source.address,
+          companyName: target.companyName ?? source.companyName,
+        },
+      });
+
+      await tx.contact.update({
+        where: { id: source.id },
+        data: { isActive: false, notes: `Merged into ${target.name} (${target.id})` },
+      });
+
+      await this.audit.recordWithin(tx, {
+        organizationId: user.organizationId,
+        userId: user.id,
+        action: AuditAction.CONTACT_MERGED,
+        entityType: 'contact',
+        entityId: target.id,
+        before: { source: { id: source.id, name: source.name } },
+        after: { target: { id: target.id, name: target.name } },
+        ipAddress: auditMeta.ipAddress ?? null,
+        deviceInfo: auditMeta.deviceInfo ?? null,
+      });
+
+      return filled;
+    });
+
+    return toView(merged);
+  }
+
+  /**
+   * Account statement for one contact: what they still owe us, what they
+   * actually paid, and what came back — each per currency, never summed
+   * across currencies.
+   */
+  async statement(user: RequestUser, id: string, limit = 50): Promise<ContactStatementView> {
+    const contact = await this.findById(user, id);
+
+    // A contact can be on either side of a cheque: the party it came from, or
+    // the party it was handed to. The statement covers both.
+    const involved: Prisma.ChequeWhereInput = {
+      organizationId: user.organizationId,
+      deletedAt: null,
+      OR: [{ originalSourceId: id }, { currentRecipientId: id }],
+    };
+
+    const [grouped, rows] = await Promise.all([
+      this.prisma.db.cheque.groupBy({
+        by: ['currency', 'status'],
+        where: involved,
+        _count: { _all: true },
+        _sum: { amount: true },
+      }),
+      this.prisma.db.cheque.findMany({
+        where: involved,
+        select: chequeSummarySelect,
+        orderBy: { dueDate: 'desc' },
+        take: limit,
+      }),
+    ]);
+
+    const byCurrency = new Map<string, ContactStatementCurrency>();
+    const blank = (currency: string): ContactStatementCurrency => ({
+      currency,
+      pending: { count: 0, total: '0.00' },
+      collected: { count: 0, total: '0.00' },
+      bounced: { count: 0, total: '0.00' },
+      returned: { count: 0, total: '0.00' },
+    });
+
+    for (const row of grouped) {
+      const bucketName = ContactsService.bucketFor(row.status);
+      if (!bucketName) continue;
+
+      const entry = byCurrency.get(row.currency) ?? blank(row.currency);
+      const current = entry[bucketName];
+      entry[bucketName] = {
+        count: current.count + row._count._all,
+        // Sums come from PostgreSQL as decimals; adding the two group sums as
+        // strings would be wrong, so re-add them as decimals.
+        total: moneyToString(toMoney(current.total).plus(row._sum.amount ?? toMoney('0'))),
+      };
+      byCurrency.set(row.currency, entry);
+    }
+
+    const today = utcToday();
+    return {
+      contact,
+      currencies: [...byCurrency.values()].sort((a, b) => a.currency.localeCompare(b.currency)),
+      cheques: rows.map((row) => toChequeSummary(row, today)),
+    };
+  }
+
+  /** Which statement bucket a status belongs to, or null if it belongs to none. */
+  private static bucketFor(
+    status: ChequeStatus,
+  ): 'pending' | 'collected' | 'bounced' | 'returned' | null {
+    if (OUTSTANDING_CHEQUE_STATUSES.includes(status)) return 'pending';
+    if (status === ChequeStatus.CLEARED) return 'collected';
+    if (status === ChequeStatus.BOUNCED) return 'bounced';
+    if (status === ChequeStatus.RETURNED) return 'returned';
+    // DRAFT, PENDING_REVIEW, CANCELLED and LOST are deliberately excluded:
+    // none of them represents money owed, collected or returned.
+    return null;
+  }
+
+  /** How many cheques and events still point at this contact. */
+  private async countReferences(id: string): Promise<number> {
+    const [asSource, asRecipient, asEventFrom, asEventTo] = await Promise.all([
+      this.prisma.db.cheque.count({ where: { originalSourceId: id } }),
+      this.prisma.db.cheque.count({ where: { currentRecipientId: id } }),
+      this.prisma.db.chequeEvent.count({ where: { fromContactId: id } }),
+      this.prisma.db.chequeEvent.count({ where: { toContactId: id } }),
+    ]);
+    return asSource + asRecipient + asEventFrom + asEventTo;
   }
 }

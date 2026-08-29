@@ -1,7 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -16,9 +19,11 @@ import { Permission } from '@cheque-flow/shared-types';
 import {
   createContactSchema,
   listContactsQuerySchema,
+  mergeContactsSchema,
   updateContactSchema,
   type CreateContactInput,
   type ListContactsQuery,
+  type MergeContactsInput,
   type UpdateContactInput,
 } from '@cheque-flow/validation';
 
@@ -56,6 +61,18 @@ export class ContactsController {
     return this.contacts.create(user, body, AuditService.contextFromRequest(request));
   }
 
+  @Post('merge')
+  @RequirePermissions(Permission.CONTACT_MANAGE)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Merge a duplicate contact into the one that should survive' })
+  merge(
+    @CurrentUser() user: RequestUser,
+    @Body(zodBody(mergeContactsSchema)) body: MergeContactsInput,
+    @Req() request: Request,
+  ) {
+    return this.contacts.merge(user, body, AuditService.contextFromRequest(request));
+  }
+
   @Get(':id')
   @RequirePermissions(Permission.CHEQUE_VIEW)
   @ApiOperation({ summary: 'Contact details' })
@@ -73,5 +90,25 @@ export class ContactsController {
     @Req() request: Request,
   ) {
     return this.contacts.update(user, id, body, AuditService.contextFromRequest(request));
+  }
+
+  @Get(':id/statement')
+  @RequirePermissions(Permission.CHEQUE_VIEW)
+  @ApiOperation({ summary: 'Per-currency position and cheque history for one contact' })
+  statement(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.contacts.statement(user, id);
+  }
+
+  @Delete(':id')
+  @RequirePermissions(Permission.CONTACT_MANAGE)
+  @ApiOperation({
+    summary: 'Delete a contact, or deactivate it when it appears in cheque history',
+  })
+  remove(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() request: Request,
+  ) {
+    return this.contacts.remove(user, id, AuditService.contextFromRequest(request));
   }
 }

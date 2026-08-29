@@ -247,6 +247,9 @@ export class OcrService {
         data: {
           ...(confirmed.chequeNumber !== undefined ? { chequeNumber: confirmed.chequeNumber } : {}),
           ...(confirmed.amount !== undefined ? { amount: toMoney(confirmed.amount) } : {}),
+          ...(confirmed.amountInWords !== undefined
+            ? { amountInWords: confirmed.amountInWords }
+            : {}),
           ...(confirmed.currency !== undefined ? { currency: confirmed.currency } : {}),
           ...(confirmed.issueDate !== undefined
             ? { issueDate: confirmed.issueDate ? toDateOnly(confirmed.issueDate) : null }

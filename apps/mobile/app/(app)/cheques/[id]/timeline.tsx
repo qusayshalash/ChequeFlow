@@ -1,67 +1,108 @@
 import { useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams } from 'expo-router';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 
-import { formatDateTime } from '@cheque-flow/localization';
 import type { ChequeEventView } from '@cheque-flow/shared-types';
-import { colors, spacing } from '@cheque-flow/ui/tokens';
+import { colors, radius, spacing } from '@cheque-flow/ui/tokens';
 
 import { useApi, useApp, useTranslator } from '@/components/providers';
-import { Card, EmptyView, LoadingView } from '@/components/ui';
+import { EmptyView, ErrorView, LoadingView, StatusPill } from '@/components/ui';
 
-/** Read-only ledger: events can never be edited or deleted. */
+/**
+ * The cheque's full movement history.
+ *
+ * This is the append-only ledger: nothing here can be edited or removed, by
+ * anyone, which is what makes it usable as evidence of where a cheque went.
+ */
 export default function ChequeTimelineScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const api = useApi();
   const t = useTranslator();
-  const { locale } = useApp();
+  const { dateTime } = useApp();
 
-  const query = useQuery<{ data: ChequeEventView[] }>({
+  const query = useQuery({
     queryKey: ['cheque-events', id],
     queryFn: () => api.listChequeEvents(id),
     enabled: Boolean(id),
   });
 
   if (query.isPending) return <LoadingView label={t('common.loading')} />;
-  if (!query.data || query.data.data.length === 0) {
-    return <EmptyView label={t('dashboard.emptyActivity')} />;
+  if (query.isError) {
+    return (
+      <ErrorView
+        label={t('errors.loadFailed')}
+        onRetry={() => void query.refetch()}
+        retryLabel={t('common.retry')}
+      />
+    );
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {query.data.data.map((event) => (
-        <Card key={event.id}>
-          <Text style={styles.title}>{t(`event.${event.eventType}`)}</Text>
-          {event.toStatus ? (
-            <Text style={styles.meta}>
-              {event.fromStatus ? `${t(`status.${event.fromStatus}`)} ← ` : ''}
-              {t(`status.${event.toStatus}`)}
-            </Text>
-          ) : null}
-          {event.toContactName ? (
-            <Text style={styles.meta}>
-              {t('cheque.currentRecipient')}: {event.toContactName}
-            </Text>
-          ) : null}
-          {event.toLocationName ? (
-            <Text style={styles.meta}>
-              {t('cheque.currentLocation')}: {event.toLocationName}
-            </Text>
-          ) : null}
-          {event.notes ? <Text style={styles.meta}>{event.notes}</Text> : null}
-          <Text style={styles.stamp}>
-            {formatDateTime(locale, event.createdAt)}
-            {event.performedByName ? ` · ${event.performedByName}` : ''}
-          </Text>
-        </Card>
-      ))}
-    </ScrollView>
+    <FlatList<ChequeEventView>
+      style={styles.list}
+      contentContainerStyle={styles.content}
+      data={query.data?.data ?? []}
+      keyExtractor={(item) => item.id}
+      ListEmptyComponent={<EmptyView label={t('errors.emptyTitle')} />}
+      renderItem={({ item }) => {
+        // Whichever party this movement was between; not every event has one.
+        const from = item.fromContactName ?? item.fromUserName ?? item.fromLocationName;
+        const to = item.toContactName ?? item.toUserName ?? item.toLocationName;
+
+        return (
+          <View style={styles.row}>
+            <View style={styles.header}>
+              <Text style={styles.title}>{t(`event.${item.eventType}`)}</Text>
+              {item.toStatus ? (
+                <StatusPill status={item.toStatus} label={t(`status.${item.toStatus}`)} />
+              ) : null}
+            </View>
+
+            <Text style={styles.time}>{dateTime(item.eventDate)}</Text>
+
+            {from || to ? (
+              <Text style={styles.meta}>{[from, to].filter(Boolean).join(' ← ')}</Text>
+            ) : null}
+
+            {item.performedByName ? (
+              <Text style={styles.meta}>
+                {t('event.performedBy')}: {item.performedByName}
+              </Text>
+            ) : null}
+
+            {item.approvedByName ? (
+              <Text style={styles.meta}>
+                {t('event.approvedBy')}: {item.approvedByName}
+              </Text>
+            ) : null}
+
+            {item.notes ? <Text style={styles.notes}>{item.notes}</Text> : null}
+          </View>
+        );
+      }}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: spacing.md, gap: spacing.sm, backgroundColor: colors.surfaceMuted },
-  title: { fontSize: 16, fontWeight: '700', color: colors.text, textAlign: 'right' },
-  meta: { fontSize: 14, color: colors.textMuted, textAlign: 'right' },
-  stamp: { fontSize: 12, color: colors.textMuted, textAlign: 'right' },
+  list: { flex: 1, backgroundColor: colors.surfaceMuted },
+  content: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xxl },
+  row: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    gap: 4,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  title: { fontSize: 16, fontWeight: '700', color: colors.text, textAlign: 'right', flexShrink: 1 },
+  time: { fontSize: 13, color: colors.textMuted, textAlign: 'right' },
+  meta: { fontSize: 13, color: colors.textMuted, textAlign: 'right' },
+  notes: { fontSize: 14, color: colors.text, textAlign: 'right' },
 });

@@ -8,6 +8,7 @@ import {
   paginationSchema,
   phoneSchema,
   shortTextSchema,
+  uuidSchema,
 } from './primitives.js';
 
 const contactTypeSchema = z.enum(Object.values(ContactType) as [ContactType, ...ContactType[]]);
@@ -29,6 +30,16 @@ export const updateContactSchema = createContactSchema
   .partial()
   .extend({ isActive: z.boolean().optional() });
 export type UpdateContactInput = z.infer<typeof updateContactSchema>;
+
+/**
+ * Merging two duplicate contacts. `sourceId` is absorbed into `targetId`;
+ * the target is the record that survives.
+ */
+export const mergeContactsSchema = z.object({
+  sourceId: uuidSchema,
+  targetId: uuidSchema,
+});
+export type MergeContactsInput = z.infer<typeof mergeContactsSchema>;
 
 export const listContactsQuerySchema = paginationSchema.extend({
   type: contactTypeSchema.optional(),

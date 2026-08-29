@@ -13,6 +13,9 @@ import { Body, Button, Card, Heading, LoadingView } from '@/components/ui';
 const FIELDS = [
   { field: 'chequeNumber', target: 'chequeNumber', labelKey: 'cheque.number' },
   { field: 'numericAmount', target: 'amount', labelKey: 'common.amount' },
+  // The written amount is what prevails in a dispute, so the reviewer confirms
+  // it alongside the digits rather than only correcting the digits.
+  { field: 'writtenAmount', target: 'amountInWords', labelKey: 'cheque.amountInWords' },
   { field: 'currency', target: 'currency', labelKey: 'common.currency' },
   { field: 'dueDate', target: 'dueDate', labelKey: 'cheque.dueDate' },
   { field: 'issueDate', target: 'issueDate', labelKey: 'cheque.issueDate' },

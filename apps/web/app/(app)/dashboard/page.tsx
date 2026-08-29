@@ -39,31 +39,91 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label={t('dashboard.inHandCount')}
-          value={String(data.inHandCount)}
-          hint={money(locale, data.inHandTotal, data.currency)}
-          tone="info"
-        />
-        <StatCard
-          label={t('dashboard.dueToday')}
-          value={String(data.dueTodayCount)}
-          hint={money(locale, data.dueTodayTotal, data.currency)}
-          tone="warning"
-        />
-        <StatCard
-          label={t('dashboard.dueWithin7Days')}
-          value={String(data.dueWithin7DaysCount)}
-          hint={money(locale, data.dueWithin7DaysTotal, data.currency)}
-        />
-        <StatCard
-          label={t('dashboard.bounced')}
-          value={String(data.bouncedCount)}
-          hint={money(locale, data.bouncedTotal, data.currency)}
-          tone="danger"
-        />
-      </div>
+      {data.currencies.length === 0 ? (
+        <EmptyState title={t('dashboard.noData')} />
+      ) : (
+        data.currencies.map((totals) => (
+          <section key={totals.currency} className="flex flex-col gap-3">
+            {/* One block per currency: shekels and dollars are never added
+                together, so each gets its own labelled set of figures. */}
+            <div className="flex items-baseline gap-2">
+              <h2 className="text-lg font-semibold text-slate-900">{totals.currency}</h2>
+              {data.currencies.length > 1 ? (
+                <span className="text-xs text-slate-500">{t('dashboard.currencyNote')}</span>
+              ) : null}
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <StatCard
+                label={t('dashboard.draft')}
+                value={String(totals.draft.count)}
+                hint={money(locale, totals.draft.total, totals.currency)}
+              />
+              <StatCard
+                label={t('dashboard.inHandCount')}
+                value={String(totals.inHand.count)}
+                hint={money(locale, totals.inHand.total, totals.currency)}
+                tone="info"
+              />
+              <StatCard
+                label={t('dashboard.dueToday')}
+                value={String(totals.dueToday.count)}
+                hint={money(locale, totals.dueToday.total, totals.currency)}
+                tone="warning"
+              />
+              <StatCard
+                label={t('dashboard.dueWithin7Days')}
+                value={String(totals.dueWithin7Days.count)}
+                hint={money(locale, totals.dueWithin7Days.total, totals.currency)}
+              />
+              <StatCard
+                label={t('dashboard.dueWithin30Days')}
+                value={String(totals.dueWithin30Days.count)}
+                hint={money(locale, totals.dueWithin30Days.total, totals.currency)}
+              />
+              <StatCard
+                label={t('dashboard.overdue')}
+                value={String(totals.overdue.count)}
+                hint={money(locale, totals.overdue.total, totals.currency)}
+                tone="danger"
+              />
+              <StatCard
+                label={t('dashboard.deposited')}
+                value={String(totals.deposited.count)}
+                hint={money(locale, totals.deposited.total, totals.currency)}
+                tone="info"
+              />
+              <StatCard
+                label={t('dashboard.cleared')}
+                value={String(totals.cleared.count)}
+                hint={money(locale, totals.cleared.total, totals.currency)}
+                tone="success"
+              />
+              <StatCard
+                label={t('dashboard.returned')}
+                value={String(totals.returned.count)}
+                hint={money(locale, totals.returned.total, totals.currency)}
+                tone="warning"
+              />
+              <StatCard
+                label={t('dashboard.bounced')}
+                value={String(totals.bounced.count)}
+                hint={money(locale, totals.bounced.total, totals.currency)}
+                tone="danger"
+              />
+              <StatCard
+                label={`${t('dashboard.incoming')} / ${t('dashboard.outgoing')}`}
+                value={`${totals.incoming.count} / ${totals.outgoing.count}`}
+                hint={`${money(locale, totals.incoming.total, totals.currency)} / ${money(
+                  locale,
+                  totals.outgoing.total,
+                  totals.currency,
+                )}`}
+              />
+            </div>
+          </section>
+        ))
+      )}
 
       <Card>
         <h2 className="mb-4 text-lg font-semibold text-slate-900">
@@ -75,6 +135,12 @@ export default function DashboardPage() {
           <ul className="flex flex-col divide-y divide-slate-100">
             {data.recentEvents.map((event) => (
               <li key={event.id} className="flex flex-wrap items-baseline gap-2 py-3">
+                <Link
+                  href={`/cheques/${event.chequeId}`}
+                  className="font-mono text-sm text-sky-700 underline-offset-2 hover:underline"
+                >
+                  {event.chequeNumber}
+                </Link>
                 <span className="font-medium text-slate-900">{t(`event.${event.eventType}`)}</span>
                 {event.toStatus ? (
                   <span className="text-sm text-slate-600">← {t(`status.${event.toStatus}`)}</span>

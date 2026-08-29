@@ -1,36 +1,59 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 
 import { ApiClientError } from '@cheque-flow/api-client';
 import { ChequeAction, type ChequeDetailView } from '@cheque-flow/shared-types';
-import { colors, radius, spacing } from '@cheque-flow/ui/tokens';
+import { colors, spacing } from '@cheque-flow/ui/tokens';
 
-import { useApi, useTranslator } from '@/components/providers';
-import { Body, Button, Card, Heading, LoadingView } from '@/components/ui';
+import { useApi, useApp, useTranslator } from '@/components/providers';
+import {
+  Banner,
+  Body,
+  Button,
+  Card,
+  DateField,
+  ErrorView,
+  Field,
+  LoadingView,
+  Picker,
+  Section,
+} from '@/components/ui';
+import { isValidDate, todayIso } from '@/lib/dates';
 
-const NEEDS_CONTACT = new Set<string>([ChequeAction.RECEIVE, ChequeAction.HANDOVER]);
+/** Which extra inputs each action needs. Drives the whole form. */
+const NEEDS_CONTACT = new Set<string>([
+  ChequeAction.RECEIVE,
+  ChequeAction.HANDOVER,
+  ChequeAction.RETURN,
+]);
 const NEEDS_LOCATION = new Set<string>([ChequeAction.RECEIVE, ChequeAction.DEPOSIT]);
 const NEEDS_REASON = new Set<string>([
   ChequeAction.BOUNCE,
   ChequeAction.RETURN,
   ChequeAction.CANCEL,
   ChequeAction.MARK_LOST,
+  ChequeAction.POSTPONE,
 ]);
+const NEEDS_NEW_DUE_DATE = new Set<string>([ChequeAction.POSTPONE]);
+const NEEDS_FEE = new Set<string>([ChequeAction.BOUNCE]);
 
 /** Records a custody movement from the phone. */
 export default function PerformActionScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, action: preselected } = useLocalSearchParams<{ id: string; action?: string }>();
   const api = useApi();
   const t = useTranslator();
+  const { money, online } = useApp();
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const [selected, setSelected] = useState<string | null>(null);
-  const [contactId, setContactId] = useState('');
-  const [locationId, setLocationId] = useState('');
+  const [selected, setSelected] = useState<string | null>(preselected ?? null);
+  const [contactId, setContactId] = useState<string | null>(null);
+  const [locationId, setLocationId] = useState<string | null>(null);
   const [reason, setReason] = useState('');
+  const [fee, setFee] = useState('');
+  const [newDueDate, setNewDueDate] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const cheque = useQuery<ChequeDetailView>({
@@ -39,41 +62,49 @@ export default function PerformActionScreen() {
     enabled: Boolean(id),
   });
   const contacts = useQuery({
-    queryKey: ['contacts', 'all'],
-    queryFn: () => api.listContacts({ pageSize: 100 }),
+    queryKey: ['contacts', 'picker'],
+    queryFn: () => api.listContacts({ pageSize: 100, isActive: true }),
   });
   const locations = useQuery({ queryKey: ['locations'], queryFn: () => api.listLocations() });
 
   const mutation = useMutation({
     mutationFn: async (action: string) => {
       const version = cheque.data?.version;
+      const notes = reason || undefined;
+
       switch (action) {
         case ChequeAction.RECEIVE:
           return api.receiveCheque(id, {
-            fromContactId: contactId,
-            toLocationId: locationId,
-            notes: reason || undefined,
+            fromContactId: contactId ?? '',
+            toLocationId: locationId ?? '',
+            notes,
             version,
           });
         case ChequeAction.HANDOVER:
           return api.handoverCheque(id, {
-            toContactId: contactId,
-            toLocationId: locationId || undefined,
-            notes: reason || undefined,
+            toContactId: contactId ?? '',
+            ...(locationId ? { toLocationId: locationId } : {}),
+            notes,
             version,
           });
         case ChequeAction.DEPOSIT:
-          return api.depositCheque(id, {
-            toLocationId: locationId,
-            notes: reason || undefined,
+          return api.depositCheque(id, { toLocationId: locationId ?? '', notes, version });
+        case ChequeAction.CLEAR:
+          return api.clearCheque(id, { notes, version });
+        case ChequeAction.BOUNCE:
+          return api.bounceCheque(id, {
+            reason,
+            ...(fee.trim() ? { fee: fee.trim() } : {}),
             version,
           });
-        case ChequeAction.CLEAR:
-          return api.clearCheque(id, { notes: reason || undefined, version });
-        case ChequeAction.BOUNCE:
-          return api.bounceCheque(id, { reason, version });
         case ChequeAction.RETURN:
-          return api.returnCheque(id, { reason, version });
+          return api.returnCheque(id, {
+            reason,
+            ...(contactId ? { toContactId: contactId } : {}),
+            version,
+          });
+        case ChequeAction.POSTPONE:
+          return api.postponeCheque(id, { newDueDate, reason, version });
         case ChequeAction.CANCEL:
           return api.cancelCheque(id, { reason, version });
         case ChequeAction.MARK_LOST:
@@ -84,11 +115,13 @@ export default function PerformActionScreen() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['cheque', id] });
-      void queryClient.invalidateQueries({ queryKey: ['cheque-events', id] });
+      void queryClient.invalidateQueries({ queryKey: ['cheques'] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
       router.back();
     },
     onError: (caught: unknown) => {
-      setError(caught instanceof ApiClientError ? t(caught.messageKey) : t('errors.network'));
+      setError(caught instanceof ApiClientError ? t(caught.messageKey) : t('errors.saveFailed'));
     },
   });
 
@@ -96,87 +129,123 @@ export default function PerformActionScreen() {
 
   const actions = cheque.data?.allowedActions ?? [];
 
-  return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Heading>{t('common.actions')}</Heading>
+  /** Everything the chosen action requires must be filled before submitting. */
+  function missingInput(action: string): boolean {
+    if (NEEDS_CONTACT.has(action) && action !== ChequeAction.RETURN && !contactId) return true;
+    if (NEEDS_LOCATION.has(action) && action !== ChequeAction.HANDOVER && !locationId) return true;
+    if (NEEDS_REASON.has(action) && reason.trim().length === 0) return true;
+    if (NEEDS_NEW_DUE_DATE.has(action) && !isValidDate(newDueDate)) return true;
+    return false;
+  }
 
-      <View style={styles.actions}>
-        {actions.map((action) => (
-          <Button
-            key={action}
-            label={t(`action.${action}`)}
-            variant={selected === action ? 'primary' : 'secondary'}
-            onPress={() => {
-              setSelected(action);
-              setError(null);
-            }}
-          />
-        ))}
-        {actions.length === 0 ? <Body muted>{t('common.noResults')}</Body> : null}
-      </View>
+  return (
+    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      {!online ? <Banner text={t('common.offline')} /> : null}
+
+      <Picker
+        label={t('common.actions')}
+        options={actions.map((value) => ({ value, label: t(`action.${value}`) }))}
+        value={selected}
+        onChange={(next) => {
+          setSelected(next);
+          setError(null);
+        }}
+        emptyLabel={t('common.noResults')}
+      />
 
       {selected ? (
-        <Card>
+        <Section title={t(`action.${selected}`)}>
           {NEEDS_CONTACT.has(selected) ? (
-            <>
-              <Text style={styles.label}>{t('cheque.originalSource')}</Text>
-              {(contacts.data?.data ?? []).slice(0, 8).map((contact) => (
-                <Button
-                  key={contact.id}
-                  label={contact.name}
-                  variant={contactId === contact.id ? 'primary' : 'secondary'}
-                  onPress={() => setContactId(contact.id)}
-                />
-              ))}
-            </>
+            <Picker
+              label={
+                selected === ChequeAction.RECEIVE
+                  ? t('cheque.originalSource')
+                  : t('cheque.currentRecipient')
+              }
+              required={selected !== ChequeAction.RETURN}
+              options={(contacts.data?.data ?? []).map((contact) => ({
+                value: contact.id,
+                label: contact.name,
+              }))}
+              value={contactId}
+              onChange={setContactId}
+              emptyLabel={t('contact.empty')}
+            />
           ) : null}
 
           {NEEDS_LOCATION.has(selected) ? (
-            <>
-              <Text style={styles.label}>{t('cheque.currentLocation')}</Text>
-              {(locations.data ?? []).map((location) => (
-                <Button
-                  key={location.id}
-                  label={location.name}
-                  variant={locationId === location.id ? 'primary' : 'secondary'}
-                  onPress={() => setLocationId(location.id)}
-                />
-              ))}
-            </>
+            <Picker
+              label={t('cheque.currentLocation')}
+              required={selected !== ChequeAction.HANDOVER}
+              options={(locations.data ?? []).map((location) => ({
+                value: location.id,
+                label: location.name,
+              }))}
+              value={locationId}
+              onChange={setLocationId}
+            />
           ) : null}
 
-          <Text style={styles.label}>
-            {NEEDS_REASON.has(selected) ? t('common.reason') : t('common.notes')}
-          </Text>
-          <TextInput style={styles.input} value={reason} onChangeText={setReason} multiline />
+          {NEEDS_NEW_DUE_DATE.has(selected) ? (
+            <DateField
+              label={t('cheque.dueDate')}
+              required
+              value={newDueDate}
+              onChange={setNewDueDate}
+              shortcuts={[{ label: t('common.today'), value: todayIso() }]}
+            />
+          ) : null}
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {NEEDS_FEE.has(selected) ? (
+            <Field
+              label={t('cheque.bounceFee')}
+              value={fee}
+              onChangeText={setFee}
+              keyboardType="numeric"
+              ltr
+              hint={
+                fee && cheque.data ? money(fee, cheque.data.currency) : t('common.optionalField')
+              }
+            />
+          ) : null}
+
+          <Field
+            label={NEEDS_REASON.has(selected) ? t('common.reason') : t('common.notes')}
+            required={NEEDS_REASON.has(selected)}
+            value={reason}
+            onChangeText={setReason}
+            multiline
+          />
+
+          {error ? <ErrorView label={error} /> : null}
 
           <Button
             label={t('common.confirm')}
-            onPress={() => mutation.mutate(selected)}
+            onPress={() => {
+              setError(null);
+              mutation.mutate(selected);
+            }}
             loading={mutation.isPending}
+            disabled={missingInput(selected)}
             large
           />
+        </Section>
+      ) : (
+        <Card>
+          <Body muted>
+            {actions.length === 0 ? t('common.noResults') : t('cheque.deleteBlocked')}
+          </Body>
         </Card>
-      ) : null}
+      )}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: spacing.md, gap: spacing.md, backgroundColor: colors.surfaceMuted },
-  actions: { gap: spacing.sm },
-  label: { fontSize: 14, color: colors.textMuted, textAlign: 'right' },
-  input: {
-    minHeight: 72,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.sm,
-    padding: spacing.sm,
-    fontSize: 16,
-    textAlign: 'right',
-    backgroundColor: colors.surface,
+  container: {
+    padding: spacing.md,
+    gap: spacing.md,
+    backgroundColor: colors.surfaceMuted,
+    paddingBottom: spacing.xxl,
   },
-  error: { color: colors.danger, fontSize: 14, textAlign: 'right' },
 });

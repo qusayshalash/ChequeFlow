@@ -4,6 +4,8 @@ import {
   ApiErrorCode,
   ChequeEventType,
   ChequeStatus,
+  OUTSTANDING_CHEQUE_STATUSES,
+  utcToday,
   type ChequeDetailView,
   type ChequeSummaryView,
   type DuplicateChequeMatch,
@@ -84,6 +86,7 @@ export class ChequeService {
           direction: input.direction,
           chequeNumber: input.chequeNumber,
           amount: toMoney(input.amount),
+          amountInWords: input.amountInWords,
           currency: input.currency,
           issueDate: input.issueDate ? toDateOnly(input.issueDate) : null,
           dueDate: toDateOnly(input.dueDate),
@@ -157,6 +160,8 @@ export class ChequeService {
   }
 
   async list(user: RequestUser, query: ListChequesQuery): Promise<Paginated<ChequeSummaryView>> {
+    // One reference day for the whole page, so overdue flags stay consistent.
+    const today = utcToday();
     const where = this.buildWhere(user, query);
     const skip = (query.page - 1) * query.pageSize;
 
@@ -172,7 +177,7 @@ export class ChequeService {
     ]);
 
     return {
-      data: rows.map(toChequeSummary),
+      data: rows.map((row) => toChequeSummary(row, today)),
       meta: {
         page: query.page,
         pageSize: query.pageSize,
@@ -235,6 +240,7 @@ export class ChequeService {
     const data: Prisma.ChequeUncheckedUpdateInput = {
       ...(input.chequeNumber !== undefined ? { chequeNumber: input.chequeNumber } : {}),
       ...(input.amount !== undefined ? { amount: toMoney(input.amount) } : {}),
+      ...(input.amountInWords !== undefined ? { amountInWords: input.amountInWords } : {}),
       ...(input.currency !== undefined ? { currency: input.currency } : {}),
       ...(input.issueDate !== undefined
         ? { issueDate: input.issueDate ? toDateOnly(input.issueDate) : null }
@@ -308,6 +314,28 @@ export class ChequeService {
     return toChequeDetail(updated, user.permissions, this.encryption);
   }
 
+  /**
+   * Records that cheque data left the system.
+   *
+   * An export is a disclosure of the whole book, so it is audited like any
+   * other sensitive action — who exported, when, and how many rows.
+   */
+  async recordExport(
+    user: RequestUser,
+    rowCount: number,
+    auditMeta: Partial<AuditContext> = {},
+  ): Promise<void> {
+    await this.audit.record({
+      organizationId: user.organizationId,
+      userId: user.id,
+      action: AuditAction.CHEQUE_EXPORTED,
+      entityType: 'cheque',
+      after: { rowCount, format: 'csv' },
+      ipAddress: auditMeta.ipAddress ?? null,
+      deviceInfo: auditMeta.deviceInfo ?? null,
+    });
+  }
+
   private buildWhere(user: RequestUser, query: ListChequesQuery): Prisma.ChequeWhereInput {
     const and: Prisma.ChequeWhereInput[] = [
       { organizationId: user.organizationId, deletedAt: null },
@@ -315,6 +343,18 @@ export class ChequeService {
 
     if (query.status) and.push({ status: { in: query.status } });
     if (query.direction) and.push({ direction: query.direction });
+    if (query.currency) and.push({ currency: query.currency });
+
+    // "Overdue" must mean the same thing here as on the dashboard: past due
+    // AND still outstanding. A cleared cheque with an old due date is not late.
+    if (query.overdue !== undefined) {
+      const past = {
+        dueDate: { lt: toDateOnly(utcToday()) },
+        status: { in: [...OUTSTANDING_CHEQUE_STATUSES] },
+      };
+      and.push(query.overdue ? past : { NOT: past });
+    }
+
     if (query.branchId) and.push({ branchId: query.branchId });
     if (query.bankId) and.push({ bankId: query.bankId });
     if (query.sourceId) and.push({ originalSourceId: query.sourceId });

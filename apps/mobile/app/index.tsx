@@ -16,5 +16,5 @@ export default function IndexScreen() {
   });
 
   if (session.isPending) return <LoadingView label={t('common.loading')} />;
-  return <Redirect href={session.isSuccess ? '/(app)/dashboard' : '/login'} />;
+  return <Redirect href={session.isSuccess ? '/(app)' : '/login'} />;
 }

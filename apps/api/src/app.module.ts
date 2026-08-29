@@ -21,6 +21,7 @@ import { ReferenceModule } from './modules/reference/reference.module';
 import { RemindersModule } from './modules/reminders/reminders.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { StorageModule } from './modules/storage/storage.module';
+import { UsersModule } from './modules/users/users.module';
 
 /**
  * Guard order matters and is enforced here globally:
@@ -54,6 +55,7 @@ import { StorageModule } from './modules/storage/storage.module';
     ReferenceModule,
     ReportsModule,
     RemindersModule,
+    UsersModule,
     HealthModule,
   ],
   providers: [

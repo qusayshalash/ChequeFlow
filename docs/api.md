@@ -34,24 +34,50 @@ POST   /cheques/:id/receive     { fromContactId, toLocationId, ... }
 POST   /cheques/:id/handover    { toContactId, ... }
 POST   /cheques/:id/deposit     { toLocationId, ... }
 POST   /cheques/:id/clear
-POST   /cheques/:id/bounce      { reason }
+POST   /cheques/:id/bounce      { reason, fee? }   الرسم يُحفظ على الشيك
 POST   /cheques/:id/return      { reason }
 POST   /cheques/:id/postpone    { newDueDate, reason }
 POST   /cheques/:id/cancel      { reason }
 POST   /cheques/:id/mark-lost   { reason }
+
+POST   /cheques/:id/reminders   { remindAt, note? }   تنبيه يدوي يبقى بعد أي حركة
+GET    /cheques/export[?locale=ar&<فلاتر القائمة>]    CSV (يتطلب cheque.export)
 ```
+
+`POST /cheques` و`PATCH /cheques/:id` يقبلان `amountInWords` — المبلغ كتابةً كما هو
+مكتوب على الشيك. يُحفظ حرفيًا لأن المبلغ المكتوب هو المعتمد عند الخلاف في أغلب
+التشريعات.
+
+`GET /cheques/:id` يُعيد `bounceReason` و`bounceFee` بعد الإرجاع، ويبقيان على الشيك
+حتى لو انتقل إلى حالة أخرى لاحقًا.
+
+كل صف في القائمة والتفاصيل يحمل `isOverdue` محسوبًا على الخادم: «متأخر» تعني تجاوز
+تاريخ الاستحقاق **مع** بقاء الشيك في حالة غير منتهية. شيك محصَّل تاريخه قديم ليس
+متأخرًا. التعريف واحد في `@cheque-flow/shared-types` تستخدمه اللوحة والتقارير
+والفلاتر، فلا يمكن أن تختلف على معنى التأخر.
 
 ### معاملات البحث في `/cheques`
 
-`search`، `chequeNumber`، `status` (مفرد أو متعدد)، `direction`، `branchId`،
-`bankId`، `sourceId`، `recipientId`، `locationId`، `dueFrom`، `dueTo`،
-`amountMin`، `amountMax`، `sortBy`، `sortOrder`، `page`، `pageSize`.
+`search`، `chequeNumber`، `status` (مفرد أو متعدد)، `direction`، `currency`،
+`overdue` (`true`/`false`)، `branchId`، `bankId`، `sourceId`، `recipientId`،
+`locationId`، `dueFrom`، `dueTo`، `amountMin`، `amountMax`، `sortBy`،
+`sortOrder`، `page`، `pageSize`.
+
+`overdue=false` يستثني المتأخرة صراحةً، ولا يعني «غير محدَّد».
 
 ## جهات الاتصال والمراجع والتقارير
 
 ```
 GET|POST   /contacts
 GET|PATCH  /contacts/:id
+GET        /contacts/:id/statement    مركز الجهة لكل عملة + شيكاتها
+DELETE     /contacts/:id              حذف، أو تعطيل إن كانت مرتبطة بشيكات
+POST       /contacts/merge            { sourceId, targetId }
+
+GET|POST   /users                     يتطلب user.manage
+PATCH      /users/:id                 الاسم/الفرع/الحالة/الأدوار/كلمة المرور
+GET        /users/roles               الأدوار القابلة للإسناد
+
 GET        /branches
 GET        /banks?country=SA
 GET        /locations?branchId=
@@ -61,8 +87,23 @@ GET        /reports/cash-flow?from&to&granularity=day|week|month
 GET        /reports/custody
 GET        /audit-logs
 GET        /notifications
+POST       /notifications/:id/snooze        { minutes }
+POST       /notifications/:id/acknowledge
 GET        /health
 ```
+
+### ملاحظات
+
+- `GET /dashboard` يُعيد `{ defaultCurrency, currencies[], recentEvents[] }`.
+  الإجماليات **لا** تُجمع عبر العملات؛ لكل عملة كتلتها. قائمة العملات مشتقة من كل
+  شيكات المنشأة، فلا تختفي عملة لأن كل شيكاتها في حالة غير محسوبة.
+- `DELETE /contacts/:id` يُعيد `{ deleted: boolean }`. جهة يشير إليها أي شيك أو حدث
+  تُعطَّل ولا تُحذف، وإلا لأصبحت أعمدة «مستلم من» و«سُلّم إلى» فارغة وأُعيدت كتابة
+  سلسلة الحيازة ضمنًا.
+- `POST /contacts/merge` ينقل شيكات `sourceId` إلى `targetId` ولا يمس `cheque_events`:
+  السجل append-only، وتلك الصفوف تسجّل ما حدث فعلًا وقتها.
+- المستخدمون لا يُحذفون أبدًا، إنما `status = DISABLED`. إعادة تعيين كلمة المرور
+  تُبطل كل جلسات الحساب.
 
 ## شكل الخطأ الموحّد
 

@@ -6,11 +6,13 @@ import type {
   ChequeEventView,
   ChequeImageView,
   ChequeSummaryView,
+  ContactStatementView,
   ContactView,
   DashboardSummary,
   DuplicateChequeMatch,
   LocationView,
   Paginated,
+  UserView,
 } from '@cheque-flow/shared-types';
 import type {
   BounceChequeInput,
@@ -18,17 +20,22 @@ import type {
   ClearChequeInput,
   CreateChequeInput,
   CreateContactInput,
+  CreateReminderInput,
+  CreateUserInput,
   DepositChequeInput,
   HandoverChequeInput,
   ListChequesQuery,
   ListContactsQuery,
+  ListUsersQuery,
   MarkLostChequeInput,
+  MergeContactsInput,
   PostponeChequeInput,
   ReceiveChequeInput,
   ReturnChequeInput,
   ReviewChequeInput,
   UpdateChequeInput,
   UpdateContactInput,
+  UpdateUserInput,
 } from '@cheque-flow/validation';
 
 import { ApiClientError } from './errors.js';
@@ -54,6 +61,27 @@ interface RequestOptions {
   signal?: AbortSignal;
   /** Multipart payload; `body` is ignored when set. */
   formData?: FormData;
+}
+
+export interface ReminderRow {
+  id: string;
+  type: string;
+  channel: string;
+  status: string;
+  remindAt: string;
+  isDue: boolean;
+  custom: boolean;
+  note: string | null;
+  acknowledgedAt: string | null;
+  cheque: {
+    id: string;
+    chequeNumber: string;
+    amount: string;
+    currency: string;
+    dueDate: string;
+    status: string;
+    direction: string;
+  };
 }
 
 export interface OcrSuggestionResponse {
@@ -110,6 +138,15 @@ export class ChequeFlowApiClient {
       // The local session is cleared even when the server call fails.
       await this.tokenStore.setTokens(null);
     }
+  }
+
+  /**
+   * Cheap reachability check. Used to tell "the server is down" apart from
+   * "this particular request failed", and deliberately unauthenticated so it
+   * still answers when the session has expired.
+   */
+  health() {
+    return this.request<{ status: string }>('/health', { anonymous: true });
   }
 
   me() {
@@ -240,6 +277,20 @@ export class ChequeFlowApiClient {
     return this.request<ContactView>('/contacts', { method: 'POST', body: input });
   }
 
+  getContactStatement(id: string) {
+    return this.request<ContactStatementView>(`/contacts/${id}/statement`);
+  }
+
+  deleteContact(id: string) {
+    return this.request<{ deleted: boolean; contact: ContactView | null }>(`/contacts/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  mergeContacts(input: MergeContactsInput) {
+    return this.request<ContactView>('/contacts/merge', { method: 'POST', body: input });
+  }
+
   updateContact(id: string, input: UpdateContactInput) {
     return this.request<ContactView>(`/contacts/${id}`, { method: 'PATCH', body: input });
   }
@@ -297,7 +348,59 @@ export class ChequeFlowApiClient {
   }
 
   listNotifications(limit = 50) {
-    return this.request<{ data: unknown[] }>('/notifications', { query: { limit } });
+    return this.request<{ data: ReminderRow[] }>('/notifications', { query: { limit } });
+  }
+
+  snoozeReminder(id: string, minutes: number) {
+    return this.request<ReminderRow>(`/notifications/${id}/snooze`, {
+      method: 'POST',
+      body: { minutes },
+    });
+  }
+
+  acknowledgeReminder(id: string) {
+    return this.request<{ acknowledged: boolean }>(`/notifications/${id}/acknowledge`, {
+      method: 'POST',
+    });
+  }
+
+  createChequeReminder(chequeId: string, input: CreateReminderInput) {
+    return this.request<{ id: string }>(`/cheques/${chequeId}/reminders`, {
+      method: 'POST',
+      body: input,
+    });
+  }
+
+  // ── users ─────────────────────────────────────────────────────────────────
+
+  listUsers(query: Partial<ListUsersQuery> = {}) {
+    return this.request<Paginated<UserView>>('/users', { query });
+  }
+
+  listRoles() {
+    return this.request<{ data: string[] }>('/users/roles');
+  }
+
+  createUser(input: CreateUserInput) {
+    return this.request<UserView>('/users', { method: 'POST', body: input });
+  }
+
+  updateUser(id: string, input: UpdateUserInput) {
+    return this.request<UserView>(`/users/${id}`, { method: 'PATCH', body: input });
+  }
+
+  // ── export ────────────────────────────────────────────────────────────────
+
+  /**
+   * Downloads the filtered cheque list as CSV text.
+   *
+   * Returns the document itself rather than a URL: the caller decides whether
+   * to write it to a file, share it, or hand it to a spreadsheet app.
+   */
+  exportChequesCsv(query: Partial<ListChequesQuery> = {}, locale?: string) {
+    return this.requestText('/cheques/export', {
+      query: { ...query, ...(locale ? { locale } : {}) },
+    });
   }
 
   // ── transport ─────────────────────────────────────────────────────────────
@@ -329,6 +432,42 @@ export class ChequeFlowApiClient {
     }
 
     return this.parse<T>(response);
+  }
+
+  /**
+   * Like {@link request}, but for endpoints that return a document rather than
+   * JSON (currently CSV). Shares the same auth and refresh handling; only the
+   * response parsing differs.
+   */
+  private async requestText(path: string, options: RequestOptions = {}): Promise<string> {
+    let response = await this.send(path, options);
+
+    if (response.status === 401 && !options.anonymous) {
+      const refreshed = await this.refreshTokens();
+      if (refreshed) {
+        response = await this.send(path, options);
+      } else {
+        await this.tokenStore.setTokens(null);
+        this.onSessionExpired?.();
+      }
+    }
+
+    const text = await response.text();
+    if (!response.ok) {
+      // An error body is still JSON even on a CSV endpoint.
+      let payload: unknown = null;
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        payload = null;
+      }
+      throw ApiClientError.fromResponse(
+        response.status,
+        payload,
+        response.headers.get('x-request-id'),
+      );
+    }
+    return text;
   }
 
   private async send(path: string, options: RequestOptions): Promise<Response> {

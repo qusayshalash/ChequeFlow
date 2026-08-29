@@ -1,6 +1,13 @@
 import { Injectable } from '@nestjs/common';
 
-import { ChequeStatus, type DashboardSummary, type Paginated } from '@cheque-flow/shared-types';
+import {
+  ChequeStatus,
+  OUTSTANDING_CHEQUE_STATUSES,
+  type Bucket,
+  type DashboardCurrencyTotals,
+  type DashboardSummary,
+  type Paginated,
+} from '@cheque-flow/shared-types';
 import { Prisma, moneyToString, sumMoney } from '@cheque-flow/database';
 import type {
   AuditLogQuery,
@@ -14,14 +21,14 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { chequeEventInclude, toChequeEventView } from '../cheques/cheque.mapper';
 import { chequeSummarySelect, toChequeSummary } from '../cheques/cheque.mapper';
 
-/** Statuses that represent money the company still expects to collect. */
-const OUTSTANDING: readonly ChequeStatus[] = [
-  ChequeStatus.IN_HAND,
-  ChequeStatus.RESERVED,
-  ChequeStatus.DEPOSITED,
-  ChequeStatus.TRANSFERRED,
-  ChequeStatus.POSTPONED,
-];
+/**
+ * Statuses that represent money the company still expects to collect.
+ * Defined once in `@cheque-flow/shared-types` so the dashboard, the reports
+ * and the mobile filters can never drift apart.
+ */
+const OUTSTANDING = OUTSTANDING_CHEQUE_STATUSES;
+
+const EMPTY_BUCKET: Bucket = { count: 0, total: '0.00' };
 
 function todayUtc(): Date {
   const now = new Date();
@@ -55,29 +62,60 @@ export interface AuditLogView {
 export class ReportsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Numbers shown on the dashboard home screen. */
+  /**
+   * Numbers shown on the dashboard home screen, split by currency.
+   *
+   * Totals are never added across currencies — a single figure mixing shekels
+   * and dollars would be meaningless — so each currency is aggregated in the
+   * database and returned as its own block.
+   */
   async dashboard(user: RequestUser): Promise<DashboardSummary> {
     const today = todayUtc();
     const in7Days = addDays(today, 7);
+    const in30Days = addDays(today, 30);
     const base = { organizationId: user.organizationId, deletedAt: null };
+    const outstanding = { ...base, status: { in: [...OUTSTANDING] } };
 
-    const [inHand, dueToday, dueWithin7, bounced, organization, recentEvents] = await Promise.all([
-      this.prisma.db.cheque.findMany({
-        where: { ...base, status: { in: [ChequeStatus.IN_HAND, ChequeStatus.RESERVED] } },
-        select: { amount: true },
+    const [
+      draft,
+      inHand,
+      dueToday,
+      dueWithin7,
+      dueWithin30,
+      overdue,
+      deposited,
+      cleared,
+      bounced,
+      returned,
+      incoming,
+      outgoing,
+      allCurrencies,
+      organization,
+      recentEvents,
+    ] = await Promise.all([
+      this.totalsByCurrency({
+        ...base,
+        status: { in: [ChequeStatus.DRAFT, ChequeStatus.PENDING_REVIEW] },
       }),
-      this.prisma.db.cheque.findMany({
-        where: { ...base, status: { in: [...OUTSTANDING] }, dueDate: today },
-        select: { amount: true },
+      this.totalsByCurrency({
+        ...base,
+        status: { in: [ChequeStatus.IN_HAND, ChequeStatus.RESERVED] },
       }),
-      this.prisma.db.cheque.findMany({
-        where: { ...base, status: { in: [...OUTSTANDING] }, dueDate: { gte: today, lte: in7Days } },
-        select: { amount: true },
-      }),
-      this.prisma.db.cheque.findMany({
-        where: { ...base, status: ChequeStatus.BOUNCED },
-        select: { amount: true },
-      }),
+      this.totalsByCurrency({ ...outstanding, dueDate: today }),
+      this.totalsByCurrency({ ...outstanding, dueDate: { gte: today, lte: in7Days } }),
+      this.totalsByCurrency({ ...outstanding, dueDate: { gte: today, lte: in30Days } }),
+      this.totalsByCurrency({ ...outstanding, dueDate: { lt: today } }),
+      this.totalsByCurrency({ ...base, status: ChequeStatus.DEPOSITED }),
+      this.totalsByCurrency({ ...base, status: ChequeStatus.CLEARED }),
+      this.totalsByCurrency({ ...base, status: ChequeStatus.BOUNCED }),
+      this.totalsByCurrency({ ...base, status: ChequeStatus.RETURNED }),
+      this.totalsByCurrency({ ...outstanding, direction: 'INCOMING' }),
+      this.totalsByCurrency({ ...outstanding, direction: 'OUTGOING' }),
+      // Every currency the organization actually holds cheques in, whatever
+      // their status. Deriving the list from the buckets instead would hide a
+      // currency whose cheques are all cancelled or lost, and the dashboard
+      // would silently show nothing for money that exists.
+      this.prisma.db.cheque.groupBy({ by: ['currency'], where: base }),
       this.prisma.db.organization.findUniqueOrThrow({
         where: { id: user.organizationId },
         select: { defaultCurrency: true },
@@ -90,21 +128,60 @@ export class ReportsService {
       }),
     ]);
 
-    const total = (rows: Array<{ amount: Prisma.Decimal }>): string =>
-      moneyToString(sumMoney(rows.map((row) => row.amount)));
+    // Report every currency that has cheques, plus the organization's own
+    // currency, which is listed first so it reads as the headline figure.
+    const seen = new Set<string>(allCurrencies.map((row) => row.currency));
+    seen.add(organization.defaultCurrency);
+
+    const currencies = [...seen].sort((a, b) => {
+      if (a === organization.defaultCurrency) return -1;
+      if (b === organization.defaultCurrency) return 1;
+      return a.localeCompare(b);
+    });
 
     return {
-      inHandCount: inHand.length,
-      inHandTotal: total(inHand),
-      dueTodayCount: dueToday.length,
-      dueTodayTotal: total(dueToday),
-      dueWithin7DaysCount: dueWithin7.length,
-      dueWithin7DaysTotal: total(dueWithin7),
-      bouncedCount: bounced.length,
-      bouncedTotal: total(bounced),
-      currency: organization.defaultCurrency,
+      defaultCurrency: organization.defaultCurrency,
+      currencies: currencies.map((currency): DashboardCurrencyTotals => ({
+        currency,
+        draft: draft.get(currency) ?? EMPTY_BUCKET,
+        inHand: inHand.get(currency) ?? EMPTY_BUCKET,
+        dueToday: dueToday.get(currency) ?? EMPTY_BUCKET,
+        dueWithin7Days: dueWithin7.get(currency) ?? EMPTY_BUCKET,
+        dueWithin30Days: dueWithin30.get(currency) ?? EMPTY_BUCKET,
+        overdue: overdue.get(currency) ?? EMPTY_BUCKET,
+        deposited: deposited.get(currency) ?? EMPTY_BUCKET,
+        cleared: cleared.get(currency) ?? EMPTY_BUCKET,
+        bounced: bounced.get(currency) ?? EMPTY_BUCKET,
+        returned: returned.get(currency) ?? EMPTY_BUCKET,
+        incoming: incoming.get(currency) ?? EMPTY_BUCKET,
+        outgoing: outgoing.get(currency) ?? EMPTY_BUCKET,
+      })),
       recentEvents: recentEvents.map(toChequeEventView),
     };
+  }
+
+  /**
+   * Counts and sums cheques matching `where`, grouped by currency.
+   * The summation happens in PostgreSQL against the NUMERIC column, so no
+   * amount ever passes through a JavaScript float.
+   */
+  private async totalsByCurrency(where: Prisma.ChequeWhereInput): Promise<Map<string, Bucket>> {
+    const rows = await this.prisma.db.cheque.groupBy({
+      by: ['currency'],
+      where,
+      _count: { _all: true },
+      _sum: { amount: true },
+    });
+
+    return new Map(
+      rows.map((row) => [
+        row.currency,
+        {
+          count: row._count._all,
+          total: row._sum.amount === null ? '0.00' : moneyToString(row._sum.amount),
+        },
+      ]),
+    );
   }
 
   /** Cheques due in a window, optionally including everything overdue. */
@@ -128,8 +205,9 @@ export class ReportsService {
       orderBy: { dueDate: 'asc' },
     });
 
-    const cheques = rows.map(toChequeSummary);
-    const overdue = cheques.filter((cheque) => toDateOnly(cheque.dueDate) < today);
+    const todayIso = today.toISOString().slice(0, 10);
+    const cheques = rows.map((row) => toChequeSummary(row, todayIso));
+    const overdue = cheques.filter((cheque) => cheque.isOverdue);
 
     return {
       from: from.toISOString().slice(0, 10),

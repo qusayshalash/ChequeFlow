@@ -364,6 +364,9 @@ model Cheque {
   direction      ChequeDirection
   chequeNumber   String          @map("cheque_number")
   amount         Decimal         @db.Decimal(18, 2)
+  /// The amount as written in letters on the cheque face. Kept verbatim for
+  /// dispute resolution: in most jurisdictions the written amount prevails.
+  amountInWords  String?         @map("amount_in_words")
   currency       String          @db.Char(3)
   issueDate      DateTime?       @map("issue_date") @db.Date
   dueDate        DateTime        @map("due_date") @db.Date
@@ -382,6 +385,10 @@ model Cheque {
   currentLocationId   String? @map("current_location_id") @db.Uuid
 
   status          ChequeStatus @default(DRAFT)
+  /// Reason the bank gave for refusing payment, and the fee it charged.
+  /// Both stay on the cheque after it is re-presented or returned.
+  bounceReason    String?      @map("bounce_reason")
+  bounceFee       Decimal?     @map("bounce_fee") @db.Decimal(18, 2)
   purpose         String?
   referenceNumber String?      @map("reference_number")
   notes           String?
@@ -511,7 +518,13 @@ model Reminder {
   channel         ReminderChannel @default(IN_APP)
   recipientUserId String?         @map("recipient_user_id") @db.Uuid
   status          ReminderStatus  @default(SCHEDULED)
+  /// Set by a person rather than by the due-date schedule. Custom reminders
+  /// survive a reschedule; automatic ones are recomputed whenever the cheque
+  /// moves or its due date changes.
+  custom          Boolean         @default(false)
+  note            String?
   sentAt          DateTime?       @map("sent_at") @db.Timestamptz(3)
+  acknowledgedAt  DateTime?       @map("acknowledged_at") @db.Timestamptz(3)
   createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
 
   cheque    Cheque @relation(fields: [chequeId], references: [id], onDelete: Cascade)

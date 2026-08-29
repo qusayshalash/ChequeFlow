@@ -1,0 +1,57 @@
+import { useRouter } from 'expo-router';
+import { Pressable, StyleSheet, Text } from 'react-native';
+
+import { MIN_TOUCH_TARGET, colors, spacing } from '@cheque-flow/ui/tokens';
+
+import { useApp } from '@/components/providers';
+
+/**
+ * Back control for the stack headers.
+ *
+ * The chevron direction is derived from the interface language rather than
+ * from `I18nManager`. A layout-direction flip only takes effect after the app
+ * restarts, so on the run where the user first switches to Arabic the platform
+ * arrow still points the wrong way; deriving it from the locale is correct
+ * immediately and on every launch.
+ */
+export function BackButton() {
+  const router = useRouter();
+  const { locale, t } = useApp();
+
+  // The first screen of a stack has nothing behind it; the tab bar is how the
+  // user leaves it.
+  if (!router.canGoBack()) return null;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={t('common.back')}
+      onPress={() => router.back()}
+      style={styles.button}
+      hitSlop={8}
+    >
+      <Text style={styles.chevron}>{locale === 'ar' ? '›' : '‹'}</Text>
+    </Pressable>
+  );
+}
+
+/** Shared options for every stack inside the tab bar. */
+export function stackScreenOptions() {
+  return {
+    headerTitleAlign: 'center' as const,
+    headerLeft: () => <BackButton />,
+    headerStyle: { backgroundColor: colors.surface },
+    headerTintColor: colors.text,
+  };
+}
+
+const styles = StyleSheet.create({
+  button: {
+    minWidth: MIN_TOUCH_TARGET,
+    minHeight: MIN_TOUCH_TARGET,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
+  },
+  chevron: { fontSize: 34, lineHeight: 38, color: colors.brand, fontWeight: '300' },
+});
