@@ -1,0 +1,142 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '24.20.0'
+  PNPM_VERSION: '10.15.0'
+  # Placeholder values: CI never touches real secrets, and the environment
+  # schema refuses to boot without them.
+  JWT_ACCESS_SECRET: ci-access-secret-that-is-long-enough-000001
+  JWT_REFRESH_SECRET: ci-refresh-secret-that-is-long-enough-00002
+  FIELD_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+  S3_ENDPOINT: http://127.0.0.1:9000
+  S3_BUCKET: cheque-images-ci
+  S3_ACCESS_KEY_ID: ci-access-key
+  S3_SECRET_ACCESS_KEY: ci-secret-key
+  # CI has no cloud OCR account and must never call one.
+  OCR_PROVIDER: mock
+
+jobs:
+  verify:
+    name: lint · typecheck · test · build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Check formatting
+        run: pnpm format:check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+  e2e:
+    name: integration tests (PostgreSQL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:17.6-alpine
+        env:
+          POSTGRES_USER: chequeflow
+          POSTGRES_PASSWORD: chequeflow_ci
+          POSTGRES_DB: chequeflow_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U chequeflow"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://chequeflow:chequeflow_ci@localhost:5432/chequeflow_test
+      TEST_DATABASE_URL: postgresql://chequeflow:chequeflow_ci@localhost:5432/chequeflow_test
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply migrations
+        run: pnpm db:deploy
+
+      - name: Build workspace packages
+        run: pnpm --filter "./packages/*" build
+
+      - name: Run end-to-end tests
+        run: pnpm --filter @cheque-flow/api test:e2e
+
+  mobile-bundle:
+    name: mobile bundle (Metro)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build workspace packages
+        run: pnpm --filter "./packages/*" build
+
+      # Proves the Expo app bundles for both platforms without needing Xcode
+      # or Android Studio in CI.
+      - name: Export Android bundle
+        run: pnpm --filter @cheque-flow/mobile exec expo export --platform android --output-dir dist-ci
+
+      - name: Export iOS bundle
+        run: pnpm --filter @cheque-flow/mobile exec expo export --platform ios --output-dir dist-ci-ios

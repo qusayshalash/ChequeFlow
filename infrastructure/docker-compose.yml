@@ -1,0 +1,82 @@
+name: cheque-flow
+
+services:
+  postgres:
+    image: postgres:17.6-alpine
+    container_name: chequeflow-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-chequeflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-chequeflow_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-chequeflow}
+      TZ: UTC
+      PGTZ: UTC
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-chequeflow} -d ${POSTGRES_DB:-chequeflow}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:8.2-alpine
+    container_name: chequeflow-redis
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:RELEASE.2025-07-23T15-54-02Z
+    container_name: chequeflow-minio
+    restart: unless-stopped
+    command: server /data --console-address ':9001'
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-chequeflow}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-chequeflow_dev_password}
+    ports:
+      - '${MINIO_PORT:-9000}:9000'
+      - '${MINIO_CONSOLE_PORT:-9001}:9001'
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # One-shot job: creates the private bucket the API uploads cheque images to.
+  minio-init:
+    image: minio/mc:RELEASE.2025-07-21T05-28-08Z
+    container_name: chequeflow-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-chequeflow}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-chequeflow_dev_password}
+      BUCKET: ${S3_BUCKET:-cheque-images}
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} &&
+      mc mb --ignore-existing local/$${BUCKET} &&
+      mc anonymous set none local/$${BUCKET} &&
+      mc version enable local/$${BUCKET} &&
+      echo 'bucket ready: '$${BUCKET}
+      "
+
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:

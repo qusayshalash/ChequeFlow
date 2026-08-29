@@ -1,0 +1,52 @@
+'use client';
+
+import { LOCALE_LABELS, LOCALES } from '@cheque-flow/localization';
+import { Card } from '@cheque-flow/ui';
+
+import { useApp, useTranslator } from '@/components/providers';
+import { useSession } from '@/components/session';
+
+/**
+ * Settings overview.
+ *
+ * Writing organization settings is a phase-2 endpoint; the locale switcher is
+ * wired to the same catalogue the whole app uses, so adding English later is
+ * a configuration change rather than a code change.
+ */
+export default function SettingsPage() {
+  const t = useTranslator();
+  const { locale } = useApp();
+  const { data: user } = useSession();
+
+  return (
+    <div className="flex flex-col gap-6">
+      <h1 className="text-2xl font-semibold text-slate-900">{t('nav.settings')}</h1>
+
+      <Card className="flex flex-col gap-3">
+        <h2 className="text-lg font-semibold text-slate-900">{t('common.appName')}</h2>
+        <dl className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <dt className="text-sm text-slate-600">organizationId</dt>
+            <dd dir="ltr" className="text-sm">
+              {user?.organizationId}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-sm text-slate-600">branchId</dt>
+            <dd dir="ltr" className="text-sm">
+              {user?.branchId ?? '—'}
+            </dd>
+          </div>
+        </dl>
+      </Card>
+
+      <Card className="flex flex-col gap-3">
+        <h2 className="text-lg font-semibold text-slate-900">{LOCALE_LABELS[locale]}</h2>
+        <p className="text-sm text-slate-600">
+          {LOCALES.map((value) => LOCALE_LABELS[value]).join(' · ')}
+        </p>
+        <p className="text-xs text-slate-500">NEXT_PUBLIC_DEFAULT_LOCALE</p>
+      </Card>
+    </div>
+  );
+}

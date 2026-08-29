@@ -1,1 +1,245 @@
-# ChequeFlow
+# ChequeFlow — نظام إدارة الشيكات
+
+نظام متكامل لتتبّع الشيكات وحركتها داخل الشركة: من استلامها من العميل، مرورًا
+بحفظها في الخزنة، وحتى إيداعها في البنك أو تسليمها لمورد.
+
+النظام يجيب في أي لحظة عن:
+
+| السؤال                | مصدر الإجابة                 |
+| --------------------- | ---------------------------- |
+| أين يوجد الشيك الآن؟  | `current_location_id`        |
+| ممن تم استلامه؟       | `original_source_id`         |
+| لمن تم تسليمه؟        | `current_recipient_id`       |
+| من نفّذ آخر حركة؟     | `cheque_events.performed_by` |
+| ما تاريخ استحقاقه؟    | `due_date` (نوع DATE)        |
+| هل تم تحصيله أم ارتد؟ | `status`                     |
+
+الواجهة عربية بالكامل وباتجاه RTL، والكود وأسماء الملفات بالإنجليزية.
+
+---
+
+## المتطلبات
+
+| الأداة                  | الإصدار                    | ملاحظة                                                        |
+| ----------------------- | -------------------------- | ------------------------------------------------------------- |
+| Node.js                 | ≥ 22.12 (مُختبر على 24.20) |                                                               |
+| pnpm                    | 10.15.0                    | `corepack enable && corepack prepare pnpm@10.15.0 --activate` |
+| Docker + Docker Compose | أي إصدار حديث              | لتشغيل PostgreSQL وRedis وMinIO                               |
+| Xcode / Android Studio  | اختياري                    | لتشغيل تطبيق الجوال على محاكٍ                                 |
+
+---
+
+## التشغيل — الأوامر بالترتيب
+
+```bash
+# 1) ملف البيئة (لا يعمل شيء بدونه)
+cp .env.example .env
+# غيّر القيم التالية على الأقل:
+#   JWT_ACCESS_SECRET, JWT_REFRESH_SECRET  ->  openssl rand -base64 48
+#   FIELD_ENCRYPTION_KEY                   ->  openssl rand -base64 32
+```
+
+```bash
+# 2) تشغيل الخدمات المحلية (PostgreSQL + Redis + MinIO)
+pnpm infra:up
+```
+
+```bash
+# 3) تثبيت الاعتماديات
+pnpm install
+```
+
+```bash
+# 4) توليد عميل Prisma وتنفيذ الترحيلات والبذور
+pnpm db:deploy && pnpm db:seed
+```
+
+```bash
+# 5) تشغيل الـAPI  (http://localhost:3333/api/v1)
+pnpm --filter @cheque-flow/api dev
+```
+
+```bash
+# 6) تشغيل لوحة الويب  (http://localhost:3000)
+pnpm --filter @cheque-flow/web dev
+```
+
+```bash
+# 7) تشغيل تطبيق الجوال
+pnpm --filter @cheque-flow/mobile dev
+```
+
+> **ملاحظة عن بيئات التشغيل المعزولة:** الأمر `dev` يستخدم Turbopack، وهو يحتاج
+> إنشاء عملية `node` فرعية لمعالجة CSS. في بعض البيئات المقيّدة (مثل لوحات
+> المعاينة داخل المحررات) يُمنع ذلك، فاستخدم بديل webpack:
+>
+> ```bash
+> pnpm --filter @cheque-flow/web dev:webpack
+> ```
+>
+> وهذا هو ما يستخدمه `.claude/launch.json`. كما أن Node يجب أن يكون على `PATH`
+> لعمليات البناء الفرعية؛ إذا كان مثبّتًا في مسار غير قياسي أضِف إلى `~/.zshrc`:
+>
+> ```bash
+> export PATH="$HOME/.local/opt/node/bin:$PATH"
+> ```
+
+بيانات الدخول التجريبية (بيئة التطوير فقط، من `.env`):
+
+| المستخدم           | الصلاحيات                                         |
+| ------------------ | ------------------------------------------------- |
+| `admin` / `admin`  | مالك — كل الصلاحيات                               |
+| `viewer` / `admin` | اطّلاع فقط — للتحقق من أن RBAC يمنع الحركات فعلًا |
+
+حقل تسجيل الدخول يقبل **اسم مستخدم أو بريدًا إلكترونيًا**، لذا يمكن لأي نشر حقيقي
+استخدام عناوين بريد كاملة عبر `SEED_OWNER_EMAIL`.
+
+> ⚠️ كلمة المرور `admin` مخصّصة للتطوير المحلي فقط. سياسة كلمات المرور
+> (`passwordSchema`) تفرض 10 أحرف على الأقل مع حروف كبيرة وصغيرة وأرقام، وهي ما
+> يجب تطبيقه عند إنشاء حسابات حقيقية.
+
+> على جهاز حقيقي، بدّل `localhost` في `EXPO_PUBLIC_API_URL` إلى عنوان IP للشبكة المحلية.
+
+---
+
+## أوامر التحقق
+
+```bash
+pnpm lint
+```
+
+```bash
+pnpm typecheck
+```
+
+```bash
+pnpm test
+```
+
+```bash
+pnpm build
+```
+
+اختبارات التكامل الشاملة تحتاج قاعدة بيانات حقيقية:
+
+```bash
+createdb chequeflow_test && TEST_DATABASE_URL="postgresql://chequeflow:PASSWORD@localhost:5432/chequeflow_test" pnpm --filter @cheque-flow/database exec prisma migrate deploy
+```
+
+```bash
+TEST_DATABASE_URL="postgresql://chequeflow:PASSWORD@localhost:5432/chequeflow_test" pnpm --filter @cheque-flow/api test:e2e
+```
+
+> بدون `TEST_DATABASE_URL` تتخطى هذه المجموعات نفسها بدل أن تفشل.
+
+---
+
+## هيكل المستودع
+
+```
+.
+├── apps/
+│   ├── api/         NestJS 11 — REST API على /api/v1 + OpenAPI
+│   ├── web/         Next.js 16 (App Router) — لوحة تحكم عربية RTL
+│   └── mobile/      Expo SDK 57 + expo-router — Android و iOS
+├── packages/
+│   ├── database/       مخطط Prisma + الترحيلات + البذور
+│   ├── shared-types/   الأنواع، الصلاحيات، وآلة حالات الشيك
+│   ├── validation/     مخططات Zod مشتركة
+│   ├── api-client/     عميل HTTP مُنمَّط مع تدوير الرموز
+│   ├── ui/             رموز التصميم ومكوّنات الواجهة
+│   ├── localization/   قواميس ar/en وأدوات التنسيق
+│   └── config/         إعدادات ESLint وTypeScript وPrettier المشتركة
+├── infrastructure/  docker-compose (PostgreSQL, Redis, MinIO)
+├── docs/            قرارات معمارية + توثيق API
+└── tests/           سيناريو قبول المرحلة الأولى
+```
+
+---
+
+## المفاهيم الأساسية
+
+### آلة الحالات
+
+كل تغيير في حالة الشيك يمر عبر `assertTransition()` في
+`packages/shared-types/src/cheque-state-machine.ts`. لا يكتب أي Controller حقل
+`status` مباشرة، وكل انتقال يُنشئ صفًا في `cheque_events` **داخل نفس المعاملة**.
+
+```
+DRAFT ──SUBMIT_FOR_REVIEW──▶ PENDING_REVIEW ──REVIEW──▶ IN_HAND
+                                                          │
+                        ┌─────────────────────────────────┤
+                        ▼                                 ▼
+                    DEPOSITED                        TRANSFERRED
+                    │       │                        │        │
+                 CLEARED  BOUNCED ──▶ RETURNED   CLEARED   RETURNED
+```
+
+`CLEARED` و`CANCELLED` حالتان نهائيتان لا انتقال بعدهما.
+
+### الفصل بين أطراف الشيك
+
+| الحقل                  | المعنى                     |
+| ---------------------- | -------------------------- |
+| `original_source_id`   | من استلمت الشركة الشيك منه |
+| `original_payee_name`  | المستفيد المكتوب على الشيك |
+| `current_holder_id`    | الموظف الحائز حاليًا       |
+| `current_recipient_id` | آخر جهة سُلّم إليها الشيك  |
+| `current_location_id`  | مكان الحفظ (خزنة/درج/بنك)  |
+
+### خط التصوير
+
+```
+Capture → Quality Check → Upload → OCR → Manual Review → Duplicate Check → Save → Event → Reminders
+```
+
+نتيجة OCR **اقتراح** حتى يعتمدها إنسان: تُحفظ في `ocr_extractions`، وتنتقل حالة
+الشيك إلى `PENDING_REVIEW`، والحقول التي ثقتها أقل من 0.75 تُبرَز في شاشة المراجعة.
+
+### مزوّدو OCR
+
+| المزوّد       | `OCR_PROVIDER`   | السلوك                                                                     |
+| ------------- | ---------------- | -------------------------------------------------------------------------- |
+| Mock          | `mock` (افتراضي) | **لا يقرأ الصورة إطلاقًا** — يولّد بيانات تركيبية حتمية للاختبارات والعروض |
+| Claude Vision | `claude`         | قراءة حقيقية للشيك (عربي/إنجليزي، مطبوع ويدوي) مع درجة ثقة لكل حقل         |
+
+لتفعيل القراءة الحقيقية، في `.env`:
+
+```bash
+OCR_PROVIDER=claude
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+المزوّدان يطبّقان الواجهة نفسها `OcrProvider`، فالتبديل بينهما لا يمسّ أي كود آخر.
+إضافة مزوّد ثالث تعني صنفًا جديدًا وسطرًا في `ocr.module.ts` فقط.
+
+### الأمان
+
+- عزل كامل بالمؤسسة: `organizationId` يُستخرج من الجلسة فقط ولا يُقبل من العميل.
+- RBAC بـ16 صلاحية و7 أدوار افتراضية، وصلاحية كل إجراء مأخوذة من جدول الانتقالات.
+- Argon2id لكلمات المرور، وتدوير إجباري لرموز التحديث مع كشف إعادة الاستخدام.
+- أرقام الحسابات مشفّرة AES-256-GCM ولا تُعاد إلا مقنّعة.
+- صور الشيكات في حاوية خاصة، وتُعرض عبر روابط موقّعة قصيرة العمر مع تسجيل تدقيق.
+- نوع الملف يُحدَّد من البايتات لا من الامتداد.
+- `cheque_events` و`audit_logs` غير قابلة للتعديل أو الحذف (مُشغّل في قاعدة البيانات).
+
+---
+
+## توثيق الـAPI
+
+بعد تشغيل الـAPI: <http://localhost:3333/api/docs>
+
+لتصدير الملف:
+
+```bash
+pnpm --filter @cheque-flow/api openapi:export
+```
+
+---
+
+## ملاحظات
+
+- لا توجد أي مفاتيح حقيقية في المستودع؛ `.env` مستثنى من Git.
+- الـseed يرفض العمل عند `NODE_ENV=production`.
+- تفاصيل القرارات التقنية في [`docs/architecture-decisions.md`](docs/architecture-decisions.md).
+- ما تم إنجازه وما تبقّى في [`docs/phase-1-status.md`](docs/phase-1-status.md).

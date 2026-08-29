@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "./dist",
+    // `nest build` deletes dist on every run, so a build-info file outside it
+    // would make tsc believe the (now missing) output is still up to date and
+    // emit nothing. Keeping it inside dist ties its lifetime to the output.
+    "tsBuildInfoFile": "./dist/.tsbuildinfo"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.spec.ts", "test/**/*", "scripts/**/*"]
+}

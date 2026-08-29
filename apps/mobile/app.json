@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "شيك فلو",
+    "slug": "cheque-flow",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "chequeflow",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "platforms": ["ios", "android"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.chequeflow.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "يستخدم التطبيق الكاميرا لتصوير الشيكات وحفظ صورها في سجل الشركة.",
+        "NSFaceIDUsageDescription": "لفتح التطبيق بسرعة وأمان باستخدام البصمة أو التعرف على الوجه."
+      }
+    },
+    "android": {
+      "package": "com.chequeflow.app",
+      "adaptiveIcon": { "backgroundColor": "#0F5C4E" },
+      "permissions": ["CAMERA", "USE_BIOMETRIC", "USE_FINGERPRINT"],
+      "edgeToEdgeEnabled": true
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "يستخدم التطبيق الكاميرا لتصوير الشيكات."
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "لفتح التطبيق باستخدام التعرف على الوجه."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {}
+    }
+  }
+}

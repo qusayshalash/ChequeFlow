@@ -1,0 +1,40 @@
+@import 'tailwindcss';
+
+/*
+ * Tailwind v4 only scans the app's own sources by default. The shared UI
+ * primitives live in a workspace package, so their class names must be
+ * registered explicitly or their styles would never be generated.
+ */
+@source '../../../packages/ui/src';
+
+/*
+ * Arabic-first defaults. The document direction is RTL (set on <html>), so
+ * Tailwind's logical properties (ms-*, me-*, ps-*, pe-*) flip automatically.
+ */
+@theme {
+  --font-sans:
+    'Segoe UI', 'Noto Sans Arabic', 'Helvetica Neue', system-ui, -apple-system, sans-serif;
+  --color-brand: #0f5c4e;
+  --color-brand-dark: #0a4238;
+  --color-brand-light: #e6f2ef;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: #f6f7f9;
+  color: #14181d;
+  font-family: var(--font-sans);
+}
+
+/* Numbers stay Latin and aligned so long columns of amounts stay scannable. */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
