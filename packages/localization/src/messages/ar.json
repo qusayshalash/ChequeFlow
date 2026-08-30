@@ -94,6 +94,7 @@
     "originalSource": "المصدر الأصلي",
     "overdue": "متأخر",
     "parties": "الأطراف",
+    "party": "الجهة",
     "purpose": "الغرض",
     "receivedDate": "تاريخ الاستلام",
     "referenceNumber": "الرقم المرجعي",
@@ -127,6 +128,7 @@
     "clear": "مسح",
     "close": "إغلاق",
     "confirm": "تأكيد",
+    "confirm2": "تأكيد",
     "confirmDelete": "هل تريد الحذف؟",
     "count": "العدد",
     "createdAt": "تاريخ الإضافة",
@@ -154,12 +156,14 @@
     "optional": "اختياري",
     "optionalField": "اختياري",
     "page": "صفحة",
+    "period": "الفترة",
     "pickDate": "اختر التاريخ",
     "previous": "السابق",
     "reason": "السبب",
     "required": "حقل مطلوب",
     "reset": "إعادة تعيين",
     "retry": "إعادة المحاولة",
+    "review": "مراجعة",
     "save": "حفظ",
     "saved": "تم الحفظ",
     "saving": "جارٍ الحفظ…",
@@ -178,6 +182,7 @@
     "unknown": "غير محدد",
     "updatedAt": "آخر تعديل",
     "view": "عرض",
+    "viewAll": "عرض الكل",
     "whatsapp": "واتساب",
     "yes": "نعم"
   },
@@ -218,11 +223,14 @@
     "SUPPLIER": "مورد"
   },
   "dashboard": {
+    "amountAxis": "المبلغ",
     "bounced": "الشيكات المرتجعة",
+    "cashFlowUpcoming": "التدفق النقدي القادم",
     "cleared": "محصّلة",
     "currencyNote": "الإجماليات منفصلة لكل عملة",
     "deposited": "مودعة في البنك",
     "draft": "بانتظار التأكيد",
+    "dueThisWeek": "تستحق هذا الأسبوع",
     "dueToday": "المستحق اليوم",
     "dueWithin30Days": "خلال 30 يومًا",
     "dueWithin7Days": "المستحق خلال ٧ أيام",
@@ -230,6 +238,8 @@
     "inHandCount": "الشيكات بالحوزة",
     "inHandTotal": "إجمالي قيمة الشيكات بالحوزة",
     "incoming": "واردة",
+    "needsAction": "تحتاج إجراء",
+    "needsFollowUp": "تحتاج متابعة",
     "noData": "لا توجد شيكات بعد",
     "outgoing": "صادرة",
     "overdue": "متأخرة",
@@ -237,7 +247,10 @@
     "recentActivity": "آخر الحركات",
     "recordCollection": "تسجيل تحصيل",
     "returned": "معادة",
-    "title": "لوحة المعلومات"
+    "searchPlaceholder": "بحث عن شيك، جهة، بنك...",
+    "subtitle": "نظرة سريعة على حالة الشيكات والاستحقاقات",
+    "title": "لوحة المعلومات",
+    "upcomingCheques": "الشيكات القادمة"
   },
   "direction": {
     "INCOMING": "وارد",
@@ -246,9 +259,12 @@
   },
   "due": {
     "inDays": "خلال {days} يوم",
+    "inDaysShort": "خلال {days} أيام",
     "lateDays": "متأخر {days} يومًا",
     "today": "يستحق اليوم",
     "tomorrow": "يستحق غدًا",
+    "tomorrowShort": "غدًا",
+    "twoDays": "بعد يومين",
     "yesterday": "متأخر يومًا واحدًا"
   },
   "errors": {
@@ -348,6 +364,11 @@
     "reviewSubtitle": "راجع القيم المستخرجة وصححها قبل الحفظ",
     "reviewTitle": "مراجعة البيانات المستخرجة",
     "suggestionNotice": "هذه القيم اقتراحات آلية ولم تُعتمد بعد"
+  },
+  "period": {
+    "next30": "خلال 30 يومًا",
+    "next90": "خلال 90 يومًا",
+    "thisMonth": "هذا الشهر"
   },
   "reminders": {
     "acknowledge": "تم التعامل معه",
@@ -476,5 +497,11 @@
       "emailTaken": "اسم الدخول مستخدم بالفعل",
       "unknownRole": "صلاحية غير معروفة"
     }
+  },
+  "week": {
+    "current": "الأسبوع الحالي",
+    "fourth": "الأسبوع الرابع",
+    "next": "الأسبوع القادم",
+    "third": "الأسبوع الثالث"
   }
 }

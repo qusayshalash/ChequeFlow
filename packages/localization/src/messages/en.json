@@ -94,6 +94,7 @@
     "originalSource": "Original source",
     "overdue": "Overdue",
     "parties": "Parties",
+    "party": "Party",
     "purpose": "Purpose",
     "receivedDate": "Received date",
     "referenceNumber": "Reference",
@@ -127,6 +128,7 @@
     "clear": "Clear",
     "close": "Close",
     "confirm": "Confirm",
+    "confirm2": "Confirm",
     "confirmDelete": "Delete this?",
     "count": "Count",
     "createdAt": "Created",
@@ -154,12 +156,14 @@
     "optional": "Optional",
     "optionalField": "Optional",
     "page": "Page",
+    "period": "Period",
     "pickDate": "Pick a date",
     "previous": "Previous",
     "reason": "Reason",
     "required": "Required",
     "reset": "Reset",
     "retry": "Retry",
+    "review": "Review",
     "save": "Save",
     "saved": "Saved",
     "saving": "Saving…",
@@ -178,6 +182,7 @@
     "unknown": "Not set",
     "updatedAt": "Updated",
     "view": "View",
+    "viewAll": "View all",
     "whatsapp": "WhatsApp",
     "yes": "Yes"
   },
@@ -218,11 +223,14 @@
     "SUPPLIER": "Supplier"
   },
   "dashboard": {
+    "amountAxis": "Amount",
     "bounced": "Bounced cheques",
+    "cashFlowUpcoming": "Upcoming cash flow",
     "cleared": "Collected",
     "currencyNote": "Totals are kept separate per currency",
     "deposited": "At the bank",
     "draft": "Awaiting confirmation",
+    "dueThisWeek": "Due this week",
     "dueToday": "Due today",
     "dueWithin30Days": "Within 30 days",
     "dueWithin7Days": "Due within 7 days",
@@ -230,6 +238,8 @@
     "inHandCount": "Cheques in hand",
     "inHandTotal": "Total value in hand",
     "incoming": "Incoming",
+    "needsAction": "Needs action",
+    "needsFollowUp": "Need chasing",
     "noData": "No cheques yet",
     "outgoing": "Outgoing",
     "overdue": "Overdue",
@@ -237,7 +247,10 @@
     "recentActivity": "Recent activity",
     "recordCollection": "Record a collection",
     "returned": "Returned",
-    "title": "Dashboard"
+    "searchPlaceholder": "Search a cheque, party or bank...",
+    "subtitle": "Cheque status and what is coming due",
+    "title": "Dashboard",
+    "upcomingCheques": "Upcoming cheques"
   },
   "direction": {
     "INCOMING": "Incoming",
@@ -246,9 +259,12 @@
   },
   "due": {
     "inDays": "In {days} days",
+    "inDaysShort": "In {days} days",
     "lateDays": "{days} days late",
     "today": "Due today",
     "tomorrow": "Due tomorrow",
+    "tomorrowShort": "Tomorrow",
+    "twoDays": "In 2 days",
     "yesterday": "1 day late"
   },
   "errors": {
@@ -348,6 +364,11 @@
     "reviewSubtitle": "Check and correct the values before saving",
     "reviewTitle": "Review extracted data",
     "suggestionNotice": "These values are automatic suggestions and are not confirmed yet"
+  },
+  "period": {
+    "next30": "Next 30 days",
+    "next90": "Next 90 days",
+    "thisMonth": "This month"
   },
   "reminders": {
     "acknowledge": "Done",
@@ -476,5 +497,11 @@
       "emailTaken": "That sign-in name is already taken",
       "unknownRole": "Unknown role"
     }
+  },
+  "week": {
+    "current": "This week",
+    "fourth": "Fourth week",
+    "next": "Next week",
+    "third": "Third week"
   }
 }
