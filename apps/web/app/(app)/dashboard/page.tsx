@@ -111,14 +111,19 @@ export default function DashboardPage() {
                 hint={money(locale, totals.bounced.total, totals.currency)}
                 tone="danger"
               />
+              {/* Two cards, not one "in / out" pair. In a right-to-left line
+                  the bidi algorithm reorders a composite like "1 / 0", so the
+                  card reported the opposite of the truth — and here position is
+                  the only thing saying which number is which. */}
               <StatCard
-                label={`${t('dashboard.incoming')} / ${t('dashboard.outgoing')}`}
-                value={`${totals.incoming.count} / ${totals.outgoing.count}`}
-                hint={`${money(locale, totals.incoming.total, totals.currency)} / ${money(
-                  locale,
-                  totals.outgoing.total,
-                  totals.currency,
-                )}`}
+                label={t('dashboard.incoming')}
+                value={String(totals.incoming.count)}
+                hint={money(locale, totals.incoming.total, totals.currency)}
+              />
+              <StatCard
+                label={t('dashboard.outgoing')}
+                value={String(totals.outgoing.count)}
+                hint={money(locale, totals.outgoing.total, totals.currency)}
               />
             </div>
           </section>
