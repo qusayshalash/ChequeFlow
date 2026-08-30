@@ -4,7 +4,11 @@ import { useQuery } from '@tanstack/react-query';
 
 import { Card, ErrorState, LoadingState, StatCard } from '@cheque-flow/ui';
 
+import { ExportButton } from '@/components/export-button';
+import { Permission } from '@cheque-flow/shared-types';
+
 import { PageHeader } from '@/components/page-header';
+import { RequirePermission } from '@/components/session';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { money } from '@/lib/format';
 
@@ -13,7 +17,15 @@ function isoDate(offsetDays: number): string {
   return date.toISOString().slice(0, 10);
 }
 
-export default function ReportsPage() {
+export default function ReportsPagePage() {
+  return (
+    <RequirePermission permission={Permission.REPORT_VIEW}>
+      <ReportsPageBody />
+    </RequirePermission>
+  );
+}
+
+function ReportsPageBody() {
   const api = useApi();
   const t = useTranslator();
   const { locale } = useApp();
@@ -30,7 +42,7 @@ export default function ReportsPage() {
 
   return (
     <div className="mx-auto flex max-w-[1180px] flex-col gap-5">
-      <PageHeader title={t('reports.title')} />
+      <PageHeader title={t('reports.title')} actions={<ExportButton />} />
 
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold text-slate-900">{t('reports.custody')}</h2>

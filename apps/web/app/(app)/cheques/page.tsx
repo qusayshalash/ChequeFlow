@@ -8,6 +8,7 @@ import { ChequeStatus, type ChequeSummaryView, type Paginated } from '@cheque-fl
 import { Button, ErrorState, LoadingState } from '@cheque-flow/ui';
 
 import { ChequeTable } from '@/components/cheque-table';
+import { ExportButton } from '@/components/export-button';
 import {
   DateRangePicker,
   EMPTY_RANGE,
@@ -91,13 +92,24 @@ export default function ChequesPage() {
           placeholder: t('dashboard.searchPlaceholder'),
         }}
         actions={
-          <Link
-            href="/cheques/new"
-            className="inline-flex h-11 items-center gap-2 rounded-xl bg-teal-800 px-4 text-sm font-semibold text-white hover:bg-teal-900"
-          >
-            <IconPlus />
-            {t('cheque.newTitle')}
-          </Link>
+          <>
+            <ExportButton
+              query={{
+                ...tabQuery,
+                ...(search ? { search } : {}),
+                ...(status ? { status: [status as ChequeStatus] } : {}),
+                ...(applied.from ? { dueFrom: applied.from } : {}),
+                ...(applied.to ? { dueTo: applied.to } : {}),
+              }}
+            />
+            <Link
+              href="/cheques/new"
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-teal-800 px-4 text-sm font-semibold text-white hover:bg-teal-900"
+            >
+              <IconPlus />
+              {t('cheque.newTitle')}
+            </Link>
+          </>
         }
       />
 

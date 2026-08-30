@@ -21,6 +21,9 @@ const NEEDS_REASON = new Set<string>([
 ]);
 const NEEDS_DATE = new Set<string>([ChequeAction.POSTPONE]);
 
+/** The bank's charge for returning a cheque, recorded against the cheque. */
+const NEEDS_FEE = new Set<string>([ChequeAction.BOUNCE]);
+
 interface Option {
   id: string;
   name: string;
@@ -44,6 +47,7 @@ export function ChequeActionsPanel({
   const [locationId, setLocationId] = useState('');
   const [reason, setReason] = useState('');
   const [newDate, setNewDate] = useState('');
+  const [fee, setFee] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const mutation = useMutation({
@@ -73,7 +77,11 @@ export function ChequeActionsPanel({
         case ChequeAction.CLEAR:
           return api.clearCheque(cheque.id, { notes: reason || undefined, version });
         case ChequeAction.BOUNCE:
-          return api.bounceCheque(cheque.id, { reason, version });
+          return api.bounceCheque(cheque.id, {
+            reason,
+            ...(fee.trim() ? { fee: fee.trim() } : {}),
+            version,
+          });
         case ChequeAction.RETURN:
           return api.returnCheque(cheque.id, {
             reason,
@@ -176,6 +184,24 @@ export function ChequeActionsPanel({
                   </option>
                 ))}
               </select>
+            </Field>
+          ) : null}
+
+          {NEEDS_FEE.has(action) ? (
+            <Field
+              label={t('cheque.bounceFee')}
+              htmlFor="action-fee"
+              hint={t('common.optionalField')}
+            >
+              <input
+                id="action-fee"
+                dir="ltr"
+                inputMode="decimal"
+                placeholder="0.00"
+                className={inputClassName}
+                value={fee}
+                onChange={(event) => setFee(event.target.value)}
+              />
             </Field>
           ) : null}
 

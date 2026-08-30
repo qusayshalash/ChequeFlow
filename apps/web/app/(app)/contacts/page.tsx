@@ -21,6 +21,7 @@ import {
 
 import { DataTable } from '@/components/data-table';
 import { PageHeader } from '@/components/page-header';
+import { Pagination } from '@/components/pagination';
 import { Panel } from '@/components/panel';
 import { useApi, useTranslator } from '@/components/providers';
 import { usePermission } from '@/components/session';
@@ -32,14 +33,15 @@ export default function ContactsPage() {
   const canManage = usePermission(Permission.CONTACT_MANAGE);
 
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
   const [name, setName] = useState('');
   const [type, setType] = useState<string>(ContactType.CUSTOMER);
   const [phone, setPhone] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const contacts = useQuery({
-    queryKey: ['contacts', { search }],
-    queryFn: () => api.listContacts({ pageSize: 50, ...(search ? { search } : {}) }),
+    queryKey: ['contacts', { search, page }],
+    queryFn: () => api.listContacts({ page, pageSize: 25, ...(search ? { search } : {}) }),
   });
 
   const create = useMutation({
@@ -200,6 +202,8 @@ export default function ContactsPage() {
           />
         </Panel>
       ) : null}
+
+      {contacts.data ? <Pagination meta={contacts.data.meta} onPageChange={setPage} /> : null}
     </div>
   );
 }

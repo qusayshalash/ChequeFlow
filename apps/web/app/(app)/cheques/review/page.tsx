@@ -1,22 +1,31 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 
 import { ChequeStatus } from '@cheque-flow/shared-types';
 import { Card, ErrorState, LoadingState } from '@cheque-flow/ui';
 
 import { ChequeTable } from '@/components/cheque-table';
 import { PageHeader } from '@/components/page-header';
+import { Pagination } from '@/components/pagination';
+import { Panel } from '@/components/panel';
 import { useApi, useTranslator } from '@/components/providers';
 
 export default function ReviewQueuePage() {
   const api = useApi();
   const t = useTranslator();
 
+  const [page, setPage] = useState(1);
+
   const query = useQuery({
     queryKey: ['cheques', 'pending-review'],
     queryFn: () =>
-      api.listCheques({ status: [ChequeStatus.PENDING_REVIEW, ChequeStatus.DRAFT], pageSize: 100 }),
+      api.listCheques({
+        status: [ChequeStatus.PENDING_REVIEW, ChequeStatus.DRAFT],
+        page,
+        pageSize: 25,
+      }),
   });
 
   return (
@@ -31,7 +40,14 @@ export default function ReviewQueuePage() {
           retryLabel={t('common.retry')}
         />
       ) : null}
-      {query.data ? <ChequeTable cheques={query.data.data} /> : null}
+      {query.data ? (
+        <>
+          <Panel bodyClassName="">
+            <ChequeTable cheques={query.data.data} />
+          </Panel>
+          <Pagination meta={query.data.meta} onPageChange={setPage} />
+        </>
+      ) : null}
     </div>
   );
 }

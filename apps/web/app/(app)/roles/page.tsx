@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  Permission,
   ALL_PERMISSIONS,
   DEFAULT_ROLE_PERMISSIONS,
   PERMISSION_DESCRIPTIONS,
@@ -10,7 +11,7 @@ import { Badge, Card } from '@cheque-flow/ui';
 
 import { PageHeader } from '@/components/page-header';
 import { useTranslator } from '@/components/providers';
-import { useSession } from '@/components/session';
+import { useSession, RequirePermission } from '@/components/session';
 
 /**
  * The RBAC catalogue.
@@ -18,7 +19,15 @@ import { useSession } from '@/components/session';
  * Role editing is a phase-2 endpoint; this page shows the seeded default
  * matrix and highlights what the signed-in user actually holds.
  */
-export default function RolesPage() {
+export default function RolesPagePage() {
+  return (
+    <RequirePermission permission={Permission.USER_MANAGE}>
+      <RolesPageBody />
+    </RequirePermission>
+  );
+}
+
+function RolesPageBody() {
   const t = useTranslator();
   const { data: user } = useSession();
   const mine = new Set(user?.permissions ?? []);

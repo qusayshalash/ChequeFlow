@@ -189,7 +189,7 @@ export default function UsersScreen() {
           onChange={setRole}
           error={error('roles')}
         />
-        <Body muted>{t('validation.password')}</Body>
+        <Body muted>{t('auth.passwordHint')}</Body>
         <Button
           label={t('common.save')}
           onPress={() => {

@@ -5,7 +5,10 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, type ComponentType, type SVGProps } from 'react';
 
 import { useApi, useTranslator } from '@/components/providers';
+import { Permission } from '@cheque-flow/shared-types';
+
 import {
+  IconBell,
   IconBranch,
   IconCalendar,
   IconCheque,
@@ -29,6 +32,8 @@ interface NavItem {
   href: string;
   labelKey: string;
   Icon: ComponentType<SVGProps<SVGSVGElement>>;
+  /** Hidden unless the signed-in user holds this. Absent means always shown. */
+  permission?: Permission;
 }
 
 /**
@@ -45,13 +50,34 @@ const PRIMARY_NAV: NavItem[] = [
 ];
 
 const SECONDARY_NAV: NavItem[] = [
+  { href: '/notifications', labelKey: 'nav.notifications', Icon: IconBell },
   { href: '/contacts', labelKey: 'nav.contacts', Icon: IconContacts },
   { href: '/branches', labelKey: 'nav.branches', Icon: IconBranch },
   { href: '/locations', labelKey: 'nav.locations', Icon: IconSafe },
-  { href: '/reports', labelKey: 'nav.reports', Icon: IconReports },
-  { href: '/users', labelKey: 'nav.users', Icon: IconUsers },
-  { href: '/roles', labelKey: 'nav.roles', Icon: IconShield },
-  { href: '/settings', labelKey: 'nav.settings', Icon: IconSettings },
+  {
+    href: '/reports',
+    labelKey: 'nav.reports',
+    Icon: IconReports,
+    permission: Permission.REPORT_VIEW,
+  },
+  {
+    href: '/users',
+    labelKey: 'nav.users',
+    Icon: IconUsers,
+    permission: Permission.USER_MANAGE,
+  },
+  {
+    href: '/roles',
+    labelKey: 'nav.roles',
+    Icon: IconShield,
+    permission: Permission.USER_MANAGE,
+  },
+  {
+    href: '/settings',
+    labelKey: 'nav.settings',
+    Icon: IconSettings,
+    permission: Permission.SETTINGS_MANAGE,
+  },
 ];
 
 const COLLAPSED_KEY = 'chequeflow.sidebarCollapsed';
@@ -69,6 +95,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const api = useApi();
   const { data: user } = useSession();
+
+  /**
+   * Offering a page that will answer with a permission error is worse than not
+   * offering it, so entries the user cannot use are not rendered at all.
+   */
+  const permitted = (items: NavItem[]): NavItem[] =>
+    items.filter(
+      (item) => !item.permission || (user?.permissions.includes(item.permission) ?? false),
+    );
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
 
@@ -207,11 +242,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <span className={collapsed ? 'hidden' : ''}>{t('nav.collapseMenu')}</span>
         </button>
 
-        {renderNav(PRIMARY_NAV)}
+        {renderNav(permitted(PRIMARY_NAV))}
 
         <div className="my-4 border-t border-slate-100" />
 
-        {renderNav(SECONDARY_NAV)}
+        {renderNav(permitted(SECONDARY_NAV))}
 
         {/* The account sits at the very bottom, out of the way of the work. */}
         <div className="mt-auto pt-4">

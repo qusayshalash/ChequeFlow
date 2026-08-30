@@ -3,9 +3,11 @@
 import { LOCALE_LABELS, LOCALES } from '@cheque-flow/localization';
 import { Card } from '@cheque-flow/ui';
 
+import { Permission } from '@cheque-flow/shared-types';
+
 import { PageHeader } from '@/components/page-header';
 import { useApp, useTranslator } from '@/components/providers';
-import { useSession } from '@/components/session';
+import { useSession, RequirePermission } from '@/components/session';
 
 /**
  * Settings overview.
@@ -14,7 +16,15 @@ import { useSession } from '@/components/session';
  * wired to the same catalogue the whole app uses, so adding English later is
  * a configuration change rather than a code change.
  */
-export default function SettingsPage() {
+export default function SettingsPagePage() {
+  return (
+    <RequirePermission permission={Permission.SETTINGS_MANAGE}>
+      <SettingsPageBody />
+    </RequirePermission>
+  );
+}
+
+function SettingsPageBody() {
   const t = useTranslator();
   const { locale } = useApp();
   const { data: user } = useSession();

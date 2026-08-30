@@ -17,6 +17,7 @@ interface FormState {
   direction: string;
   chequeNumber: string;
   amount: string;
+  amountInWords: string;
   currency: string;
   issueDate: string;
   dueDate: string;
@@ -31,6 +32,7 @@ const EMPTY: FormState = {
   direction: ChequeDirection.INCOMING,
   chequeNumber: '',
   amount: '',
+  amountInWords: '',
   currency: 'USD',
   issueDate: '',
   dueDate: '',
@@ -82,6 +84,7 @@ export default function NewChequePage() {
     // Validated with the same Zod schema the API uses, so the two never drift.
     const parsed = createChequeSchema.safeParse({
       ...form,
+      amountInWords: form.amountInWords || null,
       issueDate: form.issueDate || null,
       bankId: form.bankId || null,
       originalSourceId: form.originalSourceId || null,
@@ -155,6 +158,20 @@ export default function NewChequePage() {
                 value={form.chequeNumber}
                 onChange={(event) => update('chequeNumber', event.target.value)}
                 aria-invalid={Boolean(fieldErrors.chequeNumber)}
+              />
+            </Field>
+
+            <Field
+              label={t('cheque.amountInWords')}
+              htmlFor="amountInWords"
+              hint={t('cheque.amountInWordsHint')}
+              error={fieldErrors.amountInWords}
+            >
+              <input
+                id="amountInWords"
+                className={inputClassName}
+                value={form.amountInWords}
+                onChange={(event) => update('amountInWords', event.target.value)}
               />
             </Field>
 
