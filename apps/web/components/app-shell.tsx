@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState, type ComponentType, type SVGProps } from 'react';
+import { useEffect, useState, type ComponentType, type SVGProps } from 'react';
 
 import { useApi, useTranslator } from '@/components/providers';
 import {
@@ -10,6 +10,7 @@ import {
   IconCalendar,
   IconCheque,
   IconChevronDown,
+  IconChevronEnd,
   IconContacts,
   IconDashboard,
   IconLogo,
@@ -53,7 +54,15 @@ const SECONDARY_NAV: NavItem[] = [
   { href: '/settings', labelKey: 'nav.settings', Icon: IconSettings },
 ];
 
-/** Responsive shell: a sidebar on desktop, a collapsible drawer on mobile. */
+const COLLAPSED_KEY = 'chequeflow.sidebarCollapsed';
+
+/**
+ * Responsive shell: a sidebar on desktop, a drawer on mobile.
+ *
+ * The sidebar collapses to icons on wide screens and remembers the choice —
+ * someone who works in the cheque table all day wants the width back, and
+ * wants it to stay back tomorrow.
+ */
 export function AppShell({ children }: { children: React.ReactNode }) {
   const t = useTranslator();
   const pathname = usePathname();
@@ -62,6 +71,30 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { data: user } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+
+  // Starts expanded and corrects itself after mount. Reading storage during
+  // render would make the server and the first client paint disagree.
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    try {
+      setCollapsed(window.localStorage.getItem(COLLAPSED_KEY) === 'true');
+    } catch {
+      // A browser refusing storage is not a reason to fail to render.
+    }
+  }, []);
+
+  function toggleCollapsed(): void {
+    setCollapsed((current) => {
+      const next = !current;
+      try {
+        window.localStorage.setItem(COLLAPSED_KEY, String(next));
+      } catch {
+        // The choice still applies for this session.
+      }
+      return next;
+    });
+  }
 
   async function handleLogout(): Promise<void> {
     try {
@@ -87,20 +120,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <ul className="flex flex-col gap-0.5">
         {items.map(({ href, labelKey, Icon }) => {
           const active = isActive(href);
+          const label = t(labelKey);
           return (
             <li key={href}>
               <Link
                 href={href}
                 onClick={() => setMenuOpen(false)}
                 aria-current={active ? 'page' : undefined}
-                className={`flex min-h-11 items-center gap-3 rounded-xl px-3 text-[15px] transition-colors ${
+                // Collapsed, the icon is the only thing left, so the label has
+                // to survive as the accessible name and as a hover tooltip.
+                aria-label={collapsed ? label : undefined}
+                title={collapsed ? label : undefined}
+                className={`flex min-h-11 items-center gap-3 rounded-xl text-[15px] transition-colors ${
+                  collapsed ? 'lg:justify-center lg:px-0' : ''
+                } px-3 ${
                   active
                     ? 'bg-teal-50 font-semibold text-teal-800'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                 }`}
               >
                 <Icon className={active ? 'text-teal-700' : 'text-slate-400'} />
-                <span>{t(labelKey)}</span>
+                <span className={collapsed ? 'lg:hidden' : ''}>{label}</span>
               </Link>
             </li>
           );
@@ -110,7 +150,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 lg:flex-row-reverse">
+    <div className="flex min-h-screen flex-col bg-slate-50 lg:flex-row">
       {/* Mobile header. The sidebar becomes a drawer below the lg breakpoint. */}
       <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 lg:hidden">
         <span className="flex items-center gap-2 text-lg font-bold text-teal-800">
@@ -130,13 +170,42 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <nav
         id="main-nav"
-        className={`${menuOpen ? 'flex' : 'hidden'} w-full shrink-0 flex-col border-slate-200 bg-white p-4 lg:flex lg:w-[264px] lg:border-s`}
+        className={`${menuOpen ? 'flex' : 'hidden'} w-full shrink-0 flex-col border-slate-200 bg-white p-4 transition-[width] lg:flex lg:border-e ${
+          collapsed ? 'lg:w-[84px]' : 'lg:w-[264px]'
+        }`}
         aria-label={t('nav.dashboard')}
       >
-        <div className="mb-6 hidden items-center gap-2.5 px-2 pt-2 lg:flex">
-          <IconLogo className="text-teal-700" />
-          <span className="text-xl font-bold text-teal-800">{t('common.appName')}</span>
+        <div
+          className={`mb-6 hidden items-center gap-2.5 pt-2 lg:flex ${
+            collapsed ? 'justify-center px-0' : 'px-2'
+          }`}
+        >
+          <IconLogo className="shrink-0 text-teal-700" />
+          <span className={`text-xl font-bold text-teal-800 ${collapsed ? 'hidden' : ''}`}>
+            {t('common.appName')}
+          </span>
         </div>
+
+        {/* Desktop only: on mobile the drawer already opens and closes. */}
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          aria-expanded={!collapsed}
+          aria-controls="main-nav"
+          title={collapsed ? t('nav.expandMenu') : t('nav.collapseMenu')}
+          className={`mb-3 hidden min-h-9 items-center gap-2 rounded-lg text-sm text-slate-400 hover:bg-slate-50 hover:text-slate-600 lg:flex ${
+            collapsed ? 'justify-center px-0' : 'px-3'
+          }`}
+        >
+          <IconChevronEnd
+            width="18"
+            height="18"
+            // The chevron points the way the panel will move, which in a
+            // right-to-left layout is the mirror of the left-to-right case.
+            className={`transition-transform ${collapsed ? 'rotate-180' : ''}`}
+          />
+          <span className={collapsed ? 'hidden' : ''}>{t('nav.collapseMenu')}</span>
+        </button>
 
         {renderNav(PRIMARY_NAV)}
 
@@ -146,17 +215,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* The account sits at the very bottom, out of the way of the work. */}
         <div className="mt-auto pt-4">
-          <div className="rounded-2xl border border-slate-200 bg-white p-2">
+          <div
+            className={`rounded-2xl border border-slate-200 bg-white p-2 ${collapsed ? 'lg:border-0 lg:p-0' : ''}`}
+          >
             <button
               type="button"
               onClick={() => setAccountOpen((open) => !open)}
               aria-expanded={accountOpen}
-              className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-start hover:bg-slate-50"
+              aria-label={collapsed ? (user?.name ?? t('nav.users')) : undefined}
+              title={collapsed ? (user?.name ?? undefined) : undefined}
+              className={`flex w-full items-center gap-3 rounded-xl py-2 text-start hover:bg-slate-50 ${
+                collapsed ? 'lg:justify-center lg:px-0' : 'px-2'
+              }`}
             >
               <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">
                 <IconUser />
               </span>
-              <span className="min-w-0 flex-1">
+              <span className={`min-w-0 flex-1 ${collapsed ? 'lg:hidden' : ''}`}>
                 <span className="block truncate text-sm font-semibold text-slate-800">
                   {user?.name ?? '—'}
                 </span>
@@ -165,7 +240,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </span>
               </span>
               <IconChevronDown
-                className={`shrink-0 text-slate-400 transition-transform ${accountOpen ? 'rotate-180' : ''}`}
+                className={`shrink-0 text-slate-400 transition-transform ${accountOpen ? 'rotate-180' : ''} ${
+                  collapsed ? 'lg:hidden' : ''
+                }`}
               />
             </button>
 

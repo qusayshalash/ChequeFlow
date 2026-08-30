@@ -85,9 +85,9 @@ describe('localization', () => {
     // React Native ships a minimal Intl that ignores `calendar` and
     // `numberingSystem`, so on a device a Gregorian due date came out Hijri in
     // Arabic-Indic digits. These assertions pin the bytes.
-    expect(formatDate('ar', '2026-08-31', 'gregory')).toBe('31 آب 2026');
+    expect(formatDate('ar', '2026-08-31', 'gregory')).toBe('31 أغسطس 2026');
     expect(formatDate('en', '2026-08-31', 'gregory')).toBe('31 Aug 2026');
-    expect(formatDate('ar', '2026-01-05', 'gregory')).toBe('05 كانون الثاني 2026');
+    expect(formatDate('ar', '2026-01-05', 'gregory')).toBe('05 يناير 2026');
   });
 
   it('never emits Arabic-Indic digits, which finance staff cannot scan', () => {

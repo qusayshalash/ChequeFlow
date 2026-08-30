@@ -20,13 +20,13 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="mb-6 flex flex-col gap-4 lg:flex-row-reverse lg:items-center lg:justify-between">
+    <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <div className="min-w-0">
         <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
         {subtitle ? <p className="mt-1 text-sm text-slate-500">{subtitle}</p> : null}
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 lg:justify-end">
         {actions}
         {search ? (
           <label className="relative flex min-w-0 flex-1 items-center lg:w-80 lg:flex-none">
