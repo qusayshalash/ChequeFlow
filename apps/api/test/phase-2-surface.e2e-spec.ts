@@ -256,6 +256,45 @@ describeWithDb('phase 2 surface (e2e)', () => {
       }
     });
 
+    it('scopes every bucket to the due-date window, including the dated ones', async () => {
+      // A cheque far outside any window someone would ask for.
+      await createCheque({ currency: 'KWD', amount: '77.00', dueDate: '2031-06-15' });
+
+      const inside = await request(app.getHttpServer())
+        .get(`${API}/dashboard?dueFrom=2031-01-01&dueTo=2031-12-31`)
+        .set(auth())
+        .expect(200);
+
+      const kwdInside = inside.body.currencies.find(
+        (entry: { currency: string }) => entry.currency === 'KWD',
+      );
+      expect(kwdInside.draft.count).toBe(1);
+
+      const outside = await request(app.getHttpServer())
+        .get(`${API}/dashboard?dueFrom=2029-01-01&dueTo=2029-12-31`)
+        .set(auth())
+        .expect(200);
+
+      const kwdOutside = outside.body.currencies.find(
+        (entry: { currency: string }) => entry.currency === 'KWD',
+      );
+      expect(kwdOutside?.draft.count ?? 0).toBe(0);
+
+      // The regression this guards: `dueToday`, `dueWithin7Days` and `overdue`
+      // set `dueDate` themselves, so a window merged by object spread would be
+      // dropped for exactly those three and appear to work everywhere else.
+      const narrow = await request(app.getHttpServer())
+        .get(`${API}/dashboard?dueFrom=2031-01-01&dueTo=2031-12-31`)
+        .set(auth())
+        .expect(200);
+
+      for (const entry of narrow.body.currencies) {
+        expect(entry.overdue.count).toBe(0);
+        expect(entry.dueToday.count).toBe(0);
+        expect(entry.dueWithin7Days.count).toBe(0);
+      }
+    });
+
     it('gives every activity row the cheque it belongs to', async () => {
       const response = await request(app.getHttpServer())
         .get(`${API}/dashboard`)

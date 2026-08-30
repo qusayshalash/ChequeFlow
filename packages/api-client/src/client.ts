@@ -322,11 +322,25 @@ export class ChequeFlowApiClient {
 
   // ── dashboards and reports ────────────────────────────────────────────────
 
-  getDashboard() {
-    return this.request<DashboardSummary>('/dashboard');
+  /** `dueFrom`/`dueTo` scope which cheques the figures describe. */
+  getDashboard(query: { dueFrom?: string; dueTo?: string } = {}) {
+    return this.request<DashboardSummary>('/dashboard', { query });
   }
 
-  getDueReport(query: { withinDays?: number; from?: string; to?: string } = {}) {
+  /**
+   * `includeOverdue` defaults to true on the server, which folds every past-due
+   * cheque in regardless of the window. That is right for a chasing list and
+   * wrong for "what falls in these dates", so callers asking a date question
+   * pass false.
+   */
+  getDueReport(
+    query: {
+      withinDays?: number;
+      from?: string;
+      to?: string;
+      includeOverdue?: boolean;
+    } = {},
+  ) {
     return this.request<{
       from: string;
       to: string;

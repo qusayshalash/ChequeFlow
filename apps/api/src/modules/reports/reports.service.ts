@@ -13,6 +13,7 @@ import type {
   AuditLogQuery,
   CashFlowReportQuery,
   CustodyReportQuery,
+  DashboardQuery,
   DueReportQuery,
 } from '@cheque-flow/validation';
 
@@ -100,11 +101,28 @@ export class ReportsService {
    * and dollars would be meaningless — so each currency is aggregated in the
    * database and returned as its own block.
    */
-  async dashboard(user: RequestUser): Promise<DashboardSummary> {
+  async dashboard(user: RequestUser, query: DashboardQuery = {}): Promise<DashboardSummary> {
     const today = todayUtc();
     const in7Days = addDays(today, 7);
     const in30Days = addDays(today, 30);
-    const base = { organizationId: user.organizationId, deletedAt: null };
+
+    /*
+     * The optional window goes in `AND`, not alongside `dueDate`.
+     *
+     * Several buckets set `dueDate` themselves — due today, due within 7 days,
+     * overdue — and an object spread would silently drop whichever came first,
+     * so the window would appear to work while quietly doing nothing to those
+     * three. Under `AND` both constraints apply.
+     */
+    const window: Prisma.ChequeWhereInput[] = [];
+    if (query.dueFrom) window.push({ dueDate: { gte: toDateOnly(query.dueFrom) } });
+    if (query.dueTo) window.push({ dueDate: { lte: toDateOnly(query.dueTo) } });
+
+    const base: Prisma.ChequeWhereInput = {
+      organizationId: user.organizationId,
+      deletedAt: null,
+      ...(window.length > 0 ? { AND: window } : {}),
+    };
     const outstanding = { ...base, status: { in: [...OUTSTANDING] } };
 
     const [

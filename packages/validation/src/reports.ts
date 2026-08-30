@@ -2,6 +2,18 @@ import { z } from 'zod';
 
 import { isoDateSchema, uuidSchema } from './primitives.js';
 
+/**
+ * Optional due-date window for the dashboard.
+ *
+ * It scopes which cheques the figures describe; the buckets themselves keep
+ * their own meaning inside that window.
+ */
+export const dashboardQuerySchema = z.object({
+  dueFrom: isoDateSchema.optional(),
+  dueTo: isoDateSchema.optional(),
+});
+export type DashboardQuery = z.infer<typeof dashboardQuerySchema>;
+
 export const dueReportQuerySchema = z.object({
   from: isoDateSchema.optional(),
   to: isoDateSchema.optional(),

@@ -3,45 +3,47 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
-import { Button, Card, ErrorState, LoadingState, StatCard } from '@cheque-flow/ui';
+import { ErrorState, LoadingState, StatCard } from '@cheque-flow/ui';
 
 import { ChequeTable } from '@/components/cheque-table';
+import {
+  DateRangePicker,
+  EMPTY_RANGE,
+  isRangeInvalid,
+  type DateRange,
+} from '@/components/date-range';
 import { PageHeader } from '@/components/page-header';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { money } from '@/lib/format';
-
-const WINDOWS = [0, 7, 30] as const;
 
 export default function DueChequesPage() {
   const api = useApi();
   const t = useTranslator();
   const { locale } = useApp();
-  const [withinDays, setWithinDays] = useState<number>(7);
+  const [range, setRange] = useState<DateRange>(EMPTY_RANGE);
+
+  // A backwards range would produce an empty report that reads as "nothing is
+  // due", which is the opposite of useful on this page.
+  const applied = isRangeInvalid(range) ? EMPTY_RANGE : range;
 
   const query = useQuery({
-    queryKey: ['reports', 'due', withinDays],
-    queryFn: () => api.getDueReport({ withinDays }),
+    queryKey: ['reports', 'due', applied],
+    queryFn: () =>
+      api.getDueReport({
+        ...(applied.from ? { from: applied.from } : {}),
+        ...(applied.to ? { to: applied.to } : {}),
+        // Without an explicit window the API falls back to the next seven days
+        // and folds in everything overdue, which is what a chasing list wants.
+        // Once dates are chosen the answer must be exactly those dates.
+        ...(applied.from || applied.to ? { includeOverdue: false } : { withinDays: 7 }),
+      }),
   });
 
   return (
     <div className="mx-auto flex max-w-[1180px] flex-col gap-5">
       <PageHeader title={t('nav.due')} />
 
-      <Card className="flex flex-wrap gap-3">
-        {WINDOWS.map((days) => (
-          <Button
-            key={days}
-            variant={withinDays === days ? 'primary' : 'secondary'}
-            onClick={() => setWithinDays(days)}
-          >
-            {days === 0
-              ? t('reports.dueToday')
-              : days === 7
-                ? t('reports.due7')
-                : t('reports.due30')}
-          </Button>
-        ))}
-      </Card>
+      <DateRangePicker value={range} onChange={setRange} />
 
       {query.isPending ? <LoadingState label={t('common.loading')} /> : null}
       {query.isError ? (

@@ -8,6 +8,12 @@ import { ChequeStatus, type ChequeSummaryView, type Paginated } from '@cheque-fl
 import { Button, ErrorState, LoadingState } from '@cheque-flow/ui';
 
 import { ChequeTable } from '@/components/cheque-table';
+import {
+  DateRangePicker,
+  EMPTY_RANGE,
+  isRangeInvalid,
+  type DateRange,
+} from '@/components/date-range';
 import { IconPlus } from '@/components/icons';
 import { PageHeader } from '@/components/page-header';
 import { Panel } from '@/components/panel';
@@ -31,7 +37,12 @@ export default function ChequesPage() {
   const [tab, setTab] = useState<Tab>('ALL');
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<string>('');
+  const [range, setRange] = useState<DateRange>(EMPTY_RANGE);
   const [page, setPage] = useState(1);
+
+  // A backwards range would return an empty table that looks like "no cheques",
+  // so it is not sent until the dates make sense.
+  const applied = isRangeInvalid(range) ? EMPTY_RANGE : range;
 
   /** Translates a tab into the query the API understands. */
   const tabQuery =
@@ -46,7 +57,7 @@ export default function ChequesPage() {
             : {};
 
   const query = useQuery<Paginated<ChequeSummaryView>>({
-    queryKey: ['cheques', { tab, search, status, page }],
+    queryKey: ['cheques', { tab, search, status, applied, page }],
     queryFn: () =>
       api.listCheques({
         page,
@@ -54,6 +65,8 @@ export default function ChequesPage() {
         ...tabQuery,
         ...(search ? { search } : {}),
         ...(status ? { status: [status as ChequeStatus] } : {}),
+        ...(applied.from ? { dueFrom: applied.from } : {}),
+        ...(applied.to ? { dueTo: applied.to } : {}),
       }),
     // Keeps the previous page on screen while the next one loads, instead of
     // collapsing the table to a spinner on every keystroke.
@@ -127,6 +140,14 @@ export default function ChequesPage() {
             ))}
           </select>
         </label>
+
+        <DateRangePicker
+          value={range}
+          onChange={(next) => {
+            setRange(next);
+            setPage(1);
+          }}
+        />
       </div>
 
       {query.isError ? (

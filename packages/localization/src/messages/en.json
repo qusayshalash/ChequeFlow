@@ -385,6 +385,16 @@
     "next90": "Next 90 days",
     "thisMonth": "This month"
   },
+  "range": {
+    "all": "All time",
+    "custom": "Custom",
+    "from": "From",
+    "invalid": "“From” must come before “to”",
+    "next30": "30 days",
+    "next90": "90 days",
+    "thisMonth": "This month",
+    "to": "To"
+  },
   "reminders": {
     "acknowledge": "Done",
     "addCustom": "Custom reminder",

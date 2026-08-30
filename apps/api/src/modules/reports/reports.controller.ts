@@ -1,15 +1,17 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 
 import { Permission } from '@cheque-flow/shared-types';
 import {
   auditLogQuerySchema,
   cashFlowReportQuerySchema,
   custodyReportQuerySchema,
+  dashboardQuerySchema,
   dueReportQuerySchema,
   type AuditLogQuery,
   type CashFlowReportQuery,
   type CustodyReportQuery,
+  type DashboardQuery,
   type DueReportQuery,
 } from '@cheque-flow/validation';
 
@@ -28,8 +30,13 @@ export class ReportsController {
   @Get('dashboard')
   @RequirePermissions(Permission.CHEQUE_VIEW)
   @ApiOperation({ summary: 'Dashboard totals and the latest activity' })
-  dashboard(@CurrentUser() user: RequestUser) {
-    return this.reports.dashboard(user);
+  @ApiQuery({ name: 'dueFrom', required: false, example: '2026-01-01' })
+  @ApiQuery({ name: 'dueTo', required: false, example: '2026-12-31' })
+  dashboard(
+    @CurrentUser() user: RequestUser,
+    @Query(zodQuery(dashboardQuerySchema)) query: DashboardQuery,
+  ) {
+    return this.reports.dashboard(user, query);
   }
 
   @Get('reports/due')

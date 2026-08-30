@@ -17,19 +17,18 @@ import {
   IconPlus,
   IconWallet,
 } from '@/components/icons';
+import {
+  DateRangePicker,
+  EMPTY_RANGE,
+  isRangeInvalid,
+  type DateRange,
+} from '@/components/date-range';
 import { LineChart } from '@/components/line-chart';
 import { NotificationBell } from '@/components/notification-bell';
 import { PageHeader } from '@/components/page-header';
 import { StatCard } from '@/components/stat-card';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { formatDate, money } from '@/lib/format';
-
-/** Reporting windows offered above the figures. */
-const PERIODS = [
-  { value: 30, labelKey: 'period.thisMonth' },
-  { value: 60, labelKey: 'period.next30' },
-  { value: 90, labelKey: 'period.next90' },
-] as const;
 
 const WEEK_LABEL_KEYS = ['week.current', 'week.next', 'week.third', 'week.fourth'];
 
@@ -51,23 +50,39 @@ export default function DashboardPage() {
 
   const today = utcToday();
   const [currency, setCurrency] = useState<string | null>(null);
-  const [withinDays, setWithinDays] = useState<number>(30);
+  const [range, setRange] = useState<DateRange>(EMPTY_RANGE);
   const [search, setSearch] = useState('');
 
+  // A backwards range would return nothing and look like missing data, so the
+  // page keeps showing the last good window until the dates make sense again.
+  const invalidRange = isRangeInvalid(range);
+  const applied = invalidRange ? EMPTY_RANGE : range;
+
+  /** The window the chart and the table read, defaulted when left open. */
+  const chartFrom = applied.from || today;
+  const chartTo = applied.to || addDays(chartFrom, 30);
+
   const dashboard = useQuery<DashboardSummary>({
-    queryKey: ['dashboard'],
-    queryFn: () => api.getDashboard(),
+    queryKey: ['dashboard', applied],
+    queryFn: () =>
+      api.getDashboard({
+        ...(applied.from ? { dueFrom: applied.from } : {}),
+        ...(applied.to ? { dueTo: applied.to } : {}),
+      }),
   });
 
   const cashFlow = useQuery({
-    queryKey: ['dashboard-cash-flow', withinDays],
-    queryFn: () =>
-      api.getCashFlowReport({ from: today, to: addDays(today, withinDays), granularity: 'week' }),
+    queryKey: ['dashboard-cash-flow', chartFrom, chartTo],
+    queryFn: () => api.getCashFlowReport({ from: chartFrom, to: chartTo, granularity: 'week' }),
   });
 
   const due = useQuery({
-    queryKey: ['dashboard-due', withinDays],
-    queryFn: () => api.getDueReport({ withinDays }),
+    queryKey: ['dashboard-due', chartFrom, chartTo],
+    queryFn: () =>
+      // Strictly within the window: a table headed "upcoming cheques" that
+      // also lists ones due three weeks before the chosen start reads as a
+      // bug, and overdue cheques already have their own card above.
+      api.getDueReport({ from: chartFrom, to: chartTo, includeOverdue: false }),
   });
 
   /** Currencies the organization actually holds, for the filter. */
@@ -123,7 +138,7 @@ export default function DashboardPage() {
     );
 
     // The API buckets weeks by their Monday, so look up the same keys.
-    const firstMonday = mondayOf(today);
+    const firstMonday = mondayOf(chartFrom);
     const inflow: number[] = [];
     const outflow: number[] = [];
 
@@ -141,7 +156,7 @@ export default function DashboardPage() {
         { label: t('dashboard.outgoing'), values: outflow, color: '#26356B' },
       ],
     };
-  }, [cashFlow.data, currency, currencies, today, t]);
+  }, [cashFlow.data, currency, currencies, chartFrom, t]);
 
   const upcoming = (due.data?.cheques ?? [])
     .filter((cheque) => (currency ? cheque.currency === currency : true))
@@ -219,21 +234,7 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        <label className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600">
-          <IconCalendar className="text-slate-400" />
-          <span className="sr-only">{t('common.period')}</span>
-          <select
-            value={withinDays}
-            onChange={(event) => setWithinDays(Number(event.target.value))}
-            className="bg-transparent pe-1 text-sm font-medium text-slate-700 outline-none"
-          >
-            {PERIODS.map((period) => (
-              <option key={period.value} value={period.value}>
-                {t(period.labelKey)}
-              </option>
-            ))}
-          </select>
-        </label>
+        <DateRangePicker value={range} onChange={setRange} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
