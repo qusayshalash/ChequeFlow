@@ -8,7 +8,6 @@ import { colors, radius, spacing } from '@cheque-flow/ui/tokens';
 
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import {
-  Badge,
   Button,
   Chip,
   DateField,
@@ -215,7 +214,6 @@ export default function ChequeListScreen() {
                 <Text style={[styles.meta, item.isOverdue && styles.metaOverdue]}>
                   {dueDistance(item.dueDate, today)}
                 </Text>
-                {item.isOverdue ? <Badge label={t('cheque.overdue')} /> : null}
               </View>
 
               <Text style={styles.meta} numberOfLines={1}>

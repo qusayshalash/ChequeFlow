@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { MIN_TOUCH_TARGET, colors, spacing } from '@cheque-flow/ui/tokens';
@@ -16,11 +16,13 @@ import { useApp } from '@/components/providers';
  */
 export function BackButton() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { locale, t } = useApp();
 
-  // The first screen of a stack has nothing behind it; the tab bar is how the
-  // user leaves it.
-  if (!router.canGoBack()) return null;
+  // Only when there is somewhere to go back to *within this stack*. The global
+  // router reports true on a tab root as well, because another tab sits on the
+  // history — and an arrow that jumps to a different tab is not a back arrow.
+  if (!navigation.canGoBack()) return null;
 
   return (
     <Pressable

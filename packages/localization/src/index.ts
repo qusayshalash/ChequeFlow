@@ -110,80 +110,137 @@ export function isCalendar(value: string): value is CalendarPreference {
   return (CALENDARS as readonly string[]).includes(value);
 }
 
-/** BCP-47 tag used for number and date formatting in each locale. */
-function intlLocale(locale: Locale): string {
-  return locale === 'ar' ? 'ar-SA' : 'en-GB';
+/**
+ * Money and calendar dates are formatted by hand rather than through `Intl`.
+ *
+ * This is not a preference. React Native ships a minimal `Intl` that silently
+ * ignores `numberingSystem`, `calendar` and `currencyDisplay`, and falls back
+ * to the locale's own defaults. On a device an amount came out as
+ * `ILS ٤٠٠,٠٠` — Arabic-Indic digits, a comma where the decimal point belongs —
+ * and a Gregorian due date rendered as `١٨ صفر ١٤٤٨ هـ`, a Hijri date the user
+ * had not asked for. Node has full ICU, so every test passed while the phone
+ * was wrong.
+ *
+ * For a system of record about money and legal dates, "renders differently
+ * depending on the device" is not acceptable. These formatters produce the same
+ * bytes everywhere.
+ */
+
+/** Groups the integer part in threes: 1234567.5 -> "1,234,567.50". */
+function groupDigits(value: string): string {
+  return value.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
 /**
- * Formats money for display. The value stays a decimal string end to end.
+ * Renders a decimal string with exactly two fraction digits.
  *
- * The currency is rendered as its ISO code (`USD 4,000.00`) rather than as a
- * symbol. In Arabic, `Intl` renders the USD symbol as `US$`, which a
- * right-to-left line then displays as `$US` — a currency that does not exist.
- * The three-letter code is unambiguous in both directions and is what finance
- * staff read anyway.
+ * Works on the string, never on a `number`: the value arrives as a decimal
+ * string precisely so it never passes through binary floating point, and
+ * parsing it here to format it would throw that away.
+ */
+function formatDecimal(amount: string): string | null {
+  const match = /^(-?)(\d+)(?:\.(\d*))?$/.exec(amount.trim());
+  if (!match) return null;
+
+  const [, sign = '', whole = '0', fraction = ''] = match;
+  const cents = `${fraction}00`.slice(0, 2);
+  return `${sign}${groupDigits(whole)}.${cents}`;
+}
+
+/**
+ * Formats money for display: `400.00 ILS`.
+ *
+ * The currency is its ISO code, never a symbol — in Arabic `Intl` renders USD
+ * as `US$`, which a right-to-left line then shows as `$US`, a currency that
+ * does not exist. The result is prefixed with U+200F so the amount and the code
+ * keep their order in a right-to-left paragraph.
  */
 export function formatMoney(locale: Locale, amount: string, currency: string): string {
-  const numeric = Number(amount);
-  if (!Number.isFinite(numeric)) return `${currency} ${amount}`;
+  const formatted = formatDecimal(amount);
+  if (formatted === null) return `${currency}\u00a0${amount}`;
 
-  return new Intl.NumberFormat(intlLocale(locale), {
-    style: 'currency',
-    currency,
-    currencyDisplay: 'code',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-    // Arabic-Indic digits hurt readability for finance staff scanning numbers.
-    numberingSystem: 'latn',
-  }).format(numeric);
+  // Code first in both languages: it reads the same way in English and, with
+  // the right-to-left mark, keeps the code and the amount together as one run
+  // in an Arabic line instead of letting them drift apart.
+  const body = `${currency}\u00a0${formatted}`;
+  return locale === 'ar' ? `\u200f${body}` : body;
+}
+
+/** Month name for 1-12, from the catalogue so it stays translatable. */
+function monthName(locale: Locale, month: number): string {
+  return translate(locale, `month.${month}`);
 }
 
 /**
  * Formats a `YYYY-MM-DD` calendar date without shifting it by timezone.
  *
- * `calendar` chooses the reckoning shown to the reader. The stored value never
- * changes — only its presentation.
+ * Gregorian is produced directly, so it is identical on every device. Hijri
+ * needs a real calendar conversion and so goes through `Intl`; if the runtime
+ * cannot do it, the Gregorian form is returned rather than a wrong date.
  */
 export function formatDate(
   locale: Locale,
   isoDate: string,
   calendar: CalendarPreference = DEFAULT_CALENDAR,
 ): string {
-  const [year, month, day] = isoDate.split('-').map(Number);
-  if (!year || !month || !day) return isoDate;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
+  if (!match) return isoDate;
 
-  return new Intl.DateTimeFormat(intlLocale(locale), {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-    calendar,
-    numberingSystem: 'latn',
-    // A calendar date has no timezone: format it in UTC so it never shifts
-    // by a day depending on where the viewer is.
-    timeZone: 'UTC',
-  }).format(new Date(Date.UTC(year, month - 1, day)));
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (month < 1 || month > 12) return isoDate;
+
+  const gregorian = `${String(day).padStart(2, '0')} ${monthName(locale, month)} ${year}`;
+  if (calendar === 'gregory') return gregorian;
+
+  try {
+    const rendered = new Intl.DateTimeFormat(locale === 'ar' ? 'ar-SA' : 'en-GB', {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+      calendar: 'islamic-umalqura',
+      numberingSystem: 'latn',
+      // A calendar date has no timezone: format it in UTC so it never shifts
+      // by a day depending on where the viewer is.
+      timeZone: 'UTC',
+    }).format(new Date(Date.UTC(year, month - 1, day)));
+    return rendered;
+  } catch {
+    // Better the right day in the wrong calendar than the wrong day.
+    return gregorian;
+  }
+}
+
+/** `HH:MM` in 24-hour form, which is unambiguous in both languages. */
+function formatClock(date: Date): string {
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
 }
 
 /**
- * Formats a UTC instant. Timestamps are stored in UTC and rendered in the
- * viewer's timezone, or in `timeZone` when the organization pins one.
+ * Formats a UTC instant in the viewer's own timezone.
+ *
+ * Unlike a due date, a timestamp is a moment in time, so it is deliberately
+ * rendered in local time — "who moved this cheque, and when, from where I am
+ * standing".
  */
 export function formatDateTime(
   locale: Locale,
   isoDateTime: string,
-  options: { timeZone?: string; calendar?: CalendarPreference } = {},
+  options: { calendar?: CalendarPreference } = {},
 ): string {
   const date = new Date(isoDateTime);
   if (Number.isNaN(date.getTime())) return isoDateTime;
 
-  return new Intl.DateTimeFormat(intlLocale(locale), {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-    calendar: options.calendar ?? DEFAULT_CALENDAR,
-    numberingSystem: 'latn',
-    ...(options.timeZone ? { timeZone: options.timeZone } : {}),
-  }).format(date);
+  const day = [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-');
+
+  return `${formatDate(locale, day, options.calendar)} ${formatClock(date)}`;
 }
 
 /**

@@ -76,8 +76,24 @@ describe('localization', () => {
     const gregorian = formatDate('ar', '2026-08-29', 'gregory');
     const hijri = formatDate('ar', '2026-08-29', 'islamic-umalqura');
     expect(gregorian).toContain('2026');
-    expect(hijri).toContain('1448');
+    // The Hijri year, in whichever digits the runtime's calendar support emits.
+    expect(hijri).toMatch(/1448|١٤٤٨/);
     expect(hijri).not.toBe(gregorian);
+  });
+
+  it('produces the Gregorian date without relying on Intl', () => {
+    // React Native ships a minimal Intl that ignores `calendar` and
+    // `numberingSystem`, so on a device a Gregorian due date came out Hijri in
+    // Arabic-Indic digits. These assertions pin the bytes.
+    expect(formatDate('ar', '2026-08-31', 'gregory')).toBe('31 آب 2026');
+    expect(formatDate('en', '2026-08-31', 'gregory')).toBe('31 Aug 2026');
+    expect(formatDate('ar', '2026-01-05', 'gregory')).toBe('05 كانون الثاني 2026');
+  });
+
+  it('never emits Arabic-Indic digits, which finance staff cannot scan', () => {
+    const arabicIndic = /[٠-٩]/;
+    expect(formatDate('ar', '2026-08-31', 'gregory')).not.toMatch(arabicIndic);
+    expect(formatMoney('ar', '1234.5', 'ILS')).not.toMatch(arabicIndic);
   });
 });
 
@@ -114,10 +130,22 @@ describe('formatMoney', () => {
 
   it('always shows two decimal places', () => {
     expect(plain(formatMoney('en', '10', 'JOD'))).toBe('JOD 10.00');
+    expect(plain(formatMoney('ar', '10', 'JOD'))).toBe('JOD 10.00');
   });
 
   it('degrades readably rather than printing NaN', () => {
     expect(plain(formatMoney('en', 'not-a-number', 'USD'))).toBe('USD not-a-number');
+  });
+
+  it('formats the decimal string itself, never a float', () => {
+    // The amount arrives as a string precisely so it never touches binary
+    // floating point; parsing it here to format it would throw that away.
+    expect(plain(formatMoney('en', '0.1', 'USD'))).toBe('USD 0.10');
+    expect(plain(formatMoney('en', '1234567.891', 'USD'))).toBe('USD 1,234,567.89');
+    expect(plain(formatMoney('en', '-250', 'USD'))).toBe('USD -250.00');
+    expect(plain(formatMoney('en', '9007199254740993.55', 'USD'))).toBe(
+      'USD 9,007,199,254,740,993.55',
+    );
   });
 });
 
