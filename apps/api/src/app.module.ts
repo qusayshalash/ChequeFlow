@@ -12,9 +12,11 @@ import { AppConfigService } from './config/app-config.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { BackupModule } from './modules/backup/backup.module';
 import { ChequeImagesModule } from './modules/cheque-images/cheque-images.module';
 import { ChequesModule } from './modules/cheques/cheques.module';
 import { ContactsModule } from './modules/contacts/contacts.module';
+import { DiagnosticsModule } from './modules/diagnostics/diagnostics.module';
 import { HealthModule } from './modules/health/health.module';
 import { OcrModule } from './modules/ocr/ocr.module';
 import { ReferenceModule } from './modules/reference/reference.module';
@@ -56,6 +58,8 @@ import { UsersModule } from './modules/users/users.module';
     ReportsModule,
     RemindersModule,
     UsersModule,
+    DiagnosticsModule,
+    BackupModule,
     HealthModule,
   ],
   providers: [

@@ -21,6 +21,7 @@ export const AuditAction = {
   CHEQUE_IMAGE_UPLOADED: 'cheque.image.uploaded',
   CHEQUE_IMAGE_VIEWED: 'cheque.image.viewed',
   CHEQUE_EXPORTED: 'cheque.exported',
+  BACKUP_EXPORTED: 'backup.exported',
   CONTACT_CREATED: 'contact.created',
   CONTACT_UPDATED: 'contact.updated',
   CONTACT_DELETED: 'contact.deleted',

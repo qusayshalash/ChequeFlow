@@ -595,4 +595,80 @@ describeWithDb('phase 2 surface (e2e)', () => {
       expect(survivor?.custom).toBe(true);
     });
   });
+
+  describe('diagnostics', () => {
+    it('reports OCR as degraded when it is inventing data', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`${API}/diagnostics`)
+        .set(auth())
+        .expect(200);
+
+      // The suites pin OCR_PROVIDER=mock, so the honest answer is "degraded":
+      // the extraction is synthetic. Reporting "ok" here would be the exact
+      // failure this endpoint exists to prevent.
+      expect(response.body.ocr.state).toBe('degraded');
+      expect(response.body.ocr.effective).toBe('mock');
+      expect(response.body.database.state).toBe('ok');
+    });
+
+    it('never names a credential value, only which one is missing', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`${API}/diagnostics`)
+        .set(auth())
+        .expect(200);
+
+      const body = JSON.stringify(response.body);
+      expect(body).not.toContain(process.env.FIELD_ENCRYPTION_KEY ?? '__unset__');
+      expect(body).not.toContain(process.env.JWT_ACCESS_SECRET ?? '__unset__');
+      expect(body).not.toMatch(/sk-ant-|BEGIN PRIVATE KEY/);
+    });
+  });
+
+  describe('backup', () => {
+    it('exports every record the organization has', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`${API}/backup/export`)
+        .set(auth())
+        .expect(200);
+
+      expect(response.headers['content-disposition']).toContain('attachment; filename=');
+
+      const archive = JSON.parse(response.text);
+      expect(archive.format).toBe(1);
+      expect(archive.organization.id).toBe(fixtures.organizationId);
+      expect(archive.counts.cheques).toBeGreaterThan(0);
+      expect(archive.counts.chequeEvents).toBeGreaterThan(0);
+
+      // Amounts stay decimal strings: a backup that turned them into JSON
+      // numbers would round money on the way out.
+      expect(typeof archive.data.cheques[0].amount).toBe('string');
+    });
+
+    it('carries no credential that would let someone sign in', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`${API}/backup/export`)
+        .set(auth())
+        .expect(200);
+
+      // A backup gets copied around and emailed. It must describe the business,
+      // not hand over the keys to it.
+      expect(response.text).not.toContain('passwordHash');
+      expect(response.text).not.toContain('$argon2');
+      expect(response.text).not.toContain('tokenHash');
+      // The account number stays as stored — encrypted, never decrypted here.
+      expect(response.text).not.toMatch(/"accountNumber":/);
+    });
+
+    it('refuses a user without settings permission', async () => {
+      const viewer = await request(app.getHttpServer())
+        .post(`${API}/auth/login`)
+        .send({ email: fixtures.viewerEmail, password: fixtures.password })
+        .expect(200);
+
+      await request(app.getHttpServer())
+        .get(`${API}/backup/export`)
+        .set({ Authorization: `Bearer ${viewer.body.accessToken}` })
+        .expect(403);
+    });
+  });
 });

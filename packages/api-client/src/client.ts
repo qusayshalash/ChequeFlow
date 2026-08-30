@@ -158,6 +158,31 @@ export class ChequeFlowApiClient {
    * "this particular request failed", and deliberately unauthenticated so it
    * still answers when the session has expired.
    */
+  /**
+   * Downloads a complete JSON archive of the organization.
+   *
+   * Returned as text so the caller decides what to do with it — the browser
+   * saves it, and nothing is written to a server.
+   */
+  exportBackup() {
+    return this.requestText('/backup/export');
+  }
+
+  /** Whether OCR, the database and storage are actually working. */
+  getDiagnostics() {
+    return this.request<{
+      ocr: {
+        state: 'ok' | 'degraded' | 'down';
+        messageKey: string;
+        detail?: string;
+        requested: string;
+        effective: string;
+      };
+      database: { state: 'ok' | 'degraded' | 'down'; messageKey: string };
+      storage: { state: 'ok' | 'degraded' | 'down'; messageKey: string };
+    }>('/diagnostics');
+  }
+
   health() {
     return this.request<{ status: string }>('/health', { anonymous: true });
   }

@@ -36,6 +36,14 @@
     "username": "User name",
     "usernameHint": "User name or email address"
   },
+  "backup": {
+    "done": "Backup downloaded",
+    "download": "Download a full copy",
+    "excluded": "It excludes passwords and cheque images; the images stay in object storage.",
+    "hint": "A JSON file with all your records: cheques, their movements, contacts, branches and users.",
+    "keepSafe": "Keep the file somewhere safe: it holds a complete financial record.",
+    "title": "Backup"
+  },
   "capture": {
     "back": "Capture the back",
     "button": "Capture cheque",
@@ -266,6 +274,21 @@
     "subtitle": "Cheque status and what is coming due",
     "title": "Dashboard",
     "upcomingCheques": "Upcoming cheques"
+  },
+  "diagnostics": {
+    "database": "Database",
+    "databaseDown": "Not reachable",
+    "databaseOk": "Connected",
+    "howToFix": "How do I turn on real reading?",
+    "ocr": "Cheque reading (OCR)",
+    "ocrFallback": "Not reading cheques — the extracted values are invented",
+    "ocrGuide": "Follow the guide in docs/ocr-setup.md",
+    "ocrMock": "Test mode: the extracted values are invented",
+    "ocrReady": "Reading cheques for real",
+    "storage": "Image storage",
+    "storageDown": "Unavailable — image upload will fail",
+    "storageOk": "Working",
+    "title": "System status"
   },
   "direction": {
     "INCOMING": "Incoming",

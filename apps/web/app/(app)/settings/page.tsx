@@ -5,7 +5,9 @@ import { Card } from '@cheque-flow/ui';
 
 import { Permission } from '@cheque-flow/shared-types';
 
+import { BackupPanel } from '@/components/backup-panel';
 import { PageHeader } from '@/components/page-header';
+import { SystemStatus } from '@/components/system-status';
 import { useApp, useTranslator } from '@/components/providers';
 import { useSession, RequirePermission } from '@/components/session';
 
@@ -32,6 +34,10 @@ function SettingsPageBody() {
   return (
     <div className="mx-auto flex max-w-[1180px] flex-col gap-5">
       <PageHeader title={t('nav.settings')} />
+
+      <SystemStatus />
+
+      <BackupPanel />
 
       <Card className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold text-slate-900">{t('common.appName')}</h2>
