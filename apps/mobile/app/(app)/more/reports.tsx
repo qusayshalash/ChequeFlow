@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ApiClientError } from '@cheque-flow/api-client';
 import { colors, spacing } from '@cheque-flow/ui/tokens';
@@ -125,14 +125,27 @@ export default function ReportsScreen() {
           cashFlow.data.periods.length === 0 ? (
             <Body muted>{t('reports.empty')}</Body>
           ) : (
-            cashFlow.data.periods.map((period) =>
+            /* One labelled row per figure rather than five values strung
+               into a single line. A mixed Arabic/Latin line that long gets
+               reordered by the bidi algorithm and stops being readable — the
+               same defect that made the dashboard's in/out card read
+               backwards. */
+            cashFlow.data.periods.flatMap((period) =>
               period.byCurrency.map((entry) => (
-                <Text key={`${period.period}-${entry.currency}`} style={styles.flowRow}>
-                  {period.period} · {entry.currency} — {t('reports.expectedInflow')}:{' '}
-                  {money(entry.inflow, entry.currency)} · {t('reports.expectedOutflow')}:{' '}
-                  {money(entry.outflow, entry.currency)} · {t('reports.net')}:{' '}
-                  {money(entry.net, entry.currency)}
-                </Text>
+                <View key={`${period.period}-${entry.currency}`} style={styles.flowBlock}>
+                  <Text style={styles.flowTitle}>
+                    {period.period} — {entry.currency}
+                  </Text>
+                  <InfoRow
+                    label={t('reports.expectedInflow')}
+                    value={money(entry.inflow, entry.currency)}
+                  />
+                  <InfoRow
+                    label={t('reports.expectedOutflow')}
+                    value={money(entry.outflow, entry.currency)}
+                  />
+                  <InfoRow label={t('reports.net')} value={money(entry.net, entry.currency)} />
+                </View>
               )),
             )
           )
@@ -183,5 +196,11 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   chips: { gap: spacing.sm },
-  flowRow: { fontSize: 13, color: colors.text, textAlign: 'right' },
+  flowBlock: {
+    gap: 2,
+    paddingVertical: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  flowTitle: { fontSize: 14, fontWeight: '700', color: colors.text, textAlign: 'right' },
 });
