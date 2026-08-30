@@ -3,6 +3,7 @@
 import { LOCALE_LABELS, LOCALES } from '@cheque-flow/localization';
 import { Card } from '@cheque-flow/ui';
 
+import { PageHeader } from '@/components/page-header';
 import { useApp, useTranslator } from '@/components/providers';
 import { useSession } from '@/components/session';
 
@@ -19,8 +20,8 @@ export default function SettingsPage() {
   const { data: user } = useSession();
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold text-slate-900">{t('nav.settings')}</h1>
+    <div className="mx-auto flex max-w-[1180px] flex-col gap-5">
+      <PageHeader title={t('nav.settings')} />
 
       <Card className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold text-slate-900">{t('common.appName')}</h2>

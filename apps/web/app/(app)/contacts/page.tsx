@@ -8,6 +8,7 @@ import { ApiClientError } from '@cheque-flow/api-client';
 import { ContactType, Permission } from '@cheque-flow/shared-types';
 import { createContactSchema } from '@cheque-flow/validation';
 import {
+  Badge,
   Button,
   Card,
   EmptyState,
@@ -18,6 +19,9 @@ import {
   inputClassName,
 } from '@cheque-flow/ui';
 
+import { DataTable } from '@/components/data-table';
+import { PageHeader } from '@/components/page-header';
+import { Panel } from '@/components/panel';
 import { useApi, useTranslator } from '@/components/providers';
 import { usePermission } from '@/components/session';
 
@@ -75,8 +79,8 @@ export default function ContactsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold text-slate-900">{t('contact.title')}</h1>
+    <div className="mx-auto flex max-w-[1180px] flex-col gap-5">
+      <PageHeader title={t('contact.title')} />
 
       {canManage ? (
         <Card>
@@ -153,49 +157,48 @@ export default function ContactsPage() {
       ) : null}
 
       {contacts.data ? (
-        contacts.data.data.length === 0 ? (
-          <EmptyState title={t('contact.empty')} />
-        ) : (
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table className="w-full min-w-[600px] text-sm">
-              <thead className="bg-slate-50 text-slate-700">
-                <tr>
-                  <th scope="col" className="p-3 text-start font-medium">
-                    {t('contact.name')}
-                  </th>
-                  <th scope="col" className="p-3 text-start font-medium">
-                    {t('contact.type')}
-                  </th>
-                  <th scope="col" className="p-3 text-start font-medium">
-                    {t('contact.phone')}
-                  </th>
-                  <th scope="col" className="p-3 text-start font-medium">
-                    {t('contact.isActive')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {contacts.data.data.map((contact) => (
-                  <tr key={contact.id} className="hover:bg-slate-50">
-                    <td className="p-3">
-                      <Link
-                        href={`/contacts/${contact.id}`}
-                        className="font-medium text-teal-800 hover:underline"
-                      >
-                        {contact.name}
-                      </Link>
-                    </td>
-                    <td className="p-3">{t(`contactType.${contact.type}`)}</td>
-                    <td className="p-3" dir="ltr">
-                      {contact.phone ?? '—'}
-                    </td>
-                    <td className="p-3">{contact.isActive ? t('common.yes') : t('common.no')}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )
+        <Panel bodyClassName="">
+          <DataTable
+            rows={contacts.data.data}
+            rowKey={(contact) => contact.id}
+            empty={<EmptyState title={t('contact.empty')} />}
+            columns={[
+              {
+                key: 'name',
+                header: t('contact.name'),
+                cell: (contact) => (
+                  <Link
+                    href={`/contacts/${contact.id}`}
+                    className="font-semibold text-slate-900 hover:text-teal-700"
+                  >
+                    {contact.name}
+                  </Link>
+                ),
+              },
+              {
+                key: 'type',
+                header: t('contact.type'),
+                cell: (contact) => t(`contactType.${contact.type}`),
+              },
+              {
+                key: 'phone',
+                header: t('contact.phone'),
+                numeric: true,
+                cell: (contact) => <span dir="ltr">{contact.phone ?? '—'}</span>,
+              },
+              {
+                key: 'active',
+                header: t('contact.isActive'),
+                cell: (contact) =>
+                  contact.isActive ? (
+                    <Badge tone="success">{t('common.yes')}</Badge>
+                  ) : (
+                    <Badge>{t('common.no')}</Badge>
+                  ),
+              },
+            ]}
+          />
+        </Panel>
       ) : null}
     </div>
   );

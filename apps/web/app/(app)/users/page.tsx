@@ -2,6 +2,7 @@
 
 import { Card } from '@cheque-flow/ui';
 
+import { PageHeader } from '@/components/page-header';
 import { useTranslator } from '@/components/providers';
 import { useSession } from '@/components/session';
 
@@ -15,8 +16,8 @@ export default function UsersPage() {
   const { data: user } = useSession();
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold text-slate-900">{t('nav.users')}</h1>
+    <div className="mx-auto flex max-w-[1180px] flex-col gap-5">
+      <PageHeader title={t('nav.users')} />
 
       <Card className="flex flex-col gap-2">
         <p className="text-lg font-medium text-slate-900">{user?.name}</p>

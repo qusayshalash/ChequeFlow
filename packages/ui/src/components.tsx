@@ -11,11 +11,11 @@ import { toneFor, type StatusTone } from './tokens.js';
  */
 
 const TONE_CLASSES: Record<StatusTone, string> = {
-  neutral: 'bg-slate-100 text-slate-700 border-slate-200',
-  info: 'bg-sky-50 text-sky-800 border-sky-200',
-  success: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-  warning: 'bg-amber-50 text-amber-900 border-amber-200',
-  danger: 'bg-red-50 text-red-800 border-red-200',
+  neutral: 'bg-slate-100 text-slate-600',
+  info: 'bg-sky-50 text-sky-700',
+  success: 'bg-teal-50 text-teal-700',
+  warning: 'bg-amber-50 text-amber-700',
+  danger: 'bg-red-50 text-red-700',
 };
 
 export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
@@ -26,7 +26,7 @@ export function Badge({ tone = 'neutral', className, ...props }: BadgeProps) {
   return (
     <span
       className={clsx(
-        'inline-flex items-center rounded-full border px-2.5 py-1 text-sm font-medium',
+        'inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold',
         TONE_CLASSES[tone],
         className,
       )}
@@ -49,9 +49,9 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const BUTTON_VARIANTS: Record<NonNullable<ButtonProps['variant']>, string> = {
   primary: 'bg-teal-800 text-white hover:bg-teal-900 focus-visible:outline-teal-800',
   secondary:
-    'bg-white text-slate-900 border border-slate-300 hover:bg-slate-50 focus-visible:outline-slate-500',
-  ghost: 'bg-transparent text-teal-800 hover:bg-teal-50 focus-visible:outline-teal-800',
-  danger: 'bg-red-700 text-white hover:bg-red-800 focus-visible:outline-red-700',
+    'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 focus-visible:outline-slate-400',
+  ghost: 'bg-transparent text-teal-700 hover:bg-teal-50 focus-visible:outline-teal-700',
+  danger: 'bg-red-600 text-white hover:bg-red-700 focus-visible:outline-red-600',
 };
 
 export function Button({
@@ -67,9 +67,9 @@ export function Button({
     <button
       // 48px minimum height keeps the target comfortable on touch screens.
       className={clsx(
-        'inline-flex min-h-12 items-center justify-center gap-2 rounded-lg font-medium transition',
+        'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition',
         'focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60',
-        size === 'lg' ? 'px-6 text-lg' : 'px-4 text-base',
+        size === 'lg' ? 'min-h-12 px-6 text-base' : 'min-h-11 px-4 text-sm',
         BUTTON_VARIANTS[variant],
         className,
       )}
@@ -99,7 +99,7 @@ export function Spinner({ className }: { className?: string }) {
 export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={clsx('rounded-xl border border-slate-200 bg-white p-5 shadow-sm', className)}
+      className={clsx('rounded-2xl border border-slate-200 bg-white p-5', className)}
       {...props}
     />
   );
@@ -134,8 +134,8 @@ export function LoadingState({ label }: { label: string }) {
 
 export function EmptyState({ title, action }: { title: string; action?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-slate-300 p-10 text-center">
-      <p className="text-slate-600">{title}</p>
+    <div className="flex flex-col items-center gap-3 p-12 text-center">
+      <p className="text-sm text-slate-500">{title}</p>
       {action}
     </div>
   );
@@ -155,9 +155,9 @@ export function ErrorState({
   return (
     <div
       role="alert"
-      className="flex flex-col items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-5"
+      className="flex flex-col items-start gap-3 rounded-2xl border border-red-100 bg-red-50 p-5"
     >
-      <p className="font-medium text-red-800">{title}</p>
+      <p className="font-semibold text-red-700">{title}</p>
       {requestId ? <p className="text-xs text-red-700">request-id: {requestId}</p> : null}
       {onRetry && retryLabel ? (
         <Button variant="secondary" onClick={onRetry}>
@@ -170,10 +170,7 @@ export function ErrorState({
 
 export function SuccessBanner({ message }: { message: string }) {
   return (
-    <div
-      role="status"
-      className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-900"
-    >
+    <div role="status" className="rounded-xl border border-teal-100 bg-teal-50 p-4 text-teal-800">
       {message}
     </div>
   );
@@ -191,7 +188,7 @@ export interface FieldProps {
 export function Field({ label, htmlFor, error, hint, required, children }: FieldProps) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={htmlFor} className="text-sm font-medium text-slate-800">
+      <label htmlFor={htmlFor} className="text-sm font-medium text-slate-600">
         {label}
         {required ? (
           <span aria-hidden="true" className="text-red-700">
@@ -212,6 +209,6 @@ export function Field({ label, htmlFor, error, hint, required, children }: Field
 }
 
 export const inputClassName =
-  'min-h-12 w-full rounded-lg border border-slate-300 bg-white px-3 text-base text-slate-900 ' +
-  'focus:border-teal-700 focus:outline-2 focus:outline-offset-1 focus:outline-teal-700 ' +
-  'disabled:bg-slate-100 aria-[invalid=true]:border-red-500';
+  'min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 ' +
+  'placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-2 ' +
+  'focus:ring-teal-100 disabled:bg-slate-50 aria-[invalid=true]:border-red-400';

@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Button, Card, ErrorState, LoadingState, StatCard } from '@cheque-flow/ui';
 
 import { ChequeTable } from '@/components/cheque-table';
+import { PageHeader } from '@/components/page-header';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { money } from '@/lib/format';
 
@@ -23,8 +24,8 @@ export default function DueChequesPage() {
   });
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold text-slate-900">{t('nav.due')}</h1>
+    <div className="mx-auto flex max-w-[1180px] flex-col gap-5">
+      <PageHeader title={t('nav.due')} />
 
       <Card className="flex flex-wrap gap-3">
         {WINDOWS.map((days) => (

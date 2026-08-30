@@ -8,6 +8,7 @@ import {
 } from '@cheque-flow/shared-types';
 import { Badge, Card } from '@cheque-flow/ui';
 
+import { PageHeader } from '@/components/page-header';
 import { useTranslator } from '@/components/providers';
 import { useSession } from '@/components/session';
 
@@ -23,18 +24,18 @@ export default function RolesPage() {
   const mine = new Set(user?.permissions ?? []);
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold text-slate-900">{t('nav.roles')}</h1>
+    <div className="mx-auto flex max-w-[1180px] flex-col gap-5">
+      <PageHeader title={t('nav.roles')} />
 
       <Card className="overflow-x-auto">
         <table className="w-full min-w-[820px] text-sm">
-          <thead className="text-slate-700">
+          <thead className="text-slate-500">
             <tr>
-              <th scope="col" className="p-2 text-start font-medium">
+              <th scope="col" className="p-3 text-start text-xs font-medium">
                 {t('nav.roles')}
               </th>
               {Object.values(SystemRole).map((role) => (
-                <th key={role} scope="col" className="p-2 text-center font-medium">
+                <th key={role} scope="col" className="p-3 text-center text-xs font-medium">
                   {role}
                 </th>
               ))}
@@ -43,7 +44,7 @@ export default function RolesPage() {
           <tbody className="divide-y divide-slate-100">
             {ALL_PERMISSIONS.map((permission) => (
               <tr key={permission}>
-                <th scope="row" className="p-2 text-start font-normal">
+                <th scope="row" className="p-3 text-start font-normal text-slate-700">
                   <span className="flex flex-col">
                     <code dir="ltr" className="text-xs text-slate-500">
                       {permission}
@@ -57,7 +58,7 @@ export default function RolesPage() {
                   ) : null}
                 </th>
                 {Object.values(SystemRole).map((role) => (
-                  <td key={role} className="p-2 text-center">
+                  <td key={role} className="p-3 text-center">
                     {DEFAULT_ROLE_PERMISSIONS[role].includes(permission) ? '✓' : '—'}
                   </td>
                 ))}

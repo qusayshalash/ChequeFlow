@@ -69,7 +69,7 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
   ];
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="mx-auto flex max-w-[1180px] flex-col gap-5">
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-semibold text-slate-900" dir="ltr">
           {data.chequeNumber}

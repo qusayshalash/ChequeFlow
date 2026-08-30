@@ -6,6 +6,7 @@ import { ChequeStatus } from '@cheque-flow/shared-types';
 import { Card, ErrorState, LoadingState } from '@cheque-flow/ui';
 
 import { ChequeTable } from '@/components/cheque-table';
+import { PageHeader } from '@/components/page-header';
 import { useApi, useTranslator } from '@/components/providers';
 
 export default function ReviewQueuePage() {
@@ -19,8 +20,8 @@ export default function ReviewQueuePage() {
   });
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold text-slate-900">{t('nav.review')}</h1>
+    <div className="mx-auto flex max-w-[1180px] flex-col gap-5">
+      <PageHeader title={t('nav.review')} />
       <Card className="bg-amber-50 text-amber-900">{t('ocr.suggestionNotice')}</Card>
       {query.isPending ? <LoadingState label={t('common.loading')} /> : null}
       {query.isError ? (

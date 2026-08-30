@@ -9,6 +9,7 @@ import { ChequeDirection } from '@cheque-flow/shared-types';
 import { createChequeSchema, type CreateChequeInput } from '@cheque-flow/validation';
 import { Button, Card, ErrorState, Field, SuccessBanner, inputClassName } from '@cheque-flow/ui';
 
+import { PageHeader } from '@/components/page-header';
 import { useApi, useTranslator } from '@/components/providers';
 
 interface FormState {
@@ -112,7 +113,7 @@ export default function NewChequePage() {
 
   return (
     <div className="flex max-w-3xl flex-col gap-6">
-      <h1 className="text-2xl font-semibold text-slate-900">{t('cheque.newTitle')}</h1>
+      <PageHeader title={t('cheque.newTitle')} />
 
       {duplicateWarning ? (
         <ErrorState

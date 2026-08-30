@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { Card, ErrorState, LoadingState, StatCard } from '@cheque-flow/ui';
 
+import { PageHeader } from '@/components/page-header';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { money } from '@/lib/format';
 
@@ -28,8 +29,8 @@ export default function ReportsPage() {
   });
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-2xl font-semibold text-slate-900">{t('reports.title')}</h1>
+    <div className="mx-auto flex max-w-[1180px] flex-col gap-5">
+      <PageHeader title={t('reports.title')} />
 
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold text-slate-900">{t('reports.custody')}</h2>
@@ -57,18 +58,18 @@ export default function ReportsPage() {
             </div>
             <Card>
               <table className="w-full text-sm">
-                <thead className="text-slate-700">
+                <thead className="text-slate-500">
                   <tr>
-                    <th scope="col" className="p-2 text-start font-medium">
+                    <th scope="col" className="p-3 text-start text-xs font-medium">
                       {t('cheque.currentLocation')}
                     </th>
-                    <th scope="col" className="p-2 text-start font-medium">
+                    <th scope="col" className="p-3 text-start text-xs font-medium">
                       {t('cheque.currentHolder')}
                     </th>
-                    <th scope="col" className="p-2 text-start font-medium">
+                    <th scope="col" className="p-3 text-start text-xs font-medium">
                       {t('common.count')}
                     </th>
-                    <th scope="col" className="p-2 text-start font-medium">
+                    <th scope="col" className="p-3 text-start text-xs font-medium">
                       {t('common.total')}
                     </th>
                   </tr>
@@ -76,10 +77,14 @@ export default function ReportsPage() {
                 <tbody className="divide-y divide-slate-100">
                   {custody.data.entries.map((entry, index) => (
                     <tr key={`${entry.locationName ?? ''}-${entry.holderName ?? ''}-${index}`}>
-                      <td className="p-2">{entry.locationName ?? t('common.unknown')}</td>
-                      <td className="p-2">{entry.holderName ?? t('common.unknown')}</td>
-                      <td className="p-2 tabular-nums">{entry.count}</td>
-                      <td className="p-2 tabular-nums">
+                      <td className="p-3 text-slate-700">
+                        {entry.locationName ?? t('common.unknown')}
+                      </td>
+                      <td className="p-3 text-slate-700">
+                        {entry.holderName ?? t('common.unknown')}
+                      </td>
+                      <td className="p-3 tabular-nums text-slate-700">{entry.count}</td>
+                      <td className="p-3 tabular-nums text-slate-700">
                         {entry.byCurrency
                           .map((bucket) => money(locale, bucket.total, bucket.currency))
                           .join(' · ')}
@@ -99,18 +104,18 @@ export default function ReportsPage() {
         {cashFlow.data ? (
           <Card>
             <table className="w-full text-sm">
-              <thead className="text-slate-700">
+              <thead className="text-slate-500">
                 <tr>
-                  <th scope="col" className="p-2 text-start font-medium">
+                  <th scope="col" className="p-3 text-start text-xs font-medium">
                     {t('common.date')}
                   </th>
-                  <th scope="col" className="p-2 text-start font-medium">
+                  <th scope="col" className="p-3 text-start text-xs font-medium">
                     {t('reports.expectedInflow')}
                   </th>
-                  <th scope="col" className="p-2 text-start font-medium">
+                  <th scope="col" className="p-3 text-start text-xs font-medium">
                     {t('reports.expectedOutflow')}
                   </th>
-                  <th scope="col" className="p-2 text-start font-medium">
+                  <th scope="col" className="p-3 text-start text-xs font-medium">
                     {t('reports.net')}
                   </th>
                 </tr>
@@ -119,16 +124,16 @@ export default function ReportsPage() {
                 {cashFlow.data.periods.flatMap((period) =>
                   period.byCurrency.map((entry) => (
                     <tr key={`${period.period}-${entry.currency}`}>
-                      <td className="p-2 tabular-nums" dir="ltr">
+                      <td className="p-3 tabular-nums text-slate-700" dir="ltr">
                         {period.period} · {entry.currency}
                       </td>
-                      <td className="p-2 tabular-nums">
+                      <td className="p-3 tabular-nums text-slate-700">
                         {money(locale, entry.inflow, entry.currency)}
                       </td>
-                      <td className="p-2 tabular-nums">
+                      <td className="p-3 tabular-nums text-slate-700">
                         {money(locale, entry.outflow, entry.currency)}
                       </td>
-                      <td className="p-2 tabular-nums">
+                      <td className="p-3 tabular-nums text-slate-700">
                         {money(locale, entry.net, entry.currency)}
                       </td>
                     </tr>
