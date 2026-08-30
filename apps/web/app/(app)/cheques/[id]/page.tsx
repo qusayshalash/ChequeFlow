@@ -4,16 +4,26 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { use } from 'react';
 
-import { ChequeStatus, Permission, type ChequeDetailView } from '@cheque-flow/shared-types';
-import { Card, ErrorState, LoadingState, StatusBadge } from '@cheque-flow/ui';
+import {
+  ChequeStatus,
+  Permission,
+  utcToday,
+  type ChequeDetailView,
+} from '@cheque-flow/shared-types';
+import { ErrorState, LoadingState } from '@cheque-flow/ui';
 
 import { ChequeActionsPanel } from '@/components/cheque-actions';
+import { ChequeHero } from '@/components/cheque-hero';
 import { ChequeImagesPanel } from '@/components/cheque-images';
 import { ChequeTimeline } from '@/components/cheque-timeline';
+import { CustodyStrip } from '@/components/custody-strip';
+import { FactGrid, type Fact } from '@/components/fact-grid';
+import { IconChevronEnd } from '@/components/icons';
 import { OcrReviewPanel } from '@/components/ocr-review';
+import { Panel } from '@/components/panel';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { usePermission } from '@/components/session';
-import { formatDate, money } from '@/lib/format';
+import { formatDate, formatDateTime, money } from '@/lib/format';
 
 export default function ChequeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -21,6 +31,8 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
   const t = useTranslator();
   const { locale } = useApp();
   const canViewImages = usePermission(Permission.CHEQUE_VIEW_IMAGE);
+
+  const today = utcToday();
 
   const cheque = useQuery<ChequeDetailView>({
     queryKey: ['cheque', id],
@@ -45,76 +57,141 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
   }
 
   const data = cheque.data;
-  const rows: Array<{ label: string; value: string }> = [
-    { label: t('cheque.direction'), value: t(`direction.${data.direction}`) },
-    { label: t('common.amount'), value: money(locale, data.amount, data.currency) },
-    { label: t('cheque.dueDate'), value: formatDate(locale, data.dueDate) },
+  const unknown = t('common.unknown');
+  const unreviewed =
+    data.status === ChequeStatus.DRAFT || data.status === ChequeStatus.PENDING_REVIEW;
+
+  const dates: Fact[] = [
+    { label: t('cheque.dueDate'), value: formatDate(locale, data.dueDate), ltr: true },
     {
       label: t('cheque.issueDate'),
-      value: data.issueDate ? formatDate(locale, data.issueDate) : t('common.unknown'),
+      value: data.issueDate ? formatDate(locale, data.issueDate) : unknown,
+      ltr: true,
     },
-    { label: t('cheque.bank'), value: data.bankName ?? t('common.unknown') },
-    { label: t('cheque.bankBranch'), value: data.bankBranchRaw ?? t('common.unknown') },
-    { label: t('cheque.accountNumber'), value: data.accountNumberMasked ?? t('common.unknown') },
-    { label: t('cheque.drawerName'), value: data.drawerName ?? t('common.unknown') },
-    { label: t('cheque.originalSource'), value: data.originalSourceName ?? t('common.unknown') },
-    { label: t('cheque.originalPayee'), value: data.originalPayeeName ?? t('common.unknown') },
     {
-      label: t('cheque.currentRecipient'),
-      value: data.currentRecipientName ?? t('common.unknown'),
+      label: t('cheque.receivedDate'),
+      value: data.receivedDate ? formatDate(locale, data.receivedDate) : unknown,
+      ltr: true,
     },
-    { label: t('cheque.currentLocation'), value: data.currentLocationName ?? t('common.unknown') },
-    { label: t('cheque.branch'), value: data.branchName ?? t('common.unknown') },
-    { label: t('cheque.referenceNumber'), value: data.referenceNumber ?? t('common.unknown') },
+    { label: t('common.createdAt'), value: formatDateTime(locale, data.createdAt), ltr: true },
+    { label: t('common.updatedAt'), value: formatDateTime(locale, data.updatedAt), ltr: true },
+    {
+      label: t('cheque.reviewedBy'),
+      value: data.reviewedAt ? formatDateTime(locale, data.reviewedAt) : t('cheque.notYet'),
+      ltr: true,
+    },
+  ];
+
+  const parties: Fact[] = [
+    { label: t('cheque.drawerName'), value: data.drawerName ?? unknown },
+    { label: t('cheque.originalPayee'), value: data.originalPayeeName ?? unknown },
+    { label: t('cheque.originalSource'), value: data.originalSourceName ?? unknown },
+    { label: t('cheque.currentRecipient'), value: data.currentRecipientName ?? unknown },
+    { label: t('cheque.currentLocation'), value: data.currentLocationName ?? unknown },
+    { label: t('cheque.branch'), value: data.branchName ?? unknown },
+  ];
+
+  const bank: Fact[] = [
+    { label: t('cheque.bank'), value: data.bankName ?? unknown },
+    { label: t('cheque.bankBranch'), value: data.bankBranchRaw ?? unknown },
+    // Always the masked form; the full number never leaves the server.
+    { label: t('cheque.accountNumber'), value: data.accountNumberMasked ?? unknown, ltr: true },
+    { label: t('cheque.referenceNumber'), value: data.referenceNumber ?? unknown, ltr: true },
+    { label: t('cheque.purpose'), value: data.purpose ?? unknown },
+    { label: t('cheque.currency'), value: data.currency, ltr: true },
   ];
 
   return (
-    <div className="mx-auto flex max-w-[1180px] flex-col gap-5">
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-semibold text-slate-900" dir="ltr">
-          {data.chequeNumber}
-        </h1>
-        <StatusBadge status={data.status} label={t(`status.${data.status}`)} />
+    <div className="mx-auto max-w-[1180px]">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <nav className="flex items-center gap-1.5 text-sm text-slate-500">
+          <Link href="/cheques" className="hover:text-teal-700">
+            {t('cheque.listTitle')}
+          </Link>
+          <IconChevronEnd width="14" height="14" className="text-slate-300" />
+          <span className="font-mono text-slate-700" dir="ltr">
+            {data.chequeNumber}
+          </span>
+        </nav>
+
         <Link
           href={`/cheques/${data.id}/timeline`}
-          className="ms-auto text-teal-800 underline-offset-2 hover:underline"
+          className="inline-flex items-center gap-1 text-sm font-semibold text-teal-700 hover:text-teal-900"
         >
-          {t('cheque.timeline')}
+          {t('cheque.openTimeline')}
+          <IconChevronEnd width="16" height="16" />
         </Link>
       </div>
 
-      <Card>
-        <h2 className="mb-4 text-lg font-semibold text-slate-900">{t('common.details')}</h2>
-        <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
-          {rows.map((row) => (
-            <div key={row.label} className="flex flex-col">
-              <dt className="text-sm text-slate-600">{row.label}</dt>
-              <dd className="text-base text-slate-900">{row.value}</dd>
-            </div>
-          ))}
-        </dl>
-        {data.notes ? <p className="mt-4 text-sm text-slate-700">{data.notes}</p> : null}
-      </Card>
-
-      {data.status === ChequeStatus.DRAFT || data.status === ChequeStatus.PENDING_REVIEW ? (
-        <OcrReviewPanel cheque={data} />
+      {unreviewed ? (
+        <p className="mb-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          {t('cheque.awaitingReview')}
+        </p>
       ) : null}
 
-      <ChequeActionsPanel
-        cheque={data}
-        contacts={(contacts.data?.data ?? []).map((contact) => ({
-          id: contact.id,
-          name: contact.name,
-        }))}
-        locations={(locations.data ?? []).map((location) => ({
-          id: location.id,
-          name: location.name,
-        }))}
-      />
+      <div className="grid gap-5 lg:grid-cols-[1.65fr_1fr] lg:items-start">
+        {/* Main column: what this cheque is and where it has been. */}
+        <div className="flex min-w-0 flex-col gap-5">
+          <ChequeHero cheque={data} today={today} />
+          <CustodyStrip cheque={data} />
 
-      <ChequeImagesPanel chequeId={data.id} canViewImages={canViewImages} />
+          {/* Only when it happened, and then near the top: a bank's refusal is
+              the most consequential thing on the page. */}
+          {data.bounceReason ? (
+            <section className="rounded-2xl border border-red-100 bg-red-50 p-5">
+              <h2 className="text-base font-bold text-red-700">{t('cheque.bounceGroup')}</h2>
+              <p className="mt-2 text-sm text-red-700">{data.bounceReason}</p>
+              {data.bounceFee ? (
+                <p className="mt-1 text-sm font-semibold text-red-700 tabular-nums">
+                  {t('cheque.bounceFee')}: {money(locale, data.bounceFee, data.currency)}
+                </p>
+              ) : null}
+            </section>
+          ) : null}
 
-      <ChequeTimeline chequeId={data.id} />
+          <Panel title={t('cheque.dates')}>
+            <FactGrid facts={dates} />
+          </Panel>
+
+          <Panel title={t('cheque.parties')}>
+            <FactGrid facts={parties} />
+          </Panel>
+
+          <Panel title={t('cheque.bank')}>
+            <FactGrid facts={bank} />
+          </Panel>
+
+          {data.notes ? (
+            <Panel title={t('cheque.notesGroup')}>
+              <p className="text-sm leading-relaxed whitespace-pre-line text-slate-700">
+                {data.notes}
+              </p>
+            </Panel>
+          ) : null}
+
+          <ChequeTimeline chequeId={data.id} />
+        </div>
+
+        {/* Aside: the things you do, kept beside the facts rather than below
+            them, so acting never means scrolling past the whole record. */}
+        <div className="flex min-w-0 flex-col gap-5 lg:sticky lg:top-5">
+          {unreviewed ? <OcrReviewPanel cheque={data} /> : null}
+
+          <ChequeActionsPanel
+            cheque={data}
+            contacts={(contacts.data?.data ?? []).map((contact) => ({
+              id: contact.id,
+              name: contact.name,
+            }))}
+            locations={(locations.data ?? []).map((location) => ({
+              id: location.id,
+              name: location.name,
+            }))}
+          />
+
+          <ChequeImagesPanel chequeId={data.id} canViewImages={canViewImages} />
+        </div>
+      </div>
     </div>
   );
 }

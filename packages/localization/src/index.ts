@@ -265,7 +265,11 @@ export function formatDueDistance(locale: Locale, isoDate: string, today: string
   if (days === 0) return translate(locale, 'due.today');
   if (days === 1) return translate(locale, 'due.tomorrow');
   if (days === -1) return translate(locale, 'due.yesterday');
-  if (days > 1) return translate(locale, 'due.inDays', { days });
+  // Arabic has a dual: "خلال ٢ يوم" is wrong where "بعد يومين" is right, and
+  // the same applies to two days late.
+  if (days === 2) return translate(locale, 'due.twoDays');
+  if (days === -2) return translate(locale, 'due.twoDaysLate');
+  if (days > 2) return translate(locale, 'due.inDays', { days });
   return translate(locale, 'due.lateDays', { days: Math.abs(days) });
 }
 

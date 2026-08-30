@@ -164,4 +164,12 @@ describe('daysUntil / formatDueDistance', () => {
     expect(formatDueDistance('en', '2026-09-03', '2026-08-29')).toContain('5');
     expect(formatDueDistance('en', '2026-08-24', '2026-08-29')).toContain('5');
   });
+
+  it('uses the Arabic dual for two days', () => {
+    // "خلال ٢ يوم" is wrong where "بعد يومين" is right, in both directions.
+    expect(formatDueDistance('ar', '2026-08-31', '2026-08-29')).toBe('بعد يومين');
+    expect(formatDueDistance('ar', '2026-08-27', '2026-08-29')).toBe('متأخر يومين');
+    // Three and beyond go back to the counted form.
+    expect(formatDueDistance('ar', '2026-09-01', '2026-08-29')).toContain('3');
+  });
 });
