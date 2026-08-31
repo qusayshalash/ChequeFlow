@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import { loginSchema, passwordSchema } from './auth.js';
-import { createChequeSchema, listChequesQuerySchema, updateChequeSchema } from './cheques.js';
+import {
+  createChequeBatchSchema,
+  createChequeSchema,
+  listChequesQuerySchema,
+  updateChequeSchema,
+} from './cheques.js';
 import { createContactSchema } from './contacts.js';
 import { isoDateSchema, moneySchema, paginationSchema } from './primitives.js';
 
@@ -131,5 +136,84 @@ describe('createContactSchema', () => {
 
   it('rejects an unknown contact type', () => {
     expect(createContactSchema.safeParse({ type: 'GHOST', name: 'x' }).success).toBe(false);
+  });
+});
+
+describe('createChequeBatchSchema', () => {
+  const base = {
+    direction: 'INCOMING',
+    currency: 'USD',
+    issueDate: '2026-01-01',
+    drawerName: 'شركة النور',
+  };
+
+  const row = (chequeNumber: string, dueDate: string, amount = '500.00') => ({
+    chequeNumber,
+    amount,
+    dueDate,
+  });
+
+  it('accepts a run of serial cheques', () => {
+    const parsed = createChequeBatchSchema.parse({
+      ...base,
+      cheques: [row('000101', '2026-01-10'), row('000102', '2026-02-10')],
+    });
+
+    expect(parsed.cheques).toHaveLength(2);
+    expect(parsed.cheques[1]?.chequeNumber).toBe('000102');
+  });
+
+  it('rejects two rows carrying the same number', () => {
+    const result = createChequeBatchSchema.safeParse({
+      ...base,
+      cheques: [row('000101', '2026-01-10'), row('000101', '2026-02-10')],
+    });
+
+    expect(result.success).toBe(false);
+    // The second row is the one flagged, so the form can point at it.
+    expect(result.error?.issues[0]?.path).toEqual(['cheques', 1, 'chequeNumber']);
+    expect(result.error?.issues[0]?.message).toBe('validation.cheque.duplicateNumberInBatch');
+  });
+
+  it('treats numbers differing only in case as the same number', () => {
+    const result = createChequeBatchSchema.safeParse({
+      ...base,
+      cheques: [row('a-1', '2026-01-10'), row('A-1', '2026-02-10')],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('flags a row due before the shared issue date, by index', () => {
+    const result = createChequeBatchSchema.safeParse({
+      ...base,
+      cheques: [row('1', '2026-01-10'), row('2', '2025-12-10')],
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.path).toEqual(['cheques', 1, 'dueDate']);
+  });
+
+  it('rejects an empty batch', () => {
+    expect(createChequeBatchSchema.safeParse({ ...base, cheques: [] }).success).toBe(false);
+  });
+
+  it('caps the batch size', () => {
+    const cheques = Array.from({ length: 61 }, (_, index) => row(String(index + 1), '2026-01-10'));
+    expect(createChequeBatchSchema.safeParse({ ...base, cheques }).success).toBe(false);
+  });
+
+  it('has no top-level cheque fields left over', () => {
+    // The per-cheque fields must live only in the rows; a stray top-level
+    // `amount` would be silently ignored and the batch saved with the wrong one.
+    const parsed = createChequeBatchSchema.parse({
+      ...base,
+      amount: '999.99',
+      chequeNumber: 'IGNORED',
+      cheques: [row('1', '2026-01-10')],
+    }) as Record<string, unknown>;
+
+    expect(parsed.amount).toBeUndefined();
+    expect(parsed.chequeNumber).toBeUndefined();
   });
 });

@@ -12,6 +12,10 @@ import { Body, Heading } from '@/components/ui';
  * Photographing is listed first because it is the common case, but manual
  * entry is a peer, not a fallback: plenty of cheques are recorded from a
  * statement or over the phone, with no cheque in hand to photograph.
+ *
+ * The batch entry sits beside them because a customer settling on credit hands
+ * over a whole cheque book at once, and doing that one form at a time is the
+ * slowest path through the app.
  */
 export default function AddScreen() {
   const t = useTranslator();
@@ -32,6 +36,12 @@ export default function AddScreen() {
         label={t('cheque.addManually')}
         hint={t('cheque.newTitle')}
         onPress={() => router.push('/(app)/cheques/new')}
+      />
+      <Choice
+        glyph="🧾"
+        label={t('cheque.batchMode')}
+        hint={t('cheque.batchHint')}
+        onPress={() => router.push('/(app)/cheques/batch')}
       />
       <Choice
         glyph="👤"

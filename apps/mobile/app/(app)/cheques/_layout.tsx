@@ -10,6 +10,7 @@ export default function ChequesLayout() {
     <Stack screenOptions={stackScreenOptions()}>
       <Stack.Screen name="index" options={{ title: t('cheque.listTitle') }} />
       <Stack.Screen name="new" options={{ title: t('cheque.newTitle') }} />
+      <Stack.Screen name="batch" options={{ title: t('cheque.batchTitle') }} />
       <Stack.Screen name="[id]/index" options={{ title: t('cheque.title') }} />
       <Stack.Screen name="[id]/edit" options={{ title: t('cheque.editTitle') }} />
       <Stack.Screen name="[id]/action" options={{ title: t('common.actions') }} />

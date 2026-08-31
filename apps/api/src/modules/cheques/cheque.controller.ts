@@ -33,6 +33,7 @@ import {
   bounceChequeSchema,
   cancelChequeSchema,
   clearChequeSchema,
+  createChequeBatchSchema,
   createChequeSchema,
   depositChequeSchema,
   handoverChequeSchema,
@@ -48,6 +49,7 @@ import {
   type BounceChequeInput,
   type CancelChequeInput,
   type ClearChequeInput,
+  type CreateChequeBatchInput,
   type CreateChequeInput,
   type CreateReminderInput,
   type DepositChequeInput,
@@ -131,6 +133,34 @@ export class ChequeController {
     @Req() request: Request,
   ) {
     return this.cheques.create(
+      user,
+      body,
+      { allowDuplicate: allowDuplicate === 'true' },
+      AuditService.contextFromRequest(request),
+    );
+  }
+
+  /**
+   * A literal segment declared ahead of the `:id` routes below, so that
+   * `/cheques/batch` is never matched as a cheque whose id is "batch".
+   */
+  @Post('batch')
+  @RequirePermissions(Permission.CHEQUE_CREATE)
+  @ApiOperation({ summary: 'Create a run of serial cheques in one transaction' })
+  @ApiQuery({
+    name: 'allowDuplicate',
+    required: false,
+    description: 'Proceed even when some rows match cheques already on file',
+  })
+  @ApiResponse({ status: 201, description: 'All cheques created, with any duplicate matches' })
+  @ApiResponse({ status: 409, description: 'DUPLICATE_CHEQUE — nothing was created' })
+  createBatch(
+    @CurrentUser() user: RequestUser,
+    @Body(zodBody(createChequeBatchSchema)) body: CreateChequeBatchInput,
+    @Query('allowDuplicate') allowDuplicate: string | undefined,
+    @Req() request: Request,
+  ) {
+    return this.cheques.createBatch(
       user,
       body,
       { allowDuplicate: allowDuplicate === 'true' },

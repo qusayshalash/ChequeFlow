@@ -5,6 +5,7 @@ import {
   ChequeImageSide,
   ChequeStatus,
   CHEQUE_EXTRACTED_FIELD_NAMES,
+  MAX_SERIAL_CHEQUES,
 } from '@cheque-flow/shared-types';
 
 import {
@@ -31,42 +32,105 @@ export const chequeImageSideSchema = z.enum(
 );
 
 /**
- * Cheque creation payload.
+ * Every field a cheque can be created with.
  *
  * `organizationId` is intentionally absent: it is always taken from the
  * authenticated session and never accepted from a client.
+ *
+ * Kept as a plain object so the batch schema below can reuse it — a
+ * `.refine()`d schema cannot be `.omit()`ed, and copying twenty field
+ * definitions is how the two payloads would quietly drift apart.
  */
-export const createChequeSchema = z
-  .object({
-    direction: chequeDirectionSchema,
-    chequeNumber: chequeNumberSchema,
-    amount: moneySchema,
-    /** The amount as written in letters; in a dispute it prevails over digits. */
-    amountInWords: optionalText(255),
-    currency: currencySchema,
-    issueDate: isoDateSchema.nullish().transform((v) => v ?? null),
-    dueDate: isoDateSchema,
-    receivedDate: isoDateSchema.nullish().transform((v) => v ?? null),
-    branchId: uuidSchema.nullish().transform((v) => v ?? null),
-    bankId: uuidSchema.nullish().transform((v) => v ?? null),
-    bankNameRaw: optionalText(255),
-    bankBranchRaw: optionalText(255),
-    /** Plain account number; encrypted at rest by the API before persisting. */
-    accountNumber: optionalText(64),
-    drawerName: optionalText(255),
-    /** The party the cheque was originally received from. */
-    originalSourceId: uuidSchema.nullish().transform((v) => v ?? null),
-    originalPayeeName: optionalText(255),
-    currentLocationId: uuidSchema.nullish().transform((v) => v ?? null),
-    purpose: optionalText(255),
-    referenceNumber: optionalText(64),
-    notes: optionalText(2000),
-  })
-  .refine((data) => data.issueDate === null || data.dueDate >= data.issueDate, {
-    message: 'validation.cheque.dueBeforeIssue',
-    path: ['dueDate'],
-  });
+const chequeCoreObject = z.object({
+  direction: chequeDirectionSchema,
+  chequeNumber: chequeNumberSchema,
+  amount: moneySchema,
+  /** The amount as written in letters; in a dispute it prevails over digits. */
+  amountInWords: optionalText(255),
+  currency: currencySchema,
+  issueDate: isoDateSchema.nullish().transform((v) => v ?? null),
+  dueDate: isoDateSchema,
+  receivedDate: isoDateSchema.nullish().transform((v) => v ?? null),
+  branchId: uuidSchema.nullish().transform((v) => v ?? null),
+  bankId: uuidSchema.nullish().transform((v) => v ?? null),
+  bankNameRaw: optionalText(255),
+  bankBranchRaw: optionalText(255),
+  /** Plain account number; encrypted at rest by the API before persisting. */
+  accountNumber: optionalText(64),
+  drawerName: optionalText(255),
+  /** The party the cheque was originally received from. */
+  originalSourceId: uuidSchema.nullish().transform((v) => v ?? null),
+  originalPayeeName: optionalText(255),
+  currentLocationId: uuidSchema.nullish().transform((v) => v ?? null),
+  purpose: optionalText(255),
+  referenceNumber: optionalText(64),
+  notes: optionalText(2000),
+});
+
+/** A single cheque, entered on its own. */
+export const createChequeSchema = chequeCoreObject.refine(
+  (data) => data.issueDate === null || data.dueDate >= data.issueDate,
+  { message: 'validation.cheque.dueBeforeIssue', path: ['dueDate'] },
+);
 export type CreateChequeInput = z.infer<typeof createChequeSchema>;
+
+/**
+ * One cheque inside a serial batch — only what differs from row to row.
+ *
+ * Everything else (bank, drawer, currency, direction, custody) is written once
+ * at the top of the batch, because a book of cheques torn from the same
+ * chequebook shares all of it.
+ */
+export const serialChequeRowSchema = z.object({
+  chequeNumber: chequeNumberSchema,
+  amount: moneySchema,
+  amountInWords: optionalText(255),
+  dueDate: isoDateSchema,
+});
+export type SerialChequeRow = z.infer<typeof serialChequeRowSchema>;
+
+/**
+ * Creating a run of serial cheques in one request.
+ *
+ * The batch is all-or-nothing on the server. Half a cheque book recorded is
+ * worse than none: the missing half is invisible, while a failed batch is
+ * obvious and can simply be retried.
+ */
+export const createChequeBatchSchema = chequeCoreObject
+  .omit({ chequeNumber: true, amount: true, amountInWords: true, dueDate: true })
+  .extend({
+    cheques: z.array(serialChequeRowSchema).min(1).max(MAX_SERIAL_CHEQUES),
+  })
+  .superRefine((data, ctx) => {
+    // Two rows carrying the same number are always a typo, and the database
+    // would happily store both.
+    const seen = new Map<string, number>();
+    data.cheques.forEach((row, index) => {
+      const key = row.chequeNumber.toUpperCase();
+      const first = seen.get(key);
+      if (first === undefined) {
+        seen.set(key, index);
+        return;
+      }
+      ctx.addIssue({
+        code: 'custom',
+        message: 'validation.cheque.duplicateNumberInBatch',
+        path: ['cheques', index, 'chequeNumber'],
+      });
+    });
+
+    if (data.issueDate === null) return;
+    data.cheques.forEach((row, index) => {
+      if (row.dueDate < data.issueDate!) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'validation.cheque.dueBeforeIssue',
+          path: ['cheques', index, 'dueDate'],
+        });
+      }
+    });
+  });
+export type CreateChequeBatchInput = z.infer<typeof createChequeBatchSchema>;
 
 /**
  * Partial update of cheque data (never of `status` — status only ever changes

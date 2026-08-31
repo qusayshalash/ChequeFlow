@@ -13,6 +13,7 @@ import {
 } from '@cheque-flow/shared-types';
 import { Prisma, moneyToString, toMoney } from '@cheque-flow/database';
 import type {
+  CreateChequeBatchInput,
   CreateChequeInput,
   ListChequesQuery,
   UpdateChequeInput,
@@ -39,6 +40,19 @@ export function toDateOnly(value: string): Date {
 export interface CreateChequeResult {
   cheque: ChequeDetailView;
   duplicates: DuplicateChequeMatch[];
+}
+
+/** A row of a batch that matched a cheque already on file. */
+export interface BatchDuplicate {
+  /** Position in the submitted batch, so the form can point at the right row. */
+  index: number;
+  chequeNumber: string;
+  matches: DuplicateChequeMatch[];
+}
+
+export interface CreateChequeBatchResult {
+  cheques: ChequeSummaryView[];
+  duplicates: BatchDuplicate[];
 }
 
 @Injectable()
@@ -147,6 +161,167 @@ export class ChequeService {
       cheque: toChequeDetail(created, user.permissions, this.encryption),
       duplicates,
     };
+  }
+
+  /**
+   * Creates a run of serial cheques in one transaction.
+   *
+   * A customer settling on credit hands over a whole cheque book at once —
+   * consecutive numbers, one due date a month apart, the same bank and drawer
+   * throughout. Entering those one form at a time is twenty chances to mistype
+   * the bank.
+   *
+   * The batch is all-or-nothing. Half a book recorded is worse than none: the
+   * missing half is invisible until a cheque nobody knew about bounces, while a
+   * failed batch is obvious and can simply be sent again.
+   */
+  async createBatch(
+    user: RequestUser,
+    input: CreateChequeBatchInput,
+    options: { allowDuplicate?: boolean } = {},
+    auditMeta: Partial<AuditContext> = {},
+  ): Promise<CreateChequeBatchResult> {
+    // Every row is checked before anything is written, so the user is told
+    // about all the duplicates at once instead of discovering them one retry
+    // at a time.
+    const perRow = await Promise.all(
+      input.cheques.map((row) =>
+        this.duplicates.findByBusinessKey({
+          organizationId: user.organizationId,
+          bankId: input.bankId,
+          chequeNumber: row.chequeNumber,
+          amount: row.amount,
+          dueDate: row.dueDate,
+        }),
+      ),
+    );
+
+    const duplicates: BatchDuplicate[] = perRow.flatMap((matches, index) =>
+      matches.length === 0
+        ? []
+        : [{ index, chequeNumber: input.cheques[index]?.chequeNumber ?? '', matches }],
+    );
+
+    if (duplicates.length > 0 && options.allowDuplicate !== true) {
+      throw new AppError(ApiErrorCode.DUPLICATE_CHEQUE, 'Duplicate cheques detected in batch', {
+        // `details` carries flat scalars only, so the offending rows travel as
+        // comma-separated lists rather than as objects. The client splits them
+        // to highlight the rows; `duplicateRows` is the authoritative one.
+        details: {
+          reason: 'BUSINESS_KEY',
+          duplicateRows: duplicates.map((entry) => entry.index).join(','),
+          duplicateNumbers: duplicates.map((entry) => entry.chequeNumber).join(','),
+          duplicateCount: duplicates.length,
+        },
+      });
+    }
+
+    // The shared references are checked once — they are identical for the whole
+    // batch by construction.
+    await this.assertTenantReferences(user.organizationId, {
+      branchId: input.branchId,
+      contactIds: [input.originalSourceId],
+      locationId: input.currentLocationId,
+      bankId: input.bankId,
+    });
+
+    const accountNumberEncrypted = this.encryption.encryptNullable(input.accountNumber);
+    const today = utcToday();
+
+    const created = await this.prisma.db.$transaction(async (tx) => {
+      const rows: Array<Awaited<ReturnType<typeof this.createOneWithin>>> = [];
+      for (const row of input.cheques) {
+        rows.push(
+          await this.createOneWithin(tx, user, input, row, accountNumberEncrypted, auditMeta),
+        );
+      }
+      return rows;
+    });
+
+    return {
+      cheques: created.map((cheque) => toChequeSummary(cheque, today)),
+      duplicates,
+    };
+  }
+
+  /**
+   * Writes one cheque of a batch, with its CREATED event and audit entry.
+   *
+   * Split out rather than inlined so the loop above reads as "one row, then the
+   * next" — and so the event and the audit entry can never be forgotten for a
+   * row, which is exactly the kind of omission a loop body invites.
+   */
+  private async createOneWithin(
+    tx: Prisma.TransactionClient,
+    user: RequestUser,
+    shared: CreateChequeBatchInput,
+    row: CreateChequeBatchInput['cheques'][number],
+    accountNumberEncrypted: string | null,
+    auditMeta: Partial<AuditContext>,
+  ) {
+    const cheque = await tx.cheque.create({
+      data: {
+        organizationId: user.organizationId,
+        branchId: shared.branchId ?? user.branchId,
+        direction: shared.direction,
+        chequeNumber: row.chequeNumber,
+        amount: toMoney(row.amount),
+        amountInWords: row.amountInWords,
+        currency: shared.currency,
+        issueDate: shared.issueDate ? toDateOnly(shared.issueDate) : null,
+        dueDate: toDateOnly(row.dueDate),
+        receivedDate: shared.receivedDate ? toDateOnly(shared.receivedDate) : null,
+        bankId: shared.bankId,
+        bankNameRaw: shared.bankNameRaw,
+        bankBranchRaw: shared.bankBranchRaw,
+        accountNumberEncrypted,
+        drawerName: shared.drawerName,
+        originalSourceId: shared.originalSourceId,
+        originalPayeeName: shared.originalPayeeName,
+        currentLocationId: shared.currentLocationId,
+        currentHolderId: user.id,
+        purpose: shared.purpose,
+        referenceNumber: shared.referenceNumber,
+        notes: shared.notes,
+        status: ChequeStatus.DRAFT,
+        createdBy: user.id,
+      },
+      select: chequeSummarySelect,
+    });
+
+    await tx.chequeEvent.create({
+      data: {
+        chequeId: cheque.id,
+        eventType: ChequeEventType.CREATED,
+        toStatus: ChequeStatus.DRAFT,
+        toLocationId: shared.currentLocationId,
+        toUserId: user.id,
+        performedBy: user.id,
+        notes: null,
+      },
+    });
+
+    await this.audit.recordWithin(tx, {
+      organizationId: user.organizationId,
+      userId: user.id,
+      action: AuditAction.CHEQUE_CREATED,
+      entityType: 'cheque',
+      entityId: cheque.id,
+      after: {
+        chequeNumber: cheque.chequeNumber,
+        amount: moneyToString(cheque.amount),
+        currency: cheque.currency,
+        dueDate: cheque.dueDate.toISOString().slice(0, 10),
+        direction: cheque.direction,
+        // Marks the row as part of a book, which is the difference between one
+        // cheque and one of twenty when reading the log back.
+        batchSize: shared.cheques.length,
+      },
+      ipAddress: auditMeta.ipAddress ?? null,
+      deviceInfo: auditMeta.deviceInfo ?? null,
+    });
+
+    return cheque;
   }
 
   async findById(user: RequestUser, chequeId: string): Promise<ChequeDetailView> {

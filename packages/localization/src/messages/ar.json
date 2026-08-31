@@ -68,6 +68,26 @@
     "backImage": "الوجه الخلفي",
     "bank": "البنك",
     "bankBranch": "فرع البنك",
+    "batchAddRow": "إضافة شيك",
+    "batchAtLeastOne": "أضف شيكًا واحدًا على الأقل",
+    "batchAutoHint": "الرقم والتاريخ يُملآن تلقائيًا — أدخل المبلغ فقط",
+    "batchCopyRow": "تكرار الصف",
+    "batchCount": "عدد الشيكات",
+    "batchDuplicateRows": "صفوف تطابق شيكات مسجلة مسبقًا",
+    "batchFillAction": "توليد الصفوف",
+    "batchFillCount": "أضف دفعة",
+    "batchHint": "البيانات المشتركة تُكتب مرة واحدة، ثم صفّ لكل شيك",
+    "batchLimit": "أقصى عدد في الدفعة الواحدة ٦٠ شيكًا",
+    "batchMode": "دفعة شيكات",
+    "batchMonthStep": "الفاصل بين الاستحقاقات",
+    "batchMonthStepHint": "بالأشهر — الافتراضي شهر واحد",
+    "batchNothingSaved": "لم يُحفظ أي شيك — صحّح الصفوف المميّزة ثم أعد الحفظ",
+    "batchRemoveRow": "حذف الصف",
+    "batchRows": "الشيكات",
+    "batchShared": "بيانات مشتركة لكل الشيكات",
+    "batchSuccess": "تم حفظ الدفعة",
+    "batchTitle": "دفعة شيكات متسلسلة",
+    "batchTotal": "إجمالي الدفعة",
     "bounceFee": "مصاريف الإرجاع",
     "bounceGroup": "تفاصيل الإرجاع",
     "bounceReason": "سبب الإرجاع",
@@ -120,6 +140,7 @@
     "receivedFrom": "استُلم من",
     "referenceNumber": "الرقم المرجعي",
     "reviewedBy": "روجع بواسطة",
+    "singleMode": "شيك واحد",
     "sortAmount": "المبلغ",
     "sortCreatedAt": "تاريخ الإضافة",
     "sortDueDate": "تاريخ الاستحقاق",
@@ -504,7 +525,8 @@
   },
   "validation": {
     "cheque": {
-      "dueBeforeIssue": "تاريخ الاستحقاق قبل تاريخ الإصدار"
+      "dueBeforeIssue": "تاريخ الاستحقاق قبل تاريخ الإصدار",
+      "duplicateNumberInBatch": "رقم الشيك مكرر داخل الدفعة"
     },
     "chequeNumber": {
       "invalid": "رقم شيك غير صحيح"

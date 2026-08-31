@@ -18,6 +18,7 @@ import type {
   BounceChequeInput,
   CancelChequeInput,
   ClearChequeInput,
+  CreateChequeBatchInput,
   CreateChequeInput,
   CreateContactInput,
   CreateReminderInput,
@@ -95,6 +96,19 @@ export interface ReminderRow {
     status: string;
     direction: string;
   };
+}
+
+/** One row of a serial batch that matched a cheque already on file. */
+export interface BatchDuplicateRow {
+  /** Position in the submitted batch, so the form can point at the right row. */
+  index: number;
+  chequeNumber: string;
+  matches: DuplicateChequeMatch[];
+}
+
+export interface CreateChequeBatchResponse {
+  cheques: ChequeSummaryView[];
+  duplicates: BatchDuplicateRow[];
 }
 
 export interface OcrSuggestionResponse {
@@ -216,6 +230,20 @@ export class ChequeFlowApiClient {
       '/cheques',
       { method: 'POST', body: input, query: { allowDuplicate } },
     );
+  }
+
+  /**
+   * Creates a run of serial cheques in one request.
+   *
+   * All or nothing: on a 409 the server has written nothing, so the caller can
+   * fix the offending rows and send the same batch again.
+   */
+  createChequeBatch(input: CreateChequeBatchInput, allowDuplicate = false) {
+    return this.request<CreateChequeBatchResponse>('/cheques/batch', {
+      method: 'POST',
+      body: input,
+      query: { allowDuplicate },
+    });
   }
 
   updateCheque(id: string, input: UpdateChequeInput) {

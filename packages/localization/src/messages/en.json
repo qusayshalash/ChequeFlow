@@ -68,6 +68,26 @@
     "backImage": "Back",
     "bank": "Bank",
     "bankBranch": "Bank branch",
+    "batchAddRow": "Add cheque",
+    "batchAtLeastOne": "Add at least one cheque",
+    "batchAutoHint": "Number and date fill in automatically — just enter the amount",
+    "batchCopyRow": "Duplicate row",
+    "batchCount": "Cheques",
+    "batchDuplicateRows": "Rows matching cheques already on file",
+    "batchFillAction": "Generate rows",
+    "batchFillCount": "Add several",
+    "batchHint": "Shared details once, then one row per cheque",
+    "batchLimit": "At most 60 cheques in one batch",
+    "batchMode": "Batch",
+    "batchMonthStep": "Months between due dates",
+    "batchMonthStepHint": "Defaults to one month",
+    "batchNothingSaved": "Nothing was saved — fix the marked rows and save again",
+    "batchRemoveRow": "Remove row",
+    "batchRows": "Cheques",
+    "batchShared": "Shared by every cheque",
+    "batchSuccess": "Batch saved",
+    "batchTitle": "Serial cheque batch",
+    "batchTotal": "Batch total",
     "bounceFee": "Bounce fee",
     "bounceGroup": "Bounce details",
     "bounceReason": "Bounce reason",
@@ -120,6 +140,7 @@
     "receivedFrom": "Received from",
     "referenceNumber": "Reference",
     "reviewedBy": "Reviewed by",
+    "singleMode": "Single cheque",
     "sortAmount": "Amount",
     "sortCreatedAt": "Date added",
     "sortDueDate": "Due date",
@@ -504,7 +525,8 @@
   },
   "validation": {
     "cheque": {
-      "dueBeforeIssue": "Due date is before the issue date"
+      "dueBeforeIssue": "Due date is before the issue date",
+      "duplicateNumberInBatch": "Duplicate cheque number inside the batch"
     },
     "chequeNumber": {
       "invalid": "Invalid cheque number"

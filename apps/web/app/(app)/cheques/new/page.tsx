@@ -9,6 +9,7 @@ import { ChequeDirection } from '@cheque-flow/shared-types';
 import { createChequeSchema, type CreateChequeInput } from '@cheque-flow/validation';
 import { Button, ErrorState, Field, SuccessBanner, inputClassName } from '@cheque-flow/ui';
 
+import { ChequeBatchForm } from '@/components/cheque-batch-form';
 import { PageHeader } from '@/components/page-header';
 import { Panel } from '@/components/panel';
 import { useApi, useTranslator } from '@/components/providers';
@@ -48,6 +49,10 @@ export default function NewChequePage() {
   const t = useTranslator();
   const router = useRouter();
 
+  // Two ways in: one cheque, or a whole book of serial cheques. They share the
+  // page rather than living at two URLs, because staff decide which they are
+  // doing only once the customer has handed the cheques over.
+  const [mode, setMode] = useState<'single' | 'batch'>('single');
   const [form, setForm] = useState<FormState>(EMPTY);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -117,9 +122,38 @@ export default function NewChequePage() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5">
-      <PageHeader title={t('cheque.newTitle')} />
+      <PageHeader title={mode === 'batch' ? t('cheque.batchTitle') : t('cheque.newTitle')} />
 
-      {duplicateWarning ? (
+      <div
+        role="tablist"
+        aria-label={t('cheque.newTitle')}
+        className="inline-flex self-start rounded-xl border border-slate-200 bg-white p-1"
+      >
+        {(['single', 'batch'] as const).map((value) => (
+          <button
+            key={value}
+            type="button"
+            role="tab"
+            aria-selected={mode === value}
+            onClick={() => setMode(value)}
+            className={
+              mode === value
+                ? 'rounded-lg bg-slate-900 px-4 py-1.5 text-sm font-medium text-white'
+                : 'rounded-lg px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50'
+            }
+          >
+            {value === 'single' ? t('cheque.singleMode') : t('cheque.batchMode')}
+          </button>
+        ))}
+      </div>
+
+      {/* Both forms stay mounted: toggling back must not throw away twenty rows
+          somebody has already typed. */}
+      <div hidden={mode !== 'batch'}>
+        <ChequeBatchForm />
+      </div>
+
+      {duplicateWarning && mode === 'single' ? (
         <ErrorState
           title={`${t('cheque.duplicateWarning')} — ${t('cheque.duplicateBusinessKey')}`}
         />
@@ -127,7 +161,7 @@ export default function NewChequePage() {
 
       {mutation.isSuccess ? <SuccessBanner message={t('cheque.createSuccess')} /> : null}
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <form onSubmit={handleSubmit} hidden={mode === 'batch'} className="flex flex-col gap-5">
         <Panel title={t('cheque.identityGroup')}>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label={t('cheque.direction')} htmlFor="direction" required>

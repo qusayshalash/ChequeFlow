@@ -5,3 +5,4 @@ export * from './ocr.js';
 export * from './api-contracts.js';
 export * from './domain.js';
 export * from './outstanding.js';
+export * from './serial-cheques.js';
