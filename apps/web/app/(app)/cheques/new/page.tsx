@@ -20,6 +20,7 @@ interface FormState {
   amount: string;
   amountInWords: string;
   currency: string;
+  exchangeRate: string;
   issueDate: string;
   dueDate: string;
   bankId: string;
@@ -35,6 +36,7 @@ const EMPTY: FormState = {
   amount: '',
   amountInWords: '',
   currency: 'USD',
+  exchangeRate: '',
   issueDate: '',
   dueDate: '',
   bankId: '',
@@ -90,6 +92,7 @@ export default function NewChequePage() {
     const parsed = createChequeSchema.safeParse({
       ...form,
       amountInWords: form.amountInWords || null,
+      exchangeRate: form.exchangeRate || null,
       issueDate: form.issueDate || null,
       bankId: form.bankId || null,
       originalSourceId: form.originalSourceId || null,
@@ -235,6 +238,25 @@ export default function NewChequePage() {
                 className={inputClassName}
                 value={form.currency}
                 onChange={(event) => update('currency', event.target.value)}
+              />
+            </Field>
+
+            {/* Left blank for a cheque already in the books' currency: the
+                server converts those at 1 without being asked. */}
+            <Field
+              label={t('cheque.exchangeRate')}
+              htmlFor="exchangeRate"
+              hint={t('cheque.exchangeRateHint')}
+              error={fieldErrors.exchangeRate}
+            >
+              <input
+                id="exchangeRate"
+                dir="ltr"
+                inputMode="decimal"
+                placeholder="1"
+                className={inputClassName}
+                value={form.exchangeRate}
+                onChange={(event) => update('exchangeRate', event.target.value)}
               />
             </Field>
           </div>

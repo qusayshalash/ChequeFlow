@@ -5,7 +5,7 @@ import type {
   Permission,
 } from '@cheque-flow/shared-types';
 import { allowedActionsForUser, isChequeOverdue, utcToday } from '@cheque-flow/shared-types';
-import { moneyToString, type Prisma } from '@cheque-flow/database';
+import { moneyToString, rateToString, type Prisma } from '@cheque-flow/database';
 
 import { type FieldEncryptionService } from '../../common/crypto/field-encryption.service';
 
@@ -16,6 +16,8 @@ export const chequeSummarySelect = {
   chequeNumber: true,
   amount: true,
   currency: true,
+  exchangeRate: true,
+  amountBase: true,
   dueDate: true,
   status: true,
   drawerName: true,
@@ -71,6 +73,8 @@ export function toChequeSummary(row: ChequeSummaryRow, today: string): ChequeSum
     chequeNumber: row.chequeNumber,
     amount: moneyToString(row.amount),
     currency: row.currency,
+    exchangeRate: row.exchangeRate ? rateToString(row.exchangeRate) : null,
+    amountBase: row.amountBase ? moneyToString(row.amountBase) : null,
     dueDate,
     status: row.status,
     isOverdue: isChequeOverdue(row.status, dueDate, today),
@@ -118,6 +122,8 @@ export function toChequeDetail(
     notes: row.notes,
     bounceReason: row.bounceReason,
     bounceFee: row.bounceFee === null ? null : moneyToString(row.bounceFee),
+    exchangeRate: row.exchangeRate ? rateToString(row.exchangeRate) : null,
+    amountBase: row.amountBase ? moneyToString(row.amountBase) : null,
     ocrStatus: row.ocrStatus,
     ocrOverallConfidence:
       row.ocrOverallConfidence === null ? null : Number(row.ocrOverallConfidence),

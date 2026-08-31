@@ -267,6 +267,27 @@ export default function DashboardPage() {
         />
       </div>
 
+      {/* One figure for the bank and the accountant, kept deliberately apart
+          from the cards above: those never mix currencies, and this one only
+          adds cheques whose rate was recorded when they arrived. It says out
+          loud how many it had to leave out. */}
+      {dashboard.data ? (
+        <section className="mt-4 flex flex-wrap items-baseline gap-x-4 gap-y-1 rounded-2xl border border-slate-200 bg-white px-5 py-4">
+          <h2 className="text-sm font-semibold text-slate-600">{t('dashboard.baseTotal')}</h2>
+          <p className="text-2xl font-bold text-slate-900 tabular-nums">
+            {money(locale, dashboard.data.baseTotal.total, dashboard.data.baseTotal.currency)}
+          </p>
+          <p className="text-xs text-slate-500">{t('dashboard.baseTotalHint')}</p>
+          {dashboard.data.baseTotal.unconvertedCount > 0 ? (
+            <p className="w-full text-xs font-medium text-amber-700">
+              {t('dashboard.unconverted', {
+                count: String(dashboard.data.baseTotal.unconvertedCount),
+              })}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
+
       <div className="mt-5 grid gap-4 lg:grid-cols-[1.6fr_1fr]">
         <section className="rounded-2xl border border-slate-200 bg-white p-5">
           <div className="mb-4 flex items-center justify-between gap-3">

@@ -102,6 +102,14 @@ export interface ChequeSummaryView {
   chequeNumber: string;
   amount: MoneyString;
   currency: string;
+  /**
+   * Rate converting `currency` into the organization's base currency, as it
+   * stood when the cheque was recorded — a decimal string, never a number.
+   * `null` means no rate was recorded; it never means 1.
+   */
+  exchangeRate: string | null;
+  /** `amount` converted at `exchangeRate`. `null` whenever the rate is. */
+  amountBase: MoneyString | null;
   dueDate: IsoDateString;
   status: ChequeStatus;
   /**
@@ -215,9 +223,29 @@ export interface DashboardCurrencyTotals {
   outgoing: Bucket;
 }
 
+/**
+ * Everything outstanding, expressed in the one currency the books are kept in.
+ *
+ * This sits *beside* the per-currency blocks, never instead of them. Each
+ * cheque was converted at the rate recorded the day it arrived, so the figure
+ * is traceable to a document rather than to today's rate — and
+ * `unconvertedCount` says how many cheques carry no rate and are therefore
+ * missing from it. A converted total that quietly leaves cheques out is worse
+ * than no converted total.
+ */
+export interface DashboardBaseTotal {
+  currency: string;
+  count: number;
+  total: MoneyString;
+  unconvertedCount: number;
+}
+
 export interface DashboardSummary {
-  /** The organization's reporting currency, listed first in `currencies`. */
+  /** The currency new cheques default to, listed first in `currencies`. */
   defaultCurrency: string;
+  /** The currency the books are kept in — what `baseTotal` is expressed in. */
+  baseCurrency: string;
+  baseTotal: DashboardBaseTotal;
   /** One entry per currency that actually has cheques. */
   currencies: DashboardCurrencyTotals[];
   recentEvents: ChequeEventView[];

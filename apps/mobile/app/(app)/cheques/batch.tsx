@@ -68,6 +68,7 @@ export default function ChequeBatchScreen() {
 
   const [direction, setDirection] = useState<string>(ChequeDirection.INCOMING);
   const [currency, setCurrency] = useState('ILS');
+  const [exchangeRate, setExchangeRate] = useState('');
   const [issueDate, setIssueDate] = useState('');
   const [bankId, setBankId] = useState<string | null>(null);
   const [drawerName, setDrawerName] = useState('');
@@ -127,6 +128,7 @@ export default function ChequeBatchScreen() {
       const parsed = createChequeBatchSchema.safeParse({
         direction,
         currency,
+        exchangeRate: exchangeRate.trim() || null,
         issueDate: issueDate || null,
         bankId,
         drawerName: drawerName.trim() || null,
@@ -213,6 +215,14 @@ export default function ChequeBatchScreen() {
           options={CURRENCIES.map((value) => ({ value, label: value }))}
           value={currency}
           onChange={setCurrency}
+        />
+        <Field
+          label={t('cheque.exchangeRate')}
+          hint={t('cheque.exchangeRateHint')}
+          value={exchangeRate}
+          onChangeText={setExchangeRate}
+          keyboardType="numeric"
+          ltr
         />
         <DateField
           label={t('cheque.issueDate')}

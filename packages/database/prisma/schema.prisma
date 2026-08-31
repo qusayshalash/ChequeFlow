@@ -119,7 +119,12 @@ model Organization {
   id              String   @id @default(uuid()) @db.Uuid
   name            String
   country         String   @db.Char(2)
+  /// The currency new cheques default to — what this business usually takes in.
   defaultCurrency String   @map("default_currency") @db.Char(3)
+  /// The currency the books are kept in. Separate from `defaultCurrency` on
+  /// purpose: a business can take most of its cheques in dollars while
+  /// reporting in shekels, and conflating the two hides that.
+  baseCurrency    String   @map("base_currency") @db.Char(3)
   timezone        String   @default("UTC")
   settingsJson    Json     @default("{}") @map("settings_json")
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -364,6 +369,13 @@ model Cheque {
   direction      ChequeDirection
   chequeNumber   String          @map("cheque_number")
   amount         Decimal         @db.Decimal(18, 2)
+  /// Rate converting one unit of `currency` into the organization's base
+  /// currency, as it stood when the cheque was recorded. NULL means nobody
+  /// recorded one — never assume 1.
+  exchangeRate   Decimal?        @map("exchange_rate") @db.Decimal(18, 6)
+  /// `amount` × `exchangeRate`, stored because it is a historical fact and
+  /// because reports aggregate it across thousands of rows.
+  amountBase     Decimal?        @map("amount_base") @db.Decimal(18, 2)
   /// The amount as written in letters on the cheque face. Kept verbatim for
   /// dispute resolution: in most jurisdictions the written amount prevails.
   amountInWords  String?         @map("amount_in_words")

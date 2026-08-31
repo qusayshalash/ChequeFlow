@@ -70,6 +70,7 @@
   "cheque": {
     "accountNumber": "رقم الحساب",
     "addManually": "إضافة يدوية",
+    "amountBase": "بالعملة الرئيسية",
     "amountInWords": "المبلغ كتابةً",
     "amountInWordsHint": "المعتمد عند الخلاف مع الرقم",
     "amountRange": "نطاق المبلغ",
@@ -120,6 +121,8 @@
     "duplicateWarning": "يوجد شيك مطابق مسجل مسبقًا",
     "editTitle": "تعديل بيانات الشيك",
     "emptyList": "لا توجد شيكات مطابقة",
+    "exchangeRate": "سعر الصرف",
+    "exchangeRateHint": "كم وحدة من عملة الدفاتر تساوي وحدة واحدة من عملة الشيك",
     "extra": "ملاحظات ومرفقات",
     "filterTitle": "تصفية وترتيب",
     "from": "من",
@@ -134,6 +137,7 @@
     "listTitle": "الشيكات",
     "newTitle": "شيك جديد",
     "noImages": "لا توجد صور لهذا الشيك",
+    "notConverted": "بلا سعر صرف",
     "notYet": "لم يحدث بعد",
     "notesGroup": "ملاحظات",
     "nowAt": "موجود الآن",
@@ -277,6 +281,8 @@
   },
   "dashboard": {
     "amountAxis": "المبلغ",
+    "baseTotal": "الإجمالي بعملة الدفاتر",
+    "baseTotalHint": "محسوب بسعر الصرف المسجّل يوم استلام كل شيك",
     "bounced": "الشيكات المرتجعة",
     "cashFlowUpcoming": "التدفق النقدي القادم",
     "cleared": "محصّلة",
@@ -303,6 +309,7 @@
     "searchPlaceholder": "بحث عن شيك، جهة، بنك...",
     "subtitle": "نظرة سريعة على حالة الشيكات والاستحقاقات",
     "title": "لوحة المعلومات",
+    "unconverted": "{count} شيك بلا سعر صرف، غير محتسبة في هذا الرقم",
     "upcomingCheques": "الشيكات القادمة"
   },
   "diagnostics": {
@@ -555,6 +562,10 @@
     },
     "date": {
       "invalid": "تاريخ غير صحيح"
+    },
+    "exchangeRate": {
+      "invalid": "سعر صرف غير صحيح",
+      "positive": "سعر الصرف يجب أن يكون أكبر من صفر"
     },
     "identifier": {
       "invalid": "اسم مستخدم أو بريد إلكتروني غير صحيح"

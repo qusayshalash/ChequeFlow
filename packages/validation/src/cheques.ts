@@ -11,6 +11,7 @@ import {
 import {
   chequeNumberSchema,
   currencySchema,
+  exchangeRateSchema,
   isoDateSchema,
   isoDateTimeSchema,
   longTextSchema,
@@ -48,6 +49,13 @@ const chequeCoreObject = z.object({
   /** The amount as written in letters; in a dispute it prevails over digits. */
   amountInWords: optionalText(255),
   currency: currencySchema,
+  /**
+   * Rate converting `currency` into the organization's base currency, as it
+   * stood the day the cheque was taken in. Omitted means nobody recorded one;
+   * the server never invents a rate, and a cheque already in the base currency
+   * gets 1 without the client having to say so.
+   */
+  exchangeRate: exchangeRateSchema.nullish().transform((v) => v ?? null),
   issueDate: isoDateSchema.nullish().transform((v) => v ?? null),
   dueDate: isoDateSchema,
   receivedDate: isoDateSchema.nullish().transform((v) => v ?? null),
@@ -141,6 +149,7 @@ export const updateChequeSchema = z.object({
   amount: moneySchema.optional(),
   amountInWords: optionalText(255).optional(),
   currency: currencySchema.optional(),
+  exchangeRate: exchangeRateSchema.nullish(),
   issueDate: isoDateSchema.nullish(),
   dueDate: isoDateSchema.optional(),
   receivedDate: isoDateSchema.nullish(),

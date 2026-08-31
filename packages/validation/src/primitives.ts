@@ -14,6 +14,21 @@ export const moneySchema = z
   .regex(/^\d{1,16}(\.\d{1,2})?$/, { message: 'validation.money.invalid' })
   .refine((value) => Number.parseFloat(value) > 0, { message: 'validation.money.positive' });
 
+/**
+ * A currency conversion rate: a positive ratio with up to six decimals.
+ *
+ * Kept as a string alongside the money values, for the same reason: parsing a
+ * rate through a float and multiplying it by an amount is how a total ends up
+ * a cent out on every row.
+ */
+export const exchangeRateSchema = z
+  .string()
+  .trim()
+  .regex(/^\d{1,11}(\.\d{1,6})?$/, { message: 'validation.exchangeRate.invalid' })
+  .refine((value) => Number.parseFloat(value) > 0, {
+    message: 'validation.exchangeRate.positive',
+  });
+
 /** Calendar date, `YYYY-MM-DD`. Used for issue/due/received dates. */
 export const isoDateSchema = z
   .string()

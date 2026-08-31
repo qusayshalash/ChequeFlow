@@ -188,7 +188,12 @@ describeWithDb('bulk cheque actions (e2e)', () => {
     const stranger = await prisma.db.cheque.create({
       data: {
         organization: {
-          create: { name: 'منشأة أخرى', country: 'PS', defaultCurrency: 'ILS' },
+          create: {
+            name: 'منشأة أخرى',
+            country: 'PS',
+            defaultCurrency: 'ILS',
+            baseCurrency: 'ILS',
+          },
         },
         direction: 'INCOMING',
         chequeNumber: 'X-9',

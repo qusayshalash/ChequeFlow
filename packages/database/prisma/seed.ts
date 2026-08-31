@@ -110,6 +110,12 @@ async function main(): Promise<void> {
           name: organizationName,
           country: requireEnv('SEED_ORG_COUNTRY', 'PS'),
           defaultCurrency: requireEnv('SEED_ORG_CURRENCY', 'USD'),
+          // Books kept in the same currency cheques are usually taken in,
+          // which is the right answer until someone decides otherwise.
+          baseCurrency: requireEnv(
+            'SEED_ORG_BASE_CURRENCY',
+            requireEnv('SEED_ORG_CURRENCY', 'USD'),
+          ),
           timezone: requireEnv('SEED_ORG_TIMEZONE', 'Asia/Hebron'),
           settingsJson: {
             reminderOffsetDays: [7, 3, 1, 0],

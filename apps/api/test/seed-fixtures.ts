@@ -45,6 +45,7 @@ export async function seedFixtures(prisma: PrismaService): Promise<Fixtures> {
       name: `E2E Org ${Date.now()}`,
       country: 'PS',
       defaultCurrency: 'USD',
+      baseCurrency: 'USD',
       timezone: 'Asia/Riyadh',
     },
   });

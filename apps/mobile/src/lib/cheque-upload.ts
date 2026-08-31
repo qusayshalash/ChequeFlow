@@ -40,6 +40,9 @@ export async function uploadCapturedCheque(
       amountInWords: null,
       amount: '1.00',
       currency: PLACEHOLDER_CURRENCY,
+      // No rate on a placeholder: nothing about this cheque has been read yet,
+      // and a rate against a placeholder amount would be a fabricated figure.
+      exchangeRate: null,
       dueDate: today,
       issueDate: null,
       receivedDate: today,

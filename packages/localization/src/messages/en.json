@@ -70,6 +70,7 @@
   "cheque": {
     "accountNumber": "Account number",
     "addManually": "Add manually",
+    "amountBase": "In base currency",
     "amountInWords": "Amount in words",
     "amountInWordsHint": "Prevails over the figure in a dispute",
     "amountRange": "Amount range",
@@ -120,6 +121,8 @@
     "duplicateWarning": "A matching cheque already exists",
     "editTitle": "Edit cheque data",
     "emptyList": "No matching cheques",
+    "exchangeRate": "Exchange rate",
+    "exchangeRateHint": "How many units of the books' currency one unit of the cheque's currency is worth",
     "extra": "Notes and attachments",
     "filterTitle": "Filter and sort",
     "from": "From",
@@ -134,6 +137,7 @@
     "listTitle": "Cheques",
     "newTitle": "New cheque",
     "noImages": "No images for this cheque",
+    "notConverted": "No rate recorded",
     "notYet": "Not yet",
     "notesGroup": "Notes",
     "nowAt": "Currently at",
@@ -277,6 +281,8 @@
   },
   "dashboard": {
     "amountAxis": "Amount",
+    "baseTotal": "Total in base currency",
+    "baseTotalHint": "Converted at the rate recorded the day each cheque arrived",
     "bounced": "Bounced cheques",
     "cashFlowUpcoming": "Upcoming cash flow",
     "cleared": "Collected",
@@ -303,6 +309,7 @@
     "searchPlaceholder": "Search a cheque, party or bank...",
     "subtitle": "Cheque status and what is coming due",
     "title": "Dashboard",
+    "unconverted": "{count} cheques carry no rate and are not in this figure",
     "upcomingCheques": "Upcoming cheques"
   },
   "diagnostics": {
@@ -555,6 +562,10 @@
     },
     "date": {
       "invalid": "Invalid date"
+    },
+    "exchangeRate": {
+      "invalid": "Invalid exchange rate",
+      "positive": "The exchange rate must be greater than zero"
     },
     "identifier": {
       "invalid": "Invalid user name or email address"

@@ -37,6 +37,7 @@ export default function NewChequeScreen() {
   const [amount, setAmount] = useState('');
   const [amountInWords, setAmountInWords] = useState('');
   const [currency, setCurrency] = useState('ILS');
+  const [exchangeRate, setExchangeRate] = useState('');
   const [issueDate, setIssueDate] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [drawerName, setDrawerName] = useState('');
@@ -67,6 +68,7 @@ export default function NewChequeScreen() {
       amount: amount.trim(),
       amountInWords: amountInWords.trim() || null,
       currency,
+      exchangeRate: exchangeRate.trim() || null,
       issueDate: issueDate || null,
       dueDate,
       bankId,
@@ -170,6 +172,18 @@ export default function NewChequeScreen() {
           value={currency}
           onChange={setCurrency}
           error={error('currency')}
+        />
+
+        {/* Left blank for a cheque already in the books' currency — the server
+            converts those at 1 without being asked. */}
+        <Field
+          label={t('cheque.exchangeRate')}
+          hint={t('cheque.exchangeRateHint')}
+          value={exchangeRate}
+          onChangeText={setExchangeRate}
+          error={error('exchangeRate')}
+          keyboardType="numeric"
+          ltr
         />
       </Section>
 

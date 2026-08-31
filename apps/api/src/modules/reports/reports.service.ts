@@ -140,6 +140,8 @@ export class ReportsService {
       outgoing,
       allCurrencies,
       organization,
+      converted,
+      unconverted,
       recentEvents,
     ] = await Promise.all([
       this.totalsByCurrency({
@@ -167,8 +169,19 @@ export class ReportsService {
       this.prisma.db.cheque.groupBy({ by: ['currency'], where: base }),
       this.prisma.db.organization.findUniqueOrThrow({
         where: { id: user.organizationId },
-        select: { defaultCurrency: true },
+        select: { defaultCurrency: true, baseCurrency: true },
       }),
+      // Outstanding money expressed in the books' currency. Summed over the
+      // stored `amount_base`, which was converted at the rate recorded the day
+      // each cheque arrived — never at today's rate.
+      this.prisma.db.cheque.aggregate({
+        where: { ...outstanding, amountBase: { not: null } },
+        _sum: { amountBase: true },
+        _count: true,
+      }),
+      // Cheques that carry no rate, and so are missing from the figure above.
+      // A converted total that quietly omits them is worse than no total.
+      this.prisma.db.cheque.count({ where: { ...outstanding, amountBase: null } }),
       this.prisma.db.chequeEvent.findMany({
         where: { cheque: { organizationId: user.organizationId } },
         include: chequeEventInclude,
@@ -190,6 +203,13 @@ export class ReportsService {
 
     return {
       defaultCurrency: organization.defaultCurrency,
+      baseCurrency: organization.baseCurrency,
+      baseTotal: {
+        currency: organization.baseCurrency,
+        count: converted._count,
+        total: moneyToString(converted._sum.amountBase ?? 0),
+        unconvertedCount: unconverted,
+      },
       currencies: currencies.map((currency): DashboardCurrencyTotals => ({
         currency,
         draft: draft.get(currency) ?? EMPTY_BUCKET,

@@ -60,6 +60,7 @@ export function ChequeBatchForm() {
 
   const [direction, setDirection] = useState<string>(ChequeDirection.INCOMING);
   const [currency, setCurrency] = useState('USD');
+  const [exchangeRate, setExchangeRate] = useState('');
   const [issueDate, setIssueDate] = useState('');
   const [bankId, setBankId] = useState('');
   const [drawerName, setDrawerName] = useState('');
@@ -131,6 +132,7 @@ export function ChequeBatchForm() {
       const parsed = createChequeBatchSchema.safeParse({
         direction,
         currency,
+        exchangeRate: exchangeRate || null,
         issueDate: issueDate || null,
         bankId: bankId || null,
         drawerName: drawerName || null,
@@ -237,6 +239,22 @@ export function ChequeBatchForm() {
                 </option>
               ))}
             </select>
+          </Field>
+
+          <Field
+            label={t('cheque.exchangeRate')}
+            htmlFor="batch-rate"
+            hint={t('cheque.exchangeRateHint')}
+          >
+            <input
+              id="batch-rate"
+              dir="ltr"
+              inputMode="decimal"
+              placeholder="1"
+              className={inputClassName}
+              value={exchangeRate}
+              onChange={(event) => setExchangeRate(event.target.value)}
+            />
           </Field>
 
           <Field label={t('cheque.issueDate')} htmlFor="batch-issueDate">

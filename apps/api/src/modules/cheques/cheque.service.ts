@@ -11,7 +11,14 @@ import {
   type DuplicateChequeMatch,
   type Paginated,
 } from '@cheque-flow/shared-types';
-import { Prisma, moneyToString, toMoney } from '@cheque-flow/database';
+import {
+  Prisma,
+  convertMoney,
+  moneyToString,
+  rateToString,
+  toMoney,
+  toRate,
+} from '@cheque-flow/database';
 import type {
   CreateChequeBatchInput,
   CreateChequeInput,
@@ -31,6 +38,41 @@ import {
   toChequeSummary,
 } from './cheque.mapper';
 import { DuplicateDetectorService } from './duplicate-detector.service';
+
+/** The conversion columns, kept together because the database requires both or neither. */
+interface Conversion {
+  exchangeRate: Prisma.Decimal | null;
+  amountBase: Prisma.Decimal | null;
+}
+
+/**
+ * Works out what a cheque is worth in the books' currency.
+ *
+ * A cheque already in the base currency converts at 1 without anyone having to
+ * say so — asking a user to type "1" for every shekel cheque in a shekel
+ * business is a field they will eventually get wrong.
+ *
+ * A foreign cheque with no rate stays unconverted. The server never invents a
+ * rate: today's rate applied to a cheque taken in last year is a number no
+ * document supports, and it would be indistinguishable in the books from one
+ * that was actually recorded.
+ */
+export function computeConversion(
+  amount: string,
+  currency: string,
+  baseCurrency: string,
+  rate: string | null,
+): Conversion {
+  if (currency === baseCurrency) {
+    const one = toRate(1);
+    return { exchangeRate: one, amountBase: toMoney(amount) };
+  }
+
+  if (rate === null) return { exchangeRate: null, amountBase: null };
+
+  const parsed = toRate(rate);
+  return { exchangeRate: parsed, amountBase: convertMoney(amount, parsed) };
+}
 
 /** Converts `YYYY-MM-DD` into the UTC midnight `Date` a DATE column expects. */
 export function toDateOnly(value: string): Date {
@@ -65,6 +107,21 @@ export class ChequeService {
   ) {}
 
   /**
+   * The currency this organization keeps its books in.
+   *
+   * Read per write rather than cached on the session: it is one indexed lookup
+   * by primary key, and a stale base currency would silently convert cheques
+   * into the wrong books.
+   */
+  private async baseCurrency(organizationId: string): Promise<string> {
+    const organization = await this.prisma.db.organization.findUniqueOrThrow({
+      where: { id: organizationId },
+      select: { baseCurrency: true },
+    });
+    return organization.baseCurrency;
+  }
+
+  /**
    * Creates a cheque in DRAFT together with its CREATED event.
    *
    * `organizationId` comes from the session — a client-supplied value is
@@ -92,6 +149,13 @@ export class ChequeService {
       bankId: input.bankId,
     });
 
+    const conversion = computeConversion(
+      input.amount,
+      input.currency,
+      await this.baseCurrency(user.organizationId),
+      input.exchangeRate,
+    );
+
     const created = await this.prisma.db.$transaction(async (tx) => {
       const cheque = await tx.cheque.create({
         data: {
@@ -102,6 +166,8 @@ export class ChequeService {
           amount: toMoney(input.amount),
           amountInWords: input.amountInWords,
           currency: input.currency,
+          exchangeRate: conversion.exchangeRate,
+          amountBase: conversion.amountBase,
           issueDate: input.issueDate ? toDateOnly(input.issueDate) : null,
           dueDate: toDateOnly(input.dueDate),
           receivedDate: input.receivedDate ? toDateOnly(input.receivedDate) : null,
@@ -226,13 +292,16 @@ export class ChequeService {
     });
 
     const accountNumberEncrypted = this.encryption.encryptNullable(input.accountNumber);
+    // One lookup for the whole book: every cheque in it shares a currency and
+    // a rate, so they all convert against the same base.
+    const base = await this.baseCurrency(user.organizationId);
     const today = utcToday();
 
     const created = await this.prisma.db.$transaction(async (tx) => {
       const rows: Array<Awaited<ReturnType<typeof this.createOneWithin>>> = [];
       for (const row of input.cheques) {
         rows.push(
-          await this.createOneWithin(tx, user, input, row, accountNumberEncrypted, auditMeta),
+          await this.createOneWithin(tx, user, input, row, accountNumberEncrypted, base, auditMeta),
         );
       }
       return rows;
@@ -257,8 +326,16 @@ export class ChequeService {
     shared: CreateChequeBatchInput,
     row: CreateChequeBatchInput['cheques'][number],
     accountNumberEncrypted: string | null,
+    baseCurrency: string,
     auditMeta: Partial<AuditContext>,
   ) {
+    const conversion = computeConversion(
+      row.amount,
+      shared.currency,
+      baseCurrency,
+      shared.exchangeRate,
+    );
+
     const cheque = await tx.cheque.create({
       data: {
         organizationId: user.organizationId,
@@ -268,6 +345,8 @@ export class ChequeService {
         amount: toMoney(row.amount),
         amountInWords: row.amountInWords,
         currency: shared.currency,
+        exchangeRate: conversion.exchangeRate,
+        amountBase: conversion.amountBase,
         issueDate: shared.issueDate ? toDateOnly(shared.issueDate) : null,
         dueDate: toDateOnly(row.dueDate),
         receivedDate: shared.receivedDate ? toDateOnly(shared.receivedDate) : null,
@@ -412,11 +491,35 @@ export class ChequeService {
       bankId: input.bankId ?? null,
     });
 
+    // The converted amount is recomputed whenever any of its three inputs
+    // moves. Leaving it alone would leave a figure in the books that no longer
+    // follows from the cheque it sits on.
+    const conversionTouched =
+      input.amount !== undefined ||
+      input.currency !== undefined ||
+      input.exchangeRate !== undefined;
+
+    const conversion = conversionTouched
+      ? computeConversion(
+          input.amount ?? moneyToString(existing.amount),
+          input.currency ?? existing.currency,
+          await this.baseCurrency(user.organizationId),
+          input.exchangeRate === undefined
+            ? existing.exchangeRate === null
+              ? null
+              : rateToString(existing.exchangeRate)
+            : (input.exchangeRate ?? null),
+        )
+      : null;
+
     const data: Prisma.ChequeUncheckedUpdateInput = {
       ...(input.chequeNumber !== undefined ? { chequeNumber: input.chequeNumber } : {}),
       ...(input.amount !== undefined ? { amount: toMoney(input.amount) } : {}),
       ...(input.amountInWords !== undefined ? { amountInWords: input.amountInWords } : {}),
       ...(input.currency !== undefined ? { currency: input.currency } : {}),
+      ...(conversion
+        ? { exchangeRate: conversion.exchangeRate, amountBase: conversion.amountBase }
+        : {}),
       ...(input.issueDate !== undefined
         ? { issueDate: input.issueDate ? toDateOnly(input.issueDate) : null }
         : {}),

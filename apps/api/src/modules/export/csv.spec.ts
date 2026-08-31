@@ -66,6 +66,8 @@ describe('ExportService', () => {
     currency: 'ILS',
     dueDate: '2026-09-30',
     status: 'IN_HAND' as const,
+    exchangeRate: null,
+    amountBase: null,
     isOverdue: false,
     drawerName: 'شركة النور',
     bankName: 'بنك الاختبار',
