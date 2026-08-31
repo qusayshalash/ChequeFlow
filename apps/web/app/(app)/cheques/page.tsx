@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { ChequeStatus, type ChequeSummaryView, type Paginated } from '@cheque-flow/shared-types';
 import { Button, ErrorState, LoadingState } from '@cheque-flow/ui';
 
+import { BulkActionBar } from '@/components/bulk-action-bar';
 import { ChequeTable } from '@/components/cheque-table';
 import { ExportButton } from '@/components/export-button';
 import {
@@ -40,6 +41,11 @@ export default function ChequesPage() {
   const [status, setStatus] = useState<string>('');
   const [range, setRange] = useState<DateRange>(EMPTY_RANGE);
   const [page, setPage] = useState(1);
+
+  // Selection is deliberately cleared whenever the visible set changes. A
+  // ticked cheque that has scrolled out of the filter is a cheque the user can
+  // no longer see themselves acting on.
+  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
 
   // A backwards range would return an empty table that looks like "no cheques",
   // so it is not sent until the dates make sense.
@@ -77,6 +83,27 @@ export default function ChequesPage() {
   function changeTab(next: Tab): void {
     setTab(next);
     setPage(1);
+    setSelected(new Set());
+  }
+
+  function toggle(id: string): void {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll(keys: string[]): void {
+    setSelected((current) => {
+      const allOn = keys.length > 0 && keys.every((key) => current.has(key));
+      const next = new Set(current);
+      for (const key of keys) {
+        if (allOn) next.delete(key);
+        else next.add(key);
+      }
+      return next;
+    });
   }
 
   return (
@@ -174,7 +201,15 @@ export default function ChequesPage() {
         {query.isPending ? (
           <LoadingState label={t('common.loading')} />
         ) : (
-          <ChequeTable cheques={query.data?.data ?? []} />
+          <ChequeTable
+            cheques={query.data?.data ?? []}
+            selection={{
+              selected,
+              onToggle: toggle,
+              onToggleAll: toggleAll,
+              selectAllLabel: t('bulk.selectAll'),
+            }}
+          />
         )}
       </Panel>
 
@@ -201,6 +236,11 @@ export default function ChequesPage() {
           </Button>
         </nav>
       ) : null}
+
+      {/* Docked to the bottom of the window, so it is reachable from anywhere
+          in a long table. Padding below keeps it from covering the last row. */}
+      <div className="h-24" aria-hidden />
+      <BulkActionBar selected={selected} onClear={() => setSelected(new Set())} />
     </div>
   );
 }

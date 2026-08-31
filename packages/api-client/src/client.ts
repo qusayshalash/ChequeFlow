@@ -16,6 +16,7 @@ import type {
 } from '@cheque-flow/shared-types';
 import type {
   BounceChequeInput,
+  BulkChequeActionInput,
   CancelChequeInput,
   ClearChequeInput,
   CreateChequeBatchInput,
@@ -109,6 +110,24 @@ export interface BatchDuplicateRow {
 export interface CreateChequeBatchResponse {
   cheques: ChequeSummaryView[];
   duplicates: BatchDuplicateRow[];
+}
+
+/** A cheque a bulk action could not be applied to, and why. */
+export interface BulkActionSkip {
+  chequeId: string;
+  chequeNumber: string;
+  /** A message key — pass it through the translator before showing it. */
+  reason: string;
+}
+
+export interface BulkActionResponse {
+  /**
+   * `BLOCKED` means nothing was written. The selection held a cheque that
+   * could not take the action, and `skipInvalid` was not set.
+   */
+  status: 'APPLIED' | 'BLOCKED';
+  applied: ChequeSummaryView[];
+  skipped: BulkActionSkip[];
 }
 
 export interface OcrSuggestionResponse {
@@ -243,6 +262,20 @@ export class ChequeFlowApiClient {
       method: 'POST',
       body: input,
       query: { allowDuplicate },
+    });
+  }
+
+  /**
+   * Applies one lifecycle action to a selection of cheques.
+   *
+   * Resolves rather than throwing when the selection is refused: read
+   * `status` — `BLOCKED` means nothing was written and `skipped` says which
+   * cheque stopped it.
+   */
+  bulkChequeAction(input: BulkChequeActionInput) {
+    return this.request<BulkActionResponse>('/cheques/bulk-action', {
+      method: 'POST',
+      body: input,
     });
   }
 

@@ -297,3 +297,53 @@ export const reviewChequeSchema = z.object({
   version: z.coerce.number().int().min(1),
 });
 export type ReviewChequeInput = z.infer<typeof reviewChequeSchema>;
+
+/**
+ * Actions that may be applied to a selection of cheques at once.
+ *
+ * Deliberately a short list. An action belongs here only when one payload can
+ * honestly describe what happened to every cheque in the selection: the same
+ * deposit into the same bank, the same handover to the same party.
+ *
+ * `BOUNCE` is excluded even though banks do return cheques in batches — the
+ * reason and the fee differ per cheque, and a bulk screen would invite
+ * recording one cheque's fee against twenty. `REVIEW`, `CANCEL` and
+ * `MARK_LOST` are excluded for the same reason: each needs a decision about
+ * that particular cheque.
+ */
+export const BULK_CHEQUE_ACTIONS = [
+  'RECEIVE',
+  'RESERVE',
+  'RELEASE_RESERVATION',
+  'HANDOVER',
+  'DEPOSIT',
+  'CLEAR',
+  'POSTPONE',
+  'RESUME',
+] as const;
+
+/** Most cheques one bulk action may touch — the page size of the list screen. */
+export const MAX_BULK_CHEQUES = 100;
+
+export const bulkChequeActionSchema = actionBaseSchema
+  .omit({ version: true })
+  .extend({
+    chequeIds: z.array(uuidSchema).min(1).max(MAX_BULK_CHEQUES),
+    action: z.enum(BULK_CHEQUE_ACTIONS),
+    fromContactId: uuidSchema.optional(),
+    toContactId: uuidSchema.optional(),
+    toUserId: uuidSchema.optional(),
+    toLocationId: uuidSchema.optional(),
+    effectiveDate: isoDateSchema.optional(),
+    /**
+     * Apply the action to the cheques that can take it, instead of refusing
+     * the whole selection. Off by default: a selection containing a cheque
+     * that cannot take the action is usually a mistake in the selection.
+     */
+    skipInvalid: z.boolean().default(false),
+  })
+  .refine((data) => new Set(data.chequeIds).size === data.chequeIds.length, {
+    message: 'validation.cheque.duplicateSelection',
+    path: ['chequeIds'],
+  });
+export type BulkChequeActionInput = z.infer<typeof bulkChequeActionSchema>;

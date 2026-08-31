@@ -5,12 +5,23 @@ import Link from 'next/link';
 import type { ChequeSummaryView } from '@cheque-flow/shared-types';
 import { EmptyState, StatusBadge } from '@cheque-flow/ui';
 
-import { DataTable } from '@/components/data-table';
+import { DataTable, type TableSelection } from '@/components/data-table';
 import { useApp, useTranslator } from '@/components/providers';
 import { formatDate, money } from '@/lib/format';
 
-/** Reusable cheque list, shared by /cheques, /cheques/due and /cheques/bounced. */
-export function ChequeTable({ cheques }: { cheques: ChequeSummaryView[] }) {
+/**
+ * Reusable cheque list, shared by /cheques, /cheques/due and /cheques/bounced.
+ *
+ * `selection` is optional: the due and bounced pages are read for information,
+ * while /cheques is where cheques are acted on.
+ */
+export function ChequeTable({
+  cheques,
+  selection,
+}: {
+  cheques: ChequeSummaryView[];
+  selection?: TableSelection;
+}) {
   const t = useTranslator();
   const { locale } = useApp();
 
@@ -18,6 +29,8 @@ export function ChequeTable({ cheques }: { cheques: ChequeSummaryView[] }) {
     <DataTable
       rows={cheques}
       rowKey={(cheque) => cheque.id}
+      {...(selection ? { selection } : {})}
+      rowLabel={(cheque) => `${t('bulk.selectRow')} ${cheque.chequeNumber}`}
       empty={<EmptyState title={t('cheque.emptyList')} />}
       columns={[
         {

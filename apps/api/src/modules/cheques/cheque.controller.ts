@@ -31,6 +31,7 @@ import { ChequeAction, Permission } from '@cheque-flow/shared-types';
 import { DEFAULT_LOCALE, isLocale } from '@cheque-flow/localization';
 import {
   bounceChequeSchema,
+  bulkChequeActionSchema,
   cancelChequeSchema,
   clearChequeSchema,
   createChequeBatchSchema,
@@ -47,6 +48,7 @@ import {
   updateChequeSchema,
   uploadImageMetadataSchema,
   type BounceChequeInput,
+  type BulkChequeActionInput,
   type CancelChequeInput,
   type ClearChequeInput,
   type CreateChequeBatchInput,
@@ -136,6 +138,37 @@ export class ChequeController {
       user,
       body,
       { allowDuplicate: allowDuplicate === 'true' },
+      AuditService.contextFromRequest(request),
+    );
+  }
+
+  /**
+   * One action, many cheques.
+   *
+   * Returns 200 with `status: 'BLOCKED'` — not an error — when the selection
+   * contains a cheque that cannot take the action and `skipInvalid` was not
+   * set. Nothing is written in that case, and `skipped` names the cheques and
+   * why, so the screen can show the user what to deselect.
+   */
+  @Post('bulk-action')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Apply one lifecycle action to a selection of cheques' })
+  @ApiResponse({
+    status: 200,
+    description: 'Report of what was applied and what was skipped',
+  })
+  bulkAction(
+    @CurrentUser() user: RequestUser,
+    @Body(zodBody(bulkChequeActionSchema)) body: BulkChequeActionInput,
+    @Req() request: Request,
+  ) {
+    const { chequeIds, action, skipInvalid, ...payload } = body;
+    return this.actions.executeBulk(
+      user,
+      chequeIds,
+      action,
+      payload,
+      { skipInvalid },
       AuditService.contextFromRequest(request),
     );
   }

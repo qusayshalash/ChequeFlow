@@ -44,6 +44,15 @@
     "keepSafe": "Keep the file somewhere safe: it holds a complete financial record.",
     "title": "Backup"
   },
+  "bulk": {
+    "apply": "Apply to selected",
+    "applyRest": "Apply to the rest only",
+    "applied": "Applied to",
+    "blocked": "Nothing was applied — these cheques cannot take this action",
+    "selectAll": "Select every cheque shown",
+    "selectRow": "Select cheque",
+    "selected": "Selected"
+  },
   "capture": {
     "back": "Capture the back",
     "button": "Capture cheque",
@@ -526,7 +535,8 @@
   "validation": {
     "cheque": {
       "dueBeforeIssue": "Due date is before the issue date",
-      "duplicateNumberInBatch": "Duplicate cheque number inside the batch"
+      "duplicateNumberInBatch": "Duplicate cheque number inside the batch",
+      "duplicateSelection": "The same cheque is selected more than once"
     },
     "chequeNumber": {
       "invalid": "Invalid cheque number"

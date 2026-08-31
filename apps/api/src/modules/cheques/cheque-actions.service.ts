@@ -4,11 +4,13 @@ import {
   ApiErrorCode,
   ChequeAction,
   assertTransition,
+  utcToday,
   type ChequeDetailView,
   type ChequeEventView,
+  type ChequeSummaryView,
   type TransitionDefinition,
 } from '@cheque-flow/shared-types';
-import { Prisma, toMoney } from '@cheque-flow/database';
+import { Prisma, toMoney, type Cheque } from '@cheque-flow/database';
 
 import { AppError } from '../../common/errors/app-error';
 import { FieldEncryptionService } from '../../common/crypto/field-encryption.service';
@@ -19,8 +21,10 @@ import { RemindersService } from '../reminders/reminders.service';
 import {
   chequeDetailInclude,
   chequeEventInclude,
+  chequeSummarySelect,
   toChequeDetail,
   toChequeEventView,
+  toChequeSummary,
 } from './cheque.mapper';
 import { toDateOnly } from './cheque.service';
 
@@ -40,6 +44,38 @@ export interface ChequeActionPayload {
   reason?: string | undefined;
   /** Bank charge, currently only meaningful for BOUNCE. */
   fee?: string | undefined;
+}
+
+/** A cheque a bulk action could not be applied to, and the reason why. */
+export interface BulkActionSkip {
+  chequeId: string;
+  chequeNumber: string;
+  /** A message key, so the reason reaches the user in their own language. */
+  reason: string;
+}
+
+export interface BulkActionResult {
+  /** `BLOCKED` means nothing was written — `skipped` says which cheque stopped it. */
+  status: 'APPLIED' | 'BLOCKED';
+  applied: ChequeSummaryView[];
+  skipped: BulkActionSkip[];
+}
+
+/**
+ * Whether any transition in the run needs a counterparty the payload lacks.
+ *
+ * Checked once for the whole selection rather than per cheque: one action and
+ * one payload apply to all of them, so a missing counterparty is a fault in
+ * the request, not in any particular cheque.
+ */
+function transitionNeedsCounterparty(
+  runnable: ReadonlyArray<{ transition: TransitionDefinition }>,
+  payload: ChequeActionPayload,
+): boolean {
+  const hasCounterparty =
+    payload.toContactId ?? payload.fromContactId ?? payload.toLocationId ?? payload.toUserId;
+  if (hasCounterparty) return false;
+  return runnable.some((entry) => entry.transition.requiresCounterparty);
 }
 
 /**
@@ -101,53 +137,7 @@ export class ChequeActionsService {
     await this.assertReferencesInTenant(user.organizationId, payload);
 
     const updated = await this.prisma.db.$transaction(async (tx) => {
-      const custody = this.custodyChanges(transition, payload, user);
-
-      const result = await tx.cheque.updateMany({
-        where: { id: chequeId, organizationId: user.organizationId, version: cheque.version },
-        data: {
-          status: transition.to,
-          ...custody,
-          version: { increment: 1 },
-        },
-      });
-      if (result.count === 0) {
-        // Someone changed the cheque between the read and the write.
-        throw AppError.versionConflict(cheque.version, cheque.version + 1);
-      }
-
-      await tx.chequeEvent.create({
-        data: {
-          chequeId,
-          eventType: transition.eventType,
-          fromStatus: cheque.status,
-          toStatus: transition.to,
-          fromContactId: payload.fromContactId ?? null,
-          toContactId: payload.toContactId ?? null,
-          fromUserId: cheque.currentHolderId,
-          toUserId: payload.toUserId ?? null,
-          fromLocationId: cheque.currentLocationId,
-          toLocationId: payload.toLocationId ?? null,
-          eventDate: payload.eventDate ? new Date(payload.eventDate) : new Date(),
-          notes: payload.notes ?? payload.reason ?? null,
-          proofAttachmentId: payload.proofAttachmentId ?? null,
-          performedBy: user.id,
-          approvedBy: payload.approvedBy ?? null,
-        },
-      });
-
-      await this.audit.recordWithin(tx, {
-        organizationId: user.organizationId,
-        userId: user.id,
-        action: AuditAction.CHEQUE_ACTION,
-        entityType: 'cheque',
-        entityId: chequeId,
-        before: { status: cheque.status },
-        after: { status: transition.to, action, notes: payload.notes ?? null },
-        ipAddress: auditMeta.ipAddress ?? null,
-        deviceInfo: auditMeta.deviceInfo ?? null,
-      });
-
+      await this.applyWithin(tx, user, cheque, transition, payload, auditMeta);
       return tx.cheque.findUniqueOrThrow({ where: { id: chequeId }, include: chequeDetailInclude });
     });
 
@@ -163,6 +153,187 @@ export class ChequeActionsService {
     }
 
     return toChequeDetail(updated, user.permissions, this.encryption);
+  }
+
+  /**
+   * Applies one action to many cheques at once.
+   *
+   * Entering twenty cheques in a batch only solved half the day's work: those
+   * twenty then have to be deposited, and doing that one screen at a time is
+   * the same twenty trips through the app.
+   *
+   * The default is all-or-nothing. A selection where one cheque cannot take
+   * the action is almost always a mistake in the selection, not an invitation
+   * to silently do nineteen of them — so nothing is written and the blocked
+   * cheques are named. `skipInvalid` is the deliberate override for the case
+   * where the user has seen the report and wants the rest applied anyway.
+   *
+   * Either way the caller gets the full report: this returns 200 with
+   * `status: 'BLOCKED'` rather than an error, because "nothing happened, and
+   * here is exactly which cheque stopped it" is an answer, not a failure.
+   */
+  async executeBulk(
+    user: RequestUser,
+    chequeIds: readonly string[],
+    action: ChequeAction,
+    payload: ChequeActionPayload,
+    options: { skipInvalid?: boolean } = {},
+    auditMeta: Partial<AuditContext> = {},
+  ): Promise<BulkActionResult> {
+    const today = utcToday();
+
+    const cheques = await this.prisma.db.cheque.findMany({
+      where: { id: { in: [...chequeIds] }, organizationId: user.organizationId, deletedAt: null },
+    });
+
+    const byId = new Map(cheques.map((cheque) => [cheque.id, cheque]));
+    const skipped: BulkActionSkip[] = [];
+    const runnable: Array<{ cheque: (typeof cheques)[number]; transition: TransitionDefinition }> =
+      [];
+
+    for (const chequeId of chequeIds) {
+      const cheque = byId.get(chequeId);
+      if (!cheque) {
+        // An id from another tenant is indistinguishable from one that does
+        // not exist, and must stay that way.
+        skipped.push({ chequeId, chequeNumber: '', reason: 'errors.NOT_FOUND' });
+        continue;
+      }
+
+      let transition: TransitionDefinition;
+      try {
+        transition = assertTransition(cheque.status, action, cheque.direction);
+      } catch {
+        skipped.push({
+          chequeId,
+          chequeNumber: cheque.chequeNumber,
+          reason: 'errors.INVALID_STATE_TRANSITION',
+        });
+        continue;
+      }
+
+      // A missing permission is about the caller, not about this cheque, so
+      // it fails the request outright the way the single-cheque path does.
+      // Reporting it as a per-row "skip" would also confirm to someone without
+      // the permission that the cheque exists.
+      if (!user.permissions.includes(transition.permission)) {
+        throw AppError.forbidden(`Action ${action} requires ${transition.permission}`, {
+          required: transition.permission,
+        });
+      }
+
+      runnable.push({ cheque, transition });
+    }
+
+    if (transitionNeedsCounterparty(runnable, payload)) {
+      throw new AppError(ApiErrorCode.VALIDATION_ERROR, `${action} requires a counterparty`, {
+        fieldErrors: [{ path: 'toContactId', message: 'validation.counterparty.required' }],
+      });
+    }
+
+    if (skipped.length > 0 && options.skipInvalid !== true) {
+      return { status: 'BLOCKED', applied: [], skipped };
+    }
+
+    if (runnable.length === 0) return { status: 'BLOCKED', applied: [], skipped };
+
+    await this.assertReferencesInTenant(user.organizationId, payload);
+
+    const applied = await this.prisma.db.$transaction(async (tx) => {
+      for (const entry of runnable) {
+        await this.applyWithin(tx, user, entry.cheque, entry.transition, payload, auditMeta);
+      }
+
+      return tx.cheque.findMany({
+        where: { id: { in: runnable.map((entry) => entry.cheque.id) } },
+        select: chequeSummarySelect,
+      });
+    });
+
+    // Reminders are a side effect: a failure here must not undo custody
+    // changes that have already been committed.
+    for (const entry of runnable) {
+      try {
+        await this.reminders.syncForCheque(entry.cheque.id);
+      } catch (error) {
+        this.logger.error(
+          `Failed to schedule reminders for cheque ${entry.cheque.id}`,
+          error instanceof Error ? error.stack : undefined,
+        );
+      }
+    }
+
+    return {
+      status: 'APPLIED',
+      applied: applied.map((cheque) => toChequeSummary(cheque, today)),
+      skipped,
+    };
+  }
+
+  /**
+   * Writes one transition: the status, the custody columns, the ledger event
+   * and the audit entry.
+   *
+   * Takes the transaction rather than opening one, so a bulk action can put
+   * many cheques through it and still be a single all-or-nothing write. It
+   * deliberately does not validate — the caller has already checked the
+   * transition, the permission and the counterparty, and re-checking here
+   * would let a caller skip those by not calling them.
+   */
+  private async applyWithin(
+    tx: Prisma.TransactionClient,
+    user: RequestUser,
+    cheque: Pick<Cheque, 'id' | 'status' | 'version' | 'currentHolderId' | 'currentLocationId'>,
+    transition: TransitionDefinition,
+    payload: ChequeActionPayload,
+    auditMeta: Partial<AuditContext>,
+  ): Promise<void> {
+    const custody = this.custodyChanges(transition, payload, user);
+
+    const result = await tx.cheque.updateMany({
+      where: { id: cheque.id, organizationId: user.organizationId, version: cheque.version },
+      data: {
+        status: transition.to,
+        ...custody,
+        version: { increment: 1 },
+      },
+    });
+    if (result.count === 0) {
+      // Someone changed the cheque between the read and the write.
+      throw AppError.versionConflict(cheque.version, cheque.version + 1);
+    }
+
+    await tx.chequeEvent.create({
+      data: {
+        chequeId: cheque.id,
+        eventType: transition.eventType,
+        fromStatus: cheque.status,
+        toStatus: transition.to,
+        fromContactId: payload.fromContactId ?? null,
+        toContactId: payload.toContactId ?? null,
+        fromUserId: cheque.currentHolderId,
+        toUserId: payload.toUserId ?? null,
+        fromLocationId: cheque.currentLocationId,
+        toLocationId: payload.toLocationId ?? null,
+        eventDate: payload.eventDate ? new Date(payload.eventDate) : new Date(),
+        notes: payload.notes ?? payload.reason ?? null,
+        proofAttachmentId: payload.proofAttachmentId ?? null,
+        performedBy: user.id,
+        approvedBy: payload.approvedBy ?? null,
+      },
+    });
+
+    await this.audit.recordWithin(tx, {
+      organizationId: user.organizationId,
+      userId: user.id,
+      action: AuditAction.CHEQUE_ACTION,
+      entityType: 'cheque',
+      entityId: cheque.id,
+      before: { status: cheque.status },
+      after: { status: transition.to, action: transition.action, notes: payload.notes ?? null },
+      ipAddress: auditMeta.ipAddress ?? null,
+      deviceInfo: auditMeta.deviceInfo ?? null,
+    });
   }
 
   /** Maps an action onto the custody columns it is allowed to move. */
