@@ -9,6 +9,7 @@ import { Permission, type ContactStatementView } from '@cheque-flow/shared-types
 import { Badge, Button, ErrorState, LoadingState, SuccessBanner } from '@cheque-flow/ui';
 
 import { ChequeTable } from '@/components/cheque-table';
+import { ContactEditForm } from '@/components/contact-edit-form';
 import { FactGrid } from '@/components/fact-grid';
 import { PageHeader } from '@/components/page-header';
 import { Panel } from '@/components/panel';
@@ -28,6 +29,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mergeTarget, setMergeTarget] = useState('');
+  const [editing, setEditing] = useState(false);
 
   const statement = useQuery<ContactStatementView>({
     queryKey: ['contact-statement', id],
@@ -109,17 +111,45 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
         </p>
       ) : null}
 
-      <Panel title={t('contact.title')}>
-        <FactGrid
-          facts={[
-            { label: t('contact.phone'), value: contact.phone ?? '—', ltr: true },
-            { label: t('contact.email'), value: contact.email ?? '—', ltr: true },
-            { label: t('contact.companyName'), value: contact.companyName ?? '—' },
-            { label: t('contact.nationalId'), value: contact.nationalId ?? '—', ltr: true },
-            { label: t('contact.taxNumber'), value: contact.taxNumber ?? '—', ltr: true },
-            { label: t('contact.address'), value: contact.address ?? '—' },
-          ]}
-        />
+      <Panel
+        title={editing ? t('contact.editTitle') : t('contact.title')}
+        action={
+          canManage && !editing ? (
+            <Button variant="secondary" onClick={() => setEditing(true)}>
+              {t('common.edit')}
+            </Button>
+          ) : undefined
+        }
+      >
+        {editing ? (
+          <ContactEditForm
+            contact={contact}
+            onCancel={() => setEditing(false)}
+            onDone={() => {
+              setEditing(false);
+              setNotice(t('contact.updateSuccess'));
+              void statement.refetch();
+            }}
+          />
+        ) : (
+          <FactGrid
+            facts={[
+              // A missing number is the most consequential blank here: it is
+              // what stops a reminder being sent, so it is said plainly rather
+              // than shown as another dash.
+              {
+                label: t('contact.phone'),
+                value: contact.phone ?? t('contact.noPhone'),
+                ltr: contact.phone !== null,
+              },
+              { label: t('contact.email'), value: contact.email ?? '—', ltr: true },
+              { label: t('contact.companyName'), value: contact.companyName ?? '—' },
+              { label: t('contact.nationalId'), value: contact.nationalId ?? '—', ltr: true },
+              { label: t('contact.taxNumber'), value: contact.taxNumber ?? '—', ltr: true },
+              { label: t('contact.address'), value: contact.address ?? '—' },
+            ]}
+          />
+        )}
       </Panel>
 
       {/* Above the statement on purpose: whether this customer is already

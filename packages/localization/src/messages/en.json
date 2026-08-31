@@ -298,7 +298,8 @@
     "statementLimited": "Showing the most recent {count} cheques only",
     "taxNumber": "Tax number",
     "title": "Contacts",
-    "type": "Type"
+    "type": "Type",
+    "updateSuccess": "Contact updated"
   },
   "contactType": {
     "CUSTOMER": "Customer",

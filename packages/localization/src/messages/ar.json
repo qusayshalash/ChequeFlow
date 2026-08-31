@@ -298,7 +298,8 @@
     "statementLimited": "يعرض آخر {count} شيك فقط",
     "taxNumber": "الرقم الضريبي",
     "title": "جهات الاتصال",
-    "type": "النوع"
+    "type": "النوع",
+    "updateSuccess": "تم تحديث بيانات جهة الاتصال"
   },
   "contactType": {
     "CUSTOMER": "عميل",
