@@ -56,9 +56,34 @@ export interface ContactView {
   nationalId: string | null;
   address: string | null;
   notes: string | null;
+  /**
+   * Ceiling of uncollected cheques the business will hold from this contact,
+   * and the currency it is measured in. `null` means nobody has decided yet —
+   * it never means unlimited.
+   */
+  creditLimit: MoneyString | null;
+  creditLimitCurrency: string | null;
   isActive: boolean;
   createdAt: IsoDateTimeString;
   updatedAt: IsoDateTimeString;
+}
+
+/**
+ * How much of a contact's credit limit their uncollected cheques use up.
+ *
+ * Only cheques in the limit's own currency count towards it. Converting the
+ * rest at today's rate would make the headroom move on days when nothing
+ * happened, so they are listed separately and left out of the arithmetic.
+ */
+export interface ContactCreditStatus {
+  limit: MoneyString;
+  currency: string;
+  used: MoneyString;
+  /** Negative when the limit is exceeded — "over by 900" is the useful number. */
+  headroom: MoneyString;
+  exceeded: boolean;
+  /** Uncollected cheques in currencies the limit says nothing about. */
+  otherCurrencies: Array<{ currency: string } & Bucket>;
 }
 
 export interface LocationView {
@@ -127,8 +152,27 @@ export interface ChequeSummaryView {
   createdAt: IsoDateTimeString;
 }
 
+/** One end of a replacement chain, as shown on a cheque's own page. */
+export interface ChequeLinkView {
+  id: string;
+  chequeNumber: string;
+  status: ChequeStatus;
+  amount: MoneyString;
+  /** Carried because a replacement is not always in the same currency. */
+  currency: string;
+}
+
 export interface ChequeDetailView extends ChequeSummaryView {
   branchId: string | null;
+  /**
+   * The bounced or returned cheque this one was written to replace, and any
+   * later cheque written to replace this one.
+   *
+   * Without the link, three replacements for one debt read as three unrelated
+   * cheques and the customer's history looks cleaner than it was.
+   */
+  replaces: ChequeLinkView | null;
+  replacedBy: ChequeLinkView[];
   /** The amount written in letters, as it appears on the cheque. */
   amountInWords: string | null;
   issueDate: IsoDateString | null;
@@ -264,6 +308,8 @@ export interface ContactStatementCurrency {
 export interface ContactStatementView {
   contact: ContactView;
   currencies: ContactStatementCurrency[];
+  /** `null` when no limit is set for this contact. */
+  creditLimit: ContactCreditStatus | null;
   /** Most recent cheques involving this contact, newest first. */
   cheques: ChequeSummaryView[];
   /**

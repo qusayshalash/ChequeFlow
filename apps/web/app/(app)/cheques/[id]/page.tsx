@@ -9,8 +9,9 @@ import {
   Permission,
   utcToday,
   type ChequeDetailView,
+  type ChequeLinkView,
 } from '@cheque-flow/shared-types';
-import { ErrorState, LoadingState } from '@cheque-flow/ui';
+import { ErrorState, LoadingState, StatusBadge } from '@cheque-flow/ui';
 
 import { ChequeActionsPanel } from '@/components/cheque-actions';
 import { ChequeHero } from '@/components/cheque-hero';
@@ -146,7 +147,33 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
                   {t('cheque.bounceFee')}: {money(locale, data.bounceFee, data.currency)}
                 </p>
               ) : null}
+
+              {/* Offered right here, because this is the moment the question
+                  comes up: the cheque came back, so what was written instead? */}
+              {data.replacedBy.length === 0 ? (
+                <Link
+                  href={`/cheques/new?replaces=${data.id}`}
+                  className="mt-3 inline-flex h-10 items-center rounded-xl border border-red-300 bg-white px-4 text-sm font-semibold text-red-700 hover:bg-red-100"
+                >
+                  {t('cheque.recordReplacement')}
+                </Link>
+              ) : null}
             </section>
+          ) : null}
+
+          {/* The chain in both directions. Without it, three replacements for
+              one debt read as three unrelated cheques. */}
+          {data.replaces || data.replacedBy.length > 0 ? (
+            <Panel title={t('cheque.replacementChain')}>
+              <div className="flex flex-col gap-3">
+                {data.replaces ? (
+                  <ChainRow label={t('cheque.replaces')} link={data.replaces} />
+                ) : null}
+                {data.replacedBy.map((entry) => (
+                  <ChainRow key={entry.id} label={t('cheque.replacedBy')} link={entry} />
+                ))}
+              </div>
+            </Panel>
           ) : null}
 
           <Panel title={t('cheque.dates')}>
@@ -192,6 +219,29 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
           <ChequeImagesPanel chequeId={data.id} canViewImages={canViewImages} />
         </div>
       </div>
+    </div>
+  );
+}
+
+/** One end of a replacement chain: what it was, and a way to open it. */
+function ChainRow({ label, link }: { label: string; link: ChequeLinkView }) {
+  const t = useTranslator();
+  const { locale } = useApp();
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-slate-200 p-3">
+      <span className="text-xs font-semibold text-slate-500">{label}</span>
+      <Link
+        href={`/cheques/${link.id}`}
+        dir="ltr"
+        className="font-semibold text-slate-900 tabular-nums hover:text-teal-700"
+      >
+        {link.chequeNumber}
+      </Link>
+      <span className="text-sm text-slate-600 tabular-nums">
+        {money(locale, link.amount, link.currency)}
+      </span>
+      <StatusBadge status={link.status} label={t(`status.${link.status}`)} />
     </div>
   );
 }

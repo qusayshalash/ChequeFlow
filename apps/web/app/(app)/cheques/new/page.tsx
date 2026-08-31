@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 
 import { ApiClientError } from '@cheque-flow/api-client';
@@ -50,6 +50,9 @@ export default function NewChequePage() {
   const api = useApi();
   const t = useTranslator();
   const router = useRouter();
+  // Arrived from a bounced cheque's page: the replacement link is carried in
+  // the URL so the form opens already knowing what it is replacing.
+  const replacesChequeId = useSearchParams().get('replaces');
 
   // Two ways in: one cheque, or a whole book of serial cheques. They share the
   // page rather than living at two URLs, because staff decide which they are
@@ -92,6 +95,7 @@ export default function NewChequePage() {
     const parsed = createChequeSchema.safeParse({
       ...form,
       amountInWords: form.amountInWords || null,
+      replacesChequeId,
       exchangeRate: form.exchangeRate || null,
       issueDate: form.issueDate || null,
       bankId: form.bankId || null,
@@ -160,6 +164,12 @@ export default function NewChequePage() {
         <ErrorState
           title={`${t('cheque.duplicateWarning')} — ${t('cheque.duplicateBusinessKey')}`}
         />
+      ) : null}
+
+      {replacesChequeId ? (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          {t('cheque.replacesHint')}
+        </p>
       ) : null}
 
       {mutation.isSuccess ? <SuccessBanner message={t('cheque.createSuccess')} /> : null}

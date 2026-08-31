@@ -66,6 +66,12 @@ const chequeCoreObject = z.object({
   /** Plain account number; encrypted at rest by the API before persisting. */
   accountNumber: optionalText(64),
   drawerName: optionalText(255),
+  /**
+   * The bounced or returned cheque this one replaces. The API checks that it
+   * is in the same organization, that it actually came back, and that the link
+   * does not close a loop.
+   */
+  replacesChequeId: uuidSchema.nullish().transform((v) => v ?? null),
   /** The party the cheque was originally received from. */
   originalSourceId: uuidSchema.nullish().transform((v) => v ?? null),
   originalPayeeName: optionalText(255),
@@ -158,6 +164,7 @@ export const updateChequeSchema = z.object({
   bankBranchRaw: optionalText(255).optional(),
   accountNumber: optionalText(64).optional(),
   drawerName: optionalText(255).optional(),
+  replacesChequeId: uuidSchema.nullish(),
   originalSourceId: uuidSchema.nullish(),
   originalPayeeName: optionalText(255).optional(),
   purpose: optionalText(255).optional(),

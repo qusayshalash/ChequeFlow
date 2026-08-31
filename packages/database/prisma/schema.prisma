@@ -288,6 +288,11 @@ model Contact {
   nationalId     String?     @map("national_id")
   address        String?
   notes          String?
+  /// Ceiling of uncollected cheques the business will hold from this contact.
+  /// NULL means nobody has decided yet — never "unlimited".
+  creditLimit         Decimal? @map("credit_limit") @db.Decimal(18, 2)
+  /// A ceiling means nothing without a currency, so the two travel together.
+  creditLimitCurrency String?  @map("credit_limit_currency") @db.Char(3)
   isActive       Boolean     @default(true) @map("is_active")
   createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt      DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -390,6 +395,10 @@ model Cheque {
   accountNumberEncrypted String? @map("account_number_encrypted")
   drawerName             String? @map("drawer_name")
 
+  /// The bounced or returned cheque this one was written to replace.
+  /// Without it, three replacements for one debt read as three unrelated
+  /// cheques and the customer's history looks cleaner than it was.
+  replacesChequeId    String? @map("replaces_cheque_id") @db.Uuid
   originalSourceId    String? @map("original_source_id") @db.Uuid
   originalPayeeName   String? @map("original_payee_name")
   currentHolderId     String? @map("current_holder_id") @db.Uuid
@@ -427,6 +436,8 @@ model Cheque {
   currentLocation  Location?    @relation("ChequeCurrentLocation", fields: [currentLocationId], references: [id], onDelete: SetNull)
   creator          User?        @relation("ChequeCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
   reviewer         User?        @relation("ChequeReviewedBy", fields: [reviewedBy], references: [id], onDelete: SetNull)
+  replaces         Cheque?      @relation("ChequeReplacement", fields: [replacesChequeId], references: [id], onDelete: SetNull)
+  replacedBy       Cheque[]     @relation("ChequeReplacement")
 
   images         ChequeImage[]
   events         ChequeEvent[]
@@ -440,6 +451,7 @@ model Cheque {
   @@index([organizationId, branchId])
   @@index([organizationId, originalSourceId])
   @@index([organizationId, currentLocationId])
+  @@index([replacesChequeId])
   // Business key used by the duplicate detector.
   @@index([organizationId, bankId, chequeNumber, amount, dueDate], name: "cheques_duplicate_key_idx")
   @@map("cheques")

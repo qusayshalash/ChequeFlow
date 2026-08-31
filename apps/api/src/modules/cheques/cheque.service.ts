@@ -107,6 +107,58 @@ export class ChequeService {
   ) {}
 
   /**
+   * Checks that a cheque may be recorded as replacing another.
+   *
+   * Three things have to hold: the replaced cheque is in this organization,
+   * it actually came back (a cheque that cleared was not replaced — it was
+   * paid), and the link does not close a loop. The loop check walks the chain
+   * rather than looking one step back: A→B→C→A is just as broken as A→A, and
+   * a cycle makes every screen that follows the chain hang.
+   */
+  private async assertReplaceable(
+    organizationId: string,
+    replacesChequeId: string,
+    selfId?: string,
+  ): Promise<void> {
+    const target = await this.prisma.db.cheque.findFirst({
+      where: { id: replacesChequeId, organizationId, deletedAt: null },
+      select: { id: true, status: true, replacesChequeId: true },
+    });
+    if (!target) throw AppError.notFound('Cheque', replacesChequeId);
+
+    if (target.status !== ChequeStatus.BOUNCED && target.status !== ChequeStatus.RETURNED) {
+      throw new AppError(
+        ApiErrorCode.VALIDATION_ERROR,
+        'Only a bounced or returned cheque can be replaced',
+        {
+          fieldErrors: [
+            { path: 'replacesChequeId', message: 'validation.cheque.replacesNotBounced' },
+          ],
+        },
+      );
+    }
+
+    if (!selfId) return;
+
+    let cursor: string | null = target.replacesChequeId;
+    const seen = new Set<string>([selfId, target.id]);
+    while (cursor) {
+      if (seen.has(cursor)) {
+        throw new AppError(ApiErrorCode.VALIDATION_ERROR, 'Replacement chain would loop', {
+          fieldErrors: [{ path: 'replacesChequeId', message: 'validation.cheque.replacesLoop' }],
+        });
+      }
+      seen.add(cursor);
+      const next: { replacesChequeId: string | null } | null =
+        await this.prisma.db.cheque.findUnique({
+          where: { id: cursor },
+          select: { replacesChequeId: true },
+        });
+      cursor = next?.replacesChequeId ?? null;
+    }
+  }
+
+  /**
    * The currency this organization keeps its books in.
    *
    * Read per write rather than cached on the session: it is one indexed lookup
@@ -149,6 +201,10 @@ export class ChequeService {
       bankId: input.bankId,
     });
 
+    if (input.replacesChequeId) {
+      await this.assertReplaceable(user.organizationId, input.replacesChequeId);
+    }
+
     const conversion = computeConversion(
       input.amount,
       input.currency,
@@ -176,6 +232,7 @@ export class ChequeService {
           bankBranchRaw: input.bankBranchRaw,
           accountNumberEncrypted: this.encryption.encryptNullable(input.accountNumber),
           drawerName: input.drawerName,
+          replacesChequeId: input.replacesChequeId,
           originalSourceId: input.originalSourceId,
           originalPayeeName: input.originalPayeeName,
           currentLocationId: input.currentLocationId,
@@ -291,6 +348,12 @@ export class ChequeService {
       bankId: input.bankId,
     });
 
+    // A customer often replaces one bounced cheque with several smaller ones,
+    // so the link belongs to the batch rather than to a single row.
+    if (input.replacesChequeId) {
+      await this.assertReplaceable(user.organizationId, input.replacesChequeId);
+    }
+
     const accountNumberEncrypted = this.encryption.encryptNullable(input.accountNumber);
     // One lookup for the whole book: every cheque in it shares a currency and
     // a rate, so they all convert against the same base.
@@ -355,6 +418,7 @@ export class ChequeService {
         bankBranchRaw: shared.bankBranchRaw,
         accountNumberEncrypted,
         drawerName: shared.drawerName,
+        replacesChequeId: shared.replacesChequeId,
         originalSourceId: shared.originalSourceId,
         originalPayeeName: shared.originalPayeeName,
         currentLocationId: shared.currentLocationId,
@@ -491,6 +555,10 @@ export class ChequeService {
       bankId: input.bankId ?? null,
     });
 
+    if (input.replacesChequeId) {
+      await this.assertReplaceable(user.organizationId, input.replacesChequeId, chequeId);
+    }
+
     // The converted amount is recomputed whenever any of its three inputs
     // moves. Leaving it alone would leave a figure in the books that no longer
     // follows from the cheque it sits on.
@@ -534,6 +602,9 @@ export class ChequeService {
         ? { accountNumberEncrypted: this.encryption.encryptNullable(input.accountNumber) }
         : {}),
       ...(input.drawerName !== undefined ? { drawerName: input.drawerName } : {}),
+      ...(input.replacesChequeId !== undefined
+        ? { replacesChequeId: input.replacesChequeId ?? null }
+        : {}),
       ...(input.originalSourceId !== undefined ? { originalSourceId: input.originalSourceId } : {}),
       ...(input.originalPayeeName !== undefined
         ? { originalPayeeName: input.originalPayeeName }

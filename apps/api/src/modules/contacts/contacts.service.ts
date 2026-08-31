@@ -5,6 +5,7 @@ import {
   OUTSTANDING_CHEQUE_STATUSES,
   utcToday,
   ApiErrorCode,
+  type ContactCreditStatus,
   type ContactStatementCurrency,
   type ContactStatementView,
   type ContactView,
@@ -38,6 +39,8 @@ function toView(contact: ContactRow): ContactView {
     nationalId: contact.nationalId,
     address: contact.address,
     notes: contact.notes,
+    creditLimit: contact.creditLimit === null ? null : moneyToString(contact.creditLimit),
+    creditLimitCurrency: contact.creditLimitCurrency,
     isActive: contact.isActive,
     createdAt: contact.createdAt.toISOString(),
     updatedAt: contact.updatedAt.toISOString(),
@@ -292,6 +295,45 @@ export class ContactsService {
    * actually paid, and what came back — each per currency, never summed
    * across currencies.
    */
+  /**
+   * How much of a contact's credit limit their uncollected cheques use up.
+   *
+   * Only cheques in the limit's own currency count. Converting other currencies
+   * at today's rate to squeeze them in would make the headroom figure move on
+   * days when nothing happened, and a limit that drifts is one nobody trusts.
+   * Cheques in another currency are reported separately instead.
+   *
+   * `null` when no limit is set. That is not "unlimited" — nobody has decided
+   * yet, and the screens say so.
+   */
+  private static creditStatus(
+    contact: ContactView,
+    currencies: readonly ContactStatementCurrency[],
+  ): ContactCreditStatus | null {
+    if (contact.creditLimit === null || contact.creditLimitCurrency === null) return null;
+
+    const inCurrency = currencies.find((entry) => entry.currency === contact.creditLimitCurrency);
+    const used = toMoney(inCurrency?.pending.total ?? '0');
+    const limit = toMoney(contact.creditLimit);
+    const headroom = limit.minus(used);
+
+    return {
+      limit: moneyToString(limit),
+      currency: contact.creditLimitCurrency,
+      used: moneyToString(used),
+      // Negative headroom is reported rather than clamped: "over by 900" is the
+      // number the person chasing the debt actually needs.
+      headroom: moneyToString(headroom),
+      exceeded: headroom.lessThan(0),
+      // Uncollected cheques the limit says nothing about.
+      otherCurrencies: currencies
+        .filter(
+          (entry) => entry.currency !== contact.creditLimitCurrency && entry.pending.count > 0,
+        )
+        .map((entry) => ({ currency: entry.currency, ...entry.pending })),
+    };
+  }
+
   async statement(user: RequestUser, id: string, limit = 50): Promise<ContactStatementView> {
     const contact = await this.findById(user, id);
 
@@ -347,9 +389,14 @@ export class ContactsService {
     }
 
     const today = utcToday();
+    const currencies = [...byCurrency.values()].sort((a, b) =>
+      a.currency.localeCompare(b.currency),
+    );
+
     return {
       contact,
-      currencies: [...byCurrency.values()].sort((a, b) => a.currency.localeCompare(b.currency)),
+      currencies,
+      creditLimit: ContactsService.creditStatus(contact, currencies),
       cheques: rows.map((row) => toChequeSummary(row, today)),
       totalCheques,
     };

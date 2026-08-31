@@ -78,7 +78,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  const { contact, currencies, cheques, totalCheques } = statement.data;
+  const { contact, currencies, creditLimit, cheques, totalCheques } = statement.data;
 
   return (
     <div className="mx-auto flex max-w-[1180px] flex-col gap-5">
@@ -120,6 +120,59 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
             { label: t('contact.address'), value: contact.address ?? '—' },
           ]}
         />
+      </Panel>
+
+      {/* Above the statement on purpose: whether this customer is already
+          holding more than agreed is the question you ask before taking
+          another cheque, not after reading the whole history. */}
+      <Panel title={t('contact.creditLimit')}>
+        {creditLimit === null ? (
+          <p className="text-sm text-slate-500">{t('contact.creditNotSet')}</p>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl border border-slate-200 p-3">
+                <p className="text-xs text-slate-500">{t('contact.creditLimit')}</p>
+                <p className="mt-1 text-sm font-bold text-slate-900 tabular-nums">
+                  {money(locale, creditLimit.limit, creditLimit.currency)}
+                </p>
+              </div>
+              <div className="rounded-xl border border-slate-200 p-3">
+                <p className="text-xs text-slate-500">{t('contact.creditUsed')}</p>
+                <p className="mt-1 text-sm font-bold text-amber-600 tabular-nums">
+                  {money(locale, creditLimit.used, creditLimit.currency)}
+                </p>
+              </div>
+              <div
+                className={`rounded-xl border p-3 ${
+                  creditLimit.exceeded ? 'border-red-200 bg-red-50' : 'border-slate-200'
+                }`}
+              >
+                <p className="text-xs text-slate-500">
+                  {creditLimit.exceeded ? t('contact.creditExceeded') : t('contact.creditHeadroom')}
+                </p>
+                <p
+                  className={`mt-1 text-sm font-bold tabular-nums ${
+                    creditLimit.exceeded ? 'text-red-700' : 'text-teal-700'
+                  }`}
+                >
+                  {money(locale, creditLimit.headroom, creditLimit.currency)}
+                </p>
+              </div>
+            </div>
+
+            {/* Named rather than folded in: converting them at today's rate
+                would make the headroom move on days when nothing happened. */}
+            {creditLimit.otherCurrencies.length > 0 ? (
+              <p className="text-xs text-slate-500">
+                {t('contact.creditOther')}:{' '}
+                {creditLimit.otherCurrencies
+                  .map((entry) => money(locale, entry.total, entry.currency))
+                  .join(' · ')}
+              </p>
+            ) : null}
+          </div>
+        )}
       </Panel>
 
       {/* The position, per currency. A single figure across currencies would

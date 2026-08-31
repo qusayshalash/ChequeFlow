@@ -37,6 +37,8 @@ export default function ContactsPage() {
   const [name, setName] = useState('');
   const [type, setType] = useState<string>(ContactType.CUSTOMER);
   const [phone, setPhone] = useState('');
+  const [creditLimit, setCreditLimit] = useState('');
+  const [creditCurrency, setCreditCurrency] = useState('USD');
   const [error, setError] = useState<string | null>(null);
 
   const contacts = useQuery({
@@ -50,6 +52,10 @@ export default function ContactsPage() {
         type,
         name,
         phone: phone || null,
+        // The currency only travels with an actual limit: sending one on its
+        // own is the half-written pair the schema rejects.
+        creditLimit: creditLimit || null,
+        creditLimitCurrency: creditLimit ? creditCurrency : null,
       });
       if (!parsed.success) {
         const first = parsed.error.issues[0];
@@ -65,6 +71,7 @@ export default function ContactsPage() {
     onSuccess: () => {
       setName('');
       setPhone('');
+      setCreditLimit('');
       void queryClient.invalidateQueries({ queryKey: ['contacts'] });
     },
     onError: (caught: unknown) => {
@@ -112,6 +119,36 @@ export default function ContactsPage() {
                 ))}
               </select>
             </Field>
+            <Field
+              label={t('contact.creditLimit')}
+              htmlFor="contact-credit"
+              hint={t('contact.creditLimitHint')}
+            >
+              <div className="flex gap-2">
+                <input
+                  id="contact-credit"
+                  dir="ltr"
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  className={inputClassName}
+                  value={creditLimit}
+                  onChange={(event) => setCreditLimit(event.target.value)}
+                />
+                <select
+                  aria-label={t('contact.creditLimitCurrency')}
+                  className={`${inputClassName} w-24`}
+                  value={creditCurrency}
+                  onChange={(event) => setCreditCurrency(event.target.value)}
+                >
+                  {['USD', 'ILS', 'JOD', 'EUR'].map((code) => (
+                    <option key={code} value={code}>
+                      {code}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </Field>
+
             <Field label={t('contact.phone')} htmlFor="contact-phone">
               <input
                 id="contact-phone"

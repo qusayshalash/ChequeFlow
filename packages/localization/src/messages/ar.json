@@ -150,6 +150,7 @@
     "listTitle": "الشيكات",
     "newTitle": "شيك جديد",
     "noImages": "لا توجد صور لهذا الشيك",
+    "noReplacement": "لا يوجد شيك بديل",
     "notConverted": "بلا سعر صرف",
     "notYet": "لم يحدث بعد",
     "notesGroup": "ملاحظات",
@@ -164,7 +165,12 @@
     "purpose": "الغرض",
     "receivedDate": "تاريخ الاستلام",
     "receivedFrom": "استُلم من",
+    "recordReplacement": "تسجيل شيك بديل",
     "referenceNumber": "الرقم المرجعي",
+    "replacedBy": "استُبدل بـ",
+    "replacementChain": "سلسلة الاستبدال",
+    "replaces": "بديل عن الشيك",
+    "replacesHint": "الشيك المرتجع الذي كُتب هذا الشيك بدلًا منه",
     "reviewedBy": "روجع بواسطة",
     "singleMode": "شيك واحد",
     "sortAmount": "المبلغ",
@@ -262,6 +268,14 @@
     "collected": "محصّلة",
     "companyName": "اسم الشركة",
     "createSuccess": "تمت إضافة جهة الاتصال",
+    "creditExceeded": "تجاوز السقف",
+    "creditHeadroom": "المتبقي",
+    "creditLimit": "سقف الائتمان",
+    "creditLimitCurrency": "عملة السقف",
+    "creditLimitHint": "أقصى مجموع شيكات غير محصّلة تقبل الاحتفاظ بها من هذه الجهة",
+    "creditNotSet": "لم يُحدَّد سقف لهذه الجهة",
+    "creditOther": "شيكات بعملات أخرى، خارج حساب السقف",
+    "creditUsed": "المستخدم",
     "deactivated": "تم تعطيل جهة الاتصال لأنها مرتبطة بشيكات",
     "deleted": "تم حذف جهة الاتصال",
     "editTitle": "تعديل جهة الاتصال",
@@ -556,12 +570,15 @@
     "cheque": {
       "dueBeforeIssue": "تاريخ الاستحقاق قبل تاريخ الإصدار",
       "duplicateNumberInBatch": "رقم الشيك مكرر داخل الدفعة",
-      "duplicateSelection": "الشيك نفسه مُحدَّد أكثر من مرة"
+      "duplicateSelection": "الشيك نفسه مُحدَّد أكثر من مرة",
+      "replacesLoop": "سلسلة الاستبدال تدور على نفسها",
+      "replacesNotBounced": "لا يمكن استبدال شيك لم يرتدّ ولم يُرجَع"
     },
     "chequeNumber": {
       "invalid": "رقم شيك غير صحيح"
     },
     "contact": {
+      "creditLimitNeedsCurrency": "سقف الائتمان يحتاج عملة",
       "mergeSelf": "لا يمكن دمج جهة اتصال مع نفسها"
     },
     "counterparty": {

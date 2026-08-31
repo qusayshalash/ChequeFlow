@@ -150,6 +150,7 @@
     "listTitle": "Cheques",
     "newTitle": "New cheque",
     "noImages": "No images for this cheque",
+    "noReplacement": "No replacement cheque",
     "notConverted": "No rate recorded",
     "notYet": "Not yet",
     "notesGroup": "Notes",
@@ -164,7 +165,12 @@
     "purpose": "Purpose",
     "receivedDate": "Received date",
     "receivedFrom": "Received from",
+    "recordReplacement": "Record a replacement cheque",
     "referenceNumber": "Reference",
+    "replacedBy": "Replaced by",
+    "replacementChain": "Replacement chain",
+    "replaces": "Replaces cheque",
+    "replacesHint": "The returned cheque this one was written instead of",
     "reviewedBy": "Reviewed by",
     "singleMode": "Single cheque",
     "sortAmount": "Amount",
@@ -262,6 +268,14 @@
     "collected": "Collected",
     "companyName": "Company",
     "createSuccess": "Contact created",
+    "creditExceeded": "Over the limit",
+    "creditHeadroom": "Remaining",
+    "creditLimit": "Credit limit",
+    "creditLimitCurrency": "Limit currency",
+    "creditLimitHint": "The most in uncollected cheques you will hold from this contact",
+    "creditNotSet": "No limit set for this contact",
+    "creditOther": "Cheques in other currencies, outside the limit",
+    "creditUsed": "Used",
     "deactivated": "The contact was deactivated because cheques reference it",
     "deleted": "Contact deleted",
     "editTitle": "Edit contact",
@@ -556,12 +570,15 @@
     "cheque": {
       "dueBeforeIssue": "Due date is before the issue date",
       "duplicateNumberInBatch": "Duplicate cheque number inside the batch",
-      "duplicateSelection": "The same cheque is selected more than once"
+      "duplicateSelection": "The same cheque is selected more than once",
+      "replacesLoop": "That would make the replacement chain loop",
+      "replacesNotBounced": "Only a bounced or returned cheque can be replaced"
     },
     "chequeNumber": {
       "invalid": "Invalid cheque number"
     },
     "contact": {
+      "creditLimitNeedsCurrency": "A credit limit needs a currency",
       "mergeSelf": "A contact cannot be merged into itself"
     },
     "counterparty": {

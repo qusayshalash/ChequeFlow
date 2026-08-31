@@ -33,6 +33,15 @@ export const chequeSummarySelect = {
 
 export const chequeDetailInclude = {
   bank: { select: { name: true } },
+  // Both directions of the replacement chain: the cheque this one was written
+  // to replace, and any later cheque written to replace this one.
+  replaces: {
+    select: { id: true, chequeNumber: true, status: true, amount: true, currency: true },
+  },
+  replacedBy: {
+    select: { id: true, chequeNumber: true, status: true, amount: true, currency: true },
+    orderBy: { createdAt: 'asc' },
+  },
   originalSource: { select: { name: true } },
   currentRecipient: { select: { name: true } },
   currentLocation: { select: { name: true } },
@@ -124,6 +133,22 @@ export function toChequeDetail(
     bounceFee: row.bounceFee === null ? null : moneyToString(row.bounceFee),
     exchangeRate: row.exchangeRate ? rateToString(row.exchangeRate) : null,
     amountBase: row.amountBase ? moneyToString(row.amountBase) : null,
+    replaces: row.replaces
+      ? {
+          id: row.replaces.id,
+          chequeNumber: row.replaces.chequeNumber,
+          status: row.replaces.status,
+          amount: moneyToString(row.replaces.amount),
+          currency: row.replaces.currency,
+        }
+      : null,
+    replacedBy: row.replacedBy.map((entry) => ({
+      id: entry.id,
+      chequeNumber: entry.chequeNumber,
+      status: entry.status,
+      amount: moneyToString(entry.amount),
+      currency: entry.currency,
+    })),
     ocrStatus: row.ocrStatus,
     ocrOverallConfidence:
       row.ocrOverallConfidence === null ? null : Number(row.ocrOverallConfidence),
