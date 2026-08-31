@@ -14,6 +14,7 @@ import {
 import { ErrorState, LoadingState, StatusBadge } from '@cheque-flow/ui';
 
 import { ChequeActionsPanel } from '@/components/cheque-actions';
+import { WhatsAppReminder } from '@/components/whatsapp-reminder';
 import { ChequeHero } from '@/components/cheque-hero';
 import { ChequeImagesPanel } from '@/components/cheque-images';
 import { ChequeTimeline } from '@/components/cheque-timeline';
@@ -59,6 +60,16 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
 
   const data = cheque.data;
   const unknown = t('common.unknown');
+  // The party the cheque came from, looked up for their phone number.
+  const source = (contacts.data?.data ?? []).find(
+    (contact) => contact.id === data.originalSourceId,
+  );
+  // Nothing more is owed on these, so nudging the customer would be noise.
+  const settled: ReadonlySet<string> = new Set([
+    ChequeStatus.CLEARED,
+    ChequeStatus.CANCELLED,
+    ChequeStatus.TRANSFERRED,
+  ]);
   const unreviewed =
     data.status === ChequeStatus.DRAFT || data.status === ChequeStatus.PENDING_REVIEW;
 
@@ -215,6 +226,18 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
               name: location.name,
             }))}
           />
+
+          {/* Only for money still owed to us: nudging a customer about a
+              cheque that already cleared is how a system loses trust. */}
+          {data.direction === 'INCOMING' && !settled.has(data.status) ? (
+            <Panel title={t('reminders.whatsapp')}>
+              <WhatsAppReminder
+                cheque={data}
+                phone={source?.phone ?? null}
+                contactName={data.originalSourceName}
+              />
+            </Panel>
+          ) : null}
 
           <ChequeImagesPanel chequeId={data.id} canViewImages={canViewImages} />
         </div>

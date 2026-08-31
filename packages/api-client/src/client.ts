@@ -9,6 +9,7 @@ import type {
   ContactStatementView,
   ContactView,
   DashboardSummary,
+  DepositSlipView,
   DuplicateChequeMatch,
   LocationView,
   Paginated,
@@ -223,6 +224,11 @@ export class ChequeFlowApiClient {
     });
   }
 
+  /** The day's deposit run: cheques in hand and due, grouped by bank. */
+  getDepositSlip(query: { on?: string; branchId?: string; bankId?: string } = {}) {
+    return this.request<DepositSlipView>('/reports/deposit-slip', { query });
+  }
+
   /** Whether OCR, the database and storage are actually working. */
   getDiagnostics() {
     return this.request<{
@@ -303,6 +309,19 @@ export class ChequeFlowApiClient {
 
   updateCheque(id: string, input: UpdateChequeInput) {
     return this.request<ChequeDetailView>(`/cheques/${id}`, { method: 'PATCH', body: input });
+  }
+
+  /**
+   * Records that a WhatsApp reminder was sent by hand for this cheque.
+   *
+   * The message is sent from the user's own WhatsApp; this only writes down
+   * that it happened, so nobody chases the same customer twice.
+   */
+  recordWhatsAppReminder(id: string, note?: string) {
+    return this.request<{ id: string }>(`/cheques/${id}/whatsapp-reminder`, {
+      method: 'POST',
+      body: note ? { note } : {},
+    });
   }
 
   listChequeEvents(id: string) {

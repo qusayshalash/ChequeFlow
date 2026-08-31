@@ -1,11 +1,15 @@
 import { Injectable } from '@nestjs/common';
 
 import {
+  ChequeDirection,
   ChequeStatus,
   OUTSTANDING_CHEQUE_STATUSES,
+  utcToday,
   type Bucket,
   type DashboardCurrencyTotals,
   type DashboardSummary,
+  type DepositSlipBank,
+  type DepositSlipView,
   type Paginated,
 } from '@cheque-flow/shared-types';
 import { Prisma, moneyToString, sumMoney, toMoney } from '@cheque-flow/database';
@@ -14,6 +18,7 @@ import type {
   CashFlowReportQuery,
   CustodyReportQuery,
   DashboardQuery,
+  DepositSlipQuery,
   DueReportQuery,
 } from '@cheque-flow/validation';
 
@@ -226,6 +231,78 @@ export class ReportsService {
         outgoing: outgoing.get(currency) ?? EMPTY_BUCKET,
       })),
       recentEvents: recentEvents.map(toChequeEventView),
+    };
+  }
+
+  /**
+   * The day's deposit run: which cheques to take to which bank.
+   *
+   * Only cheques the company is actually holding — a cheque already at the
+   * bank, or handed to a supplier, cannot be deposited today. Grouped by bank
+   * because that is how the trip is made: one envelope per bank.
+   *
+   * Cheques that came due *before* the chosen day are included on purpose. One
+   * that fell due last week and is still in the safe belongs on today's run
+   * more urgently than one due today, and a slip that showed only today's date
+   * is how a cheque quietly ages in a drawer.
+   */
+  async depositSlip(user: RequestUser, query: DepositSlipQuery): Promise<DepositSlipView> {
+    const on = query.on ?? utcToday();
+
+    const rows = await this.prisma.db.cheque.findMany({
+      where: {
+        organizationId: user.organizationId,
+        deletedAt: null,
+        // In hand, and nothing else: RESERVED cheques are promised elsewhere.
+        status: ChequeStatus.IN_HAND,
+        direction: ChequeDirection.INCOMING,
+        dueDate: { lte: toDateOnly(on) },
+        ...(query.branchId ? { branchId: query.branchId } : {}),
+        ...(query.bankId ? { bankId: query.bankId } : {}),
+      },
+      select: chequeSummarySelect,
+      orderBy: [{ dueDate: 'asc' }, { chequeNumber: 'asc' }],
+    });
+
+    const banks = new Map<string, DepositSlipBank>();
+    let overdueCount = 0;
+
+    for (const row of rows) {
+      const summary = toChequeSummary(row, on);
+      if (summary.isOverdue) overdueCount += 1;
+
+      // A cheque with no bank on file still has to be deposited somewhere, so
+      // it gets its own group rather than being dropped from the run.
+      const key = row.bank?.name ?? row.bankNameRaw ?? '';
+      const entry = banks.get(key) ?? {
+        bankId: null,
+        bankName: key,
+        currencies: [],
+        cheques: [],
+      };
+
+      entry.cheques.push(summary);
+
+      const bucket = entry.currencies.find((item) => item.currency === summary.currency);
+      if (bucket) {
+        bucket.count += 1;
+        bucket.total = moneyToString(toMoney(bucket.total).plus(toMoney(summary.amount)));
+      } else {
+        entry.currencies.push({
+          currency: summary.currency,
+          count: 1,
+          total: moneyToString(toMoney(summary.amount)),
+        });
+      }
+
+      banks.set(key, entry);
+    }
+
+    return {
+      on,
+      banks: [...banks.values()].sort((a, b) => a.bankName.localeCompare(b.bankName)),
+      overdueCount,
+      totalCount: rows.length,
     };
   }
 

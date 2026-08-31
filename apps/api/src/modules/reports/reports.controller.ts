@@ -6,11 +6,13 @@ import {
   auditLogQuerySchema,
   cashFlowReportQuerySchema,
   custodyReportQuerySchema,
+  depositSlipQuerySchema,
   dashboardQuerySchema,
   dueReportQuerySchema,
   type AuditLogQuery,
   type CashFlowReportQuery,
   type CustodyReportQuery,
+  type DepositSlipQuery,
   type DashboardQuery,
   type DueReportQuery,
 } from '@cheque-flow/validation';
@@ -57,6 +59,19 @@ export class ReportsController {
     @Query(zodQuery(cashFlowReportQuerySchema)) query: CashFlowReportQuery,
   ) {
     return this.reports.cashFlow(user, query);
+  }
+
+  @Get('reports/deposit-slip')
+  @RequirePermissions(Permission.REPORT_VIEW)
+  @ApiOperation({
+    summary: "The day's deposit run: cheques in hand and due, grouped by bank",
+  })
+  @ApiQuery({ name: 'on', required: false, example: '2026-09-30' })
+  depositSlip(
+    @CurrentUser() user: RequestUser,
+    @Query(zodQuery(depositSlipQuerySchema)) query: DepositSlipQuery,
+  ) {
+    return this.reports.depositSlip(user, query);
   }
 
   @Get('reports/custody')

@@ -39,6 +39,7 @@ import {
   depositChequeSchema,
   handoverChequeSchema,
   createReminderSchema,
+  createWhatsAppReminderSchema,
   listChequesQuerySchema,
   markLostChequeSchema,
   postponeChequeSchema,
@@ -54,6 +55,7 @@ import {
   type CreateChequeBatchInput,
   type CreateChequeInput,
   type CreateReminderInput,
+  type CreateWhatsAppReminderInput,
   type DepositChequeInput,
   type HandoverChequeInput,
   type ListChequesQuery,
@@ -292,6 +294,32 @@ export class ChequeController {
       user.id,
       id,
       new Date(body.remindAt),
+      body.note ?? null,
+    );
+    if (!created) throw AppError.notFound('Cheque', id);
+    return created;
+  }
+
+  /**
+   * Logs a WhatsApp reminder the user has just sent from their own phone.
+   *
+   * The system does not send it — there is no business account behind this, and
+   * pretending otherwise would be a capability that silently fails. What it
+   * records is that a person did, so nobody chases the same customer twice.
+   */
+  @Post(':id/whatsapp-reminder')
+  @HttpCode(HttpStatus.CREATED)
+  @RequirePermissions(Permission.CHEQUE_VIEW)
+  @ApiOperation({ summary: 'Record that a WhatsApp reminder was sent by hand' })
+  async recordWhatsApp(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(zodBody(createWhatsAppReminderSchema)) body: CreateWhatsAppReminderInput,
+  ) {
+    const created = await this.reminders.recordWhatsAppSent(
+      user.organizationId,
+      user.id,
+      id,
       body.note ?? null,
     );
     if (!created) throw AppError.notFound('Cheque', id);

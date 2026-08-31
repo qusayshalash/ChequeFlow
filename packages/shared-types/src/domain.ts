@@ -295,6 +295,29 @@ export interface DashboardSummary {
   recentEvents: ChequeEventView[];
 }
 
+/**
+ * One bank's share of a day's deposit run.
+ *
+ * Grouped by bank because that is how the trip is actually made: one envelope
+ * per bank, one slip per envelope.
+ */
+export interface DepositSlipBank {
+  bankId: string | null;
+  bankName: string;
+  /** Totals per currency — never summed across them. */
+  currencies: Array<{ currency: string } & Bucket>;
+  cheques: ChequeSummaryView[];
+}
+
+export interface DepositSlipView {
+  /** The day the run is for; cheques due on or before it are included. */
+  on: IsoDateString;
+  banks: DepositSlipBank[];
+  /** How many of these were already overdue when the slip was drawn. */
+  overdueCount: number;
+  totalCount: number;
+}
+
 /** Per-currency position of one contact, for their account statement. */
 export interface ContactStatementCurrency {
   currency: string;

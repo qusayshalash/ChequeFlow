@@ -284,6 +284,48 @@ export class RemindersService {
   }
 
   /** A reminder a person set by hand on a specific cheque. */
+  /**
+   * Records that a reminder was actually sent to the customer over WhatsApp.
+   *
+   * The message is composed and sent by the person, in their own WhatsApp —
+   * there is no business account or provider behind this. What the system owes
+   * them is a record that it happened, so the next person to look at the cheque
+   * does not chase the same customer twice in a day.
+   *
+   * Written as already SENT because by the time this is called it has been:
+   * scheduling it would put a reminder in the future for something in the past.
+   */
+  async recordWhatsAppSent(
+    organizationId: string,
+    userId: string,
+    chequeId: string,
+    note: string | null,
+  ): Promise<{ id: string } | null> {
+    const cheque = await this.prisma.db.cheque.findFirst({
+      where: { id: chequeId, organizationId, deletedAt: null },
+      select: { id: true, dueDate: true },
+    });
+    if (!cheque) return null;
+
+    const now = new Date();
+    return this.prisma.db.reminder.create({
+      data: {
+        chequeId,
+        type: cheque.dueDate < now ? ReminderType.OVERDUE : ReminderType.BEFORE_DUE,
+        remindAt: now,
+        channel: 'WHATSAPP',
+        status: 'SENT',
+        sentAt: now,
+        recipientUserId: userId,
+        // Custom, so the automatic schedule never deletes it: this is a record
+        // of something that happened, not a plan for something that will.
+        custom: true,
+        note,
+      },
+      select: { id: true },
+    });
+  }
+
   async createCustom(
     organizationId: string,
     userId: string,

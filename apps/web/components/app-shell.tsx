@@ -47,6 +47,9 @@ const PRIMARY_NAV: NavItem[] = [
   { href: '/cheques/review', labelKey: 'nav.review', Icon: IconSearch },
   { href: '/cheques/due', labelKey: 'nav.due', Icon: IconCalendar },
   { href: '/cheques/bounced', labelKey: 'nav.bounced', Icon: IconReturn },
+  // Beside the due list because it answers the next question: not just what is
+  // due, but what to put in an envelope this morning.
+  { href: '/reports/deposit-slip', labelKey: 'nav.depositSlip', Icon: IconReports },
 ];
 
 const SECONDARY_NAV: NavItem[] = [

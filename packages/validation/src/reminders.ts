@@ -22,3 +22,15 @@ export const createReminderSchema = z.object({
   note: longTextSchema.optional(),
 });
 export type CreateReminderInput = z.infer<typeof createReminderSchema>;
+
+/**
+ * Logging a WhatsApp reminder a person has just sent themselves.
+ *
+ * Only a note: the recipient, the time and the channel are all facts the server
+ * already knows or can see, and accepting them from the client would let a
+ * record be written that says something other than what happened.
+ */
+export const createWhatsAppReminderSchema = z.object({
+  note: longTextSchema.optional(),
+});
+export type CreateWhatsAppReminderInput = z.infer<typeof createWhatsAppReminderSchema>;

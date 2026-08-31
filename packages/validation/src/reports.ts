@@ -53,3 +53,18 @@ export const auditLogQuerySchema = z.object({
   to: isoDateSchema.optional(),
 });
 export type AuditLogQuery = z.infer<typeof auditLogQuerySchema>;
+
+/**
+ * The day's deposit run: which cheques to take to which bank.
+ *
+ * `on` defaults to today on the server. `throughDate` is deliberate — a cheque
+ * that came due last week and is still in the safe belongs on today's run just
+ * as much as one due today, and leaving it out is how a cheque quietly ages.
+ */
+export const depositSlipQuerySchema = z.object({
+  on: isoDateSchema.optional(),
+  branchId: uuidSchema.optional(),
+  /** Restrict the run to one bank, for a trip that only visits that branch. */
+  bankId: uuidSchema.optional(),
+});
+export type DepositSlipQuery = z.infer<typeof depositSlipQuerySchema>;
