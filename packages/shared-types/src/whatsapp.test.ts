@@ -33,6 +33,14 @@ describe('toWhatsAppNumber', () => {
     expect(toWhatsAppNumber('012345678901234567')).toBeNull();
   });
 
+  it('rejects a run of zeros, however long', () => {
+    // Somebody's way past a required field, not a number — and it passes every
+    // length check, so it has to be caught by shape.
+    expect(toWhatsAppNumber('0000000000')).toBeNull();
+    expect(toWhatsAppNumber('000')).toBeNull();
+    expect(toWhatsAppNumber('+970000000000')).toBeNull();
+  });
+
   it('handles a landline the same way, area code and all', () => {
     // 02-2951234 → trunk zero dropped, country code prefixed: 970 2 2951234.
     expect(toWhatsAppNumber('02-2951234')).toBe('97022951234');

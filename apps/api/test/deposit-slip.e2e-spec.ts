@@ -174,6 +174,38 @@ describeWithDb('deposit slip (e2e)', () => {
     expect(ils.total).toBe('4000.00');
   });
 
+  it('records a WhatsApp reminder as already sent, not scheduled', async () => {
+    const id = await inHand({ chequeNumber: 'DS-7', amount: '120.00', dueDate: '2026-09-30' });
+
+    const created = await request(app.getHttpServer())
+      .post(`${API}/cheques/${id}/whatsapp-reminder`)
+      .set(auth())
+      .send({ note: 'اتصلت به وأرسلت تذكيرًا' })
+      .expect(201);
+
+    const reminder = await prisma.db.reminder.findUniqueOrThrow({
+      where: { id: String(created.body.id) },
+      select: { channel: true, status: true, sentAt: true, custom: true, note: true },
+    });
+
+    // By the time this is called the message has been sent, so scheduling it
+    // would put a reminder in the future for something in the past.
+    expect(reminder.channel).toBe('WHATSAPP');
+    expect(reminder.status).toBe('SENT');
+    expect(reminder.sentAt).not.toBeNull();
+    // Custom, so the automatic schedule never deletes this record of a fact.
+    expect(reminder.custom).toBe(true);
+    expect(reminder.note).toBe('اتصلت به وأرسلت تذكيرًا');
+  });
+
+  it('will not log a reminder against a cheque in another tenant', async () => {
+    await request(app.getHttpServer())
+      .post(`${API}/cheques/00000000-0000-4000-8000-000000000000/whatsapp-reminder`)
+      .set(auth())
+      .send({})
+      .expect(404);
+  });
+
   it('can be narrowed to one bank, for a trip that only visits that branch', async () => {
     const response = await request(app.getHttpServer())
       .get(`${API}/reports/deposit-slip`)

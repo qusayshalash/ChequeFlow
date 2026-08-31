@@ -43,20 +43,36 @@ export function toWhatsAppNumber(
   const digits = latin.replace(/\D/g, '');
   if (digits.length === 0) return null;
 
-  if (international) {
-    const stripped = latin.startsWith('00') ? digits.slice(2) : digits;
-    return stripped.length >= 8 && stripped.length <= 15 ? stripped : null;
-  }
+  const candidate = ((): string | null => {
+    if (international) {
+      const stripped = latin.startsWith('00') ? digits.slice(2) : digits;
+      return stripped.length >= 8 && stripped.length <= 15 ? stripped : null;
+    }
 
-  if (digits.startsWith('0')) {
-    const local = digits.slice(1);
-    // A local number is 8-10 digits once the trunk zero is gone; longer than
-    // that and it is not a number this can safely guess at.
-    if (local.length < 7 || local.length > 11) return null;
-    return `${countryCode}${local}`;
-  }
+    if (digits.startsWith('0')) {
+      const local = digits.slice(1);
+      // A local number is 8-10 digits once the trunk zero is gone; longer than
+      // that and it is not a number this can safely guess at.
+      if (local.length < 7 || local.length > 11) return null;
+      return `${countryCode}${local}`;
+    }
 
-  return digits.length >= 9 && digits.length <= 15 ? digits : null;
+    return digits.length >= 9 && digits.length <= 15 ? digits : null;
+  })();
+
+  return candidate === null || isPlaceholder(candidate) ? null : candidate;
+}
+
+/**
+ * Numbers people type to get past a required field.
+ *
+ * Every one of these passes the length checks above, which is exactly why they
+ * need catching by shape. The rule is deliberately narrow — a real subscriber
+ * number does not end in six zeros, and is not the same digit repeated — so it
+ * cannot start rejecting numbers that belong to someone.
+ */
+function isPlaceholder(number: string): boolean {
+  return /0{6,}$/.test(number) || /^(\d)\1+$/.test(number);
 }
 
 /**
