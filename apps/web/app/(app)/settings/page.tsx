@@ -62,7 +62,8 @@ function SettingsPageBody() {
         <p className="text-sm text-slate-600">
           {LOCALES.map((value) => LOCALE_LABELS[value]).join(' · ')}
         </p>
-        <p className="text-xs text-slate-500">NEXT_PUBLIC_DEFAULT_LOCALE</p>
+        {/* The environment variable that sets this is a deployment detail.
+            Naming it here told the user nothing they could act on. */}
       </Card>
     </div>
   );

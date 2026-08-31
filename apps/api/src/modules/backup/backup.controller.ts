@@ -1,11 +1,13 @@
-import { Controller, Get, Req, Res } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, Res } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 
 import { Permission } from '@cheque-flow/shared-types';
+import { restoreBackupSchema, type RestoreBackupInput } from '@cheque-flow/validation';
 
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../../common/decorators/require-permissions.decorator';
+import { zodBody } from '../../common/pipes/zod-validation.pipe';
 import type { RequestUser } from '../../common/types/request-user';
 import { AuditService } from '../audit/audit.service';
 import { BackupService } from './backup.service';
@@ -34,5 +36,26 @@ export class BackupController {
     // Indented on purpose: the point of a JSON backup over a database dump is
     // that a person can open it and read it.
     response.send(JSON.stringify(archive, null, 2));
+  }
+
+  /**
+   * Puts an archive back.
+   *
+   * Refuses unless the organization is empty — there is no merge, because the
+   * append-only ledger cannot be cleared to make room for one. `confirm` must
+   * be sent explicitly: this is not an action a stray click should reach.
+   */
+  @Post('restore')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermissions(Permission.SETTINGS_MANAGE)
+  @ApiOperation({ summary: 'Restore a JSON archive into an empty organization' })
+  @ApiResponse({ status: 200, description: 'What was restored, and what could not be' })
+  @ApiResponse({ status: 409, description: 'The organization already holds records' })
+  restore(
+    @CurrentUser() user: RequestUser,
+    @Body(zodBody(restoreBackupSchema)) body: RestoreBackupInput,
+    @Req() request: Request,
+  ) {
+    return this.backup.restore(user, body, AuditService.contextFromRequest(request));
   }
 }

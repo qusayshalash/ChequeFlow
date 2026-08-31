@@ -17,6 +17,7 @@ import type {
 import type {
   BounceChequeInput,
   BulkChequeActionInput,
+  RestoreBackupInput,
   CancelChequeInput,
   ClearChequeInput,
   CreateChequeBatchInput,
@@ -130,6 +131,14 @@ export interface BulkActionResponse {
   skipped: BulkActionSkip[];
 }
 
+export interface RestoreBackupResponse {
+  restored: Record<string, number>;
+  /** Users the archive held that already exist here, by email. */
+  skippedUsers: number;
+  /** Always true when users were restored: the archive holds no passwords. */
+  usersNeedPasswords: boolean;
+}
+
 export interface OcrSuggestionResponse {
   extractionId: string;
   provider: string;
@@ -199,6 +208,19 @@ export class ChequeFlowApiClient {
    */
   exportBackup() {
     return this.requestText('/backup/export');
+  }
+
+  /**
+   * Puts an archive back into an empty organization.
+   *
+   * Rejects with CONFLICT when the organization already holds records: there
+   * is no merge, and the caller is expected to say so rather than retry.
+   */
+  restoreBackup(input: RestoreBackupInput) {
+    return this.request<RestoreBackupResponse>('/backup/restore', {
+      method: 'POST',
+      body: input,
+    });
   }
 
   /** Whether OCR, the database and storage are actually working. */

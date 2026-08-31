@@ -25,8 +25,19 @@ export interface Fixtures {
   bankId: string;
 }
 
+/**
+ * Distinguishes fixtures seeded in the same millisecond.
+ *
+ * `Date.now()` alone is not enough: a suite that seeds two organizations back
+ * to back can land on the same timestamp, and the second one then fails on the
+ * unique email index for a reason that looks nothing like the cause.
+ */
+let fixtureCounter = 0;
+
 export async function seedFixtures(prisma: PrismaService): Promise<Fixtures> {
   const db = prisma.db;
+  fixtureCounter += 1;
+  const tag = `${Date.now()}-${fixtureCounter}`;
   const password = 'TestPassword1';
   const passwordHash = await argon2.hash(password, { type: argon2.argon2id });
 
@@ -42,7 +53,7 @@ export async function seedFixtures(prisma: PrismaService): Promise<Fixtures> {
 
   const organization = await db.organization.create({
     data: {
-      name: `E2E Org ${Date.now()}`,
+      name: `E2E Org ${tag}`,
       country: 'PS',
       defaultCurrency: 'USD',
       baseCurrency: 'USD',
@@ -72,8 +83,8 @@ export async function seedFixtures(prisma: PrismaService): Promise<Fixtures> {
     });
   }
 
-  const ownerEmail = `owner+${Date.now()}@e2e.local`;
-  const viewerEmail = `viewer+${Date.now()}@e2e.local`;
+  const ownerEmail = `owner+${tag}@e2e.local`;
+  const viewerEmail = `viewer+${tag}@e2e.local`;
 
   const owner = await db.user.create({
     data: {
