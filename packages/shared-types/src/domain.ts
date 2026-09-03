@@ -68,6 +68,36 @@ export interface ContactView {
   updatedAt: IsoDateTimeString;
 }
 
+/** One currency's worth of a contact's position, for the contacts list. */
+export interface ContactBalance {
+  currency: string;
+  /**
+   * Uncollected cheques from this contact minus uncollected cheques handed to
+   * them, in this currency alone.
+   *
+   * Positive means they still owe us, negative means we still owe them. Each
+   * currency stands on its own — a dollar balance and a shekel balance are
+   * never added together, because there is no honest rate at which to do it.
+   */
+  net: MoneyString;
+}
+
+/**
+ * A contact as the list shows them: the record, plus the two things people
+ * scan the list for — how much is outstanding, and how many cheques there are.
+ *
+ * Separate from `ContactView` because these two fields cost a second query.
+ * Screens that only need the record (a picker, an autocomplete) keep the
+ * cheaper shape.
+ */
+export interface ContactListItemView extends ContactView {
+  /** Every cheque this contact is on either side of, in any status. */
+  chequeCount: number;
+  /** One entry per currency the contact has an open position in. Empty when
+   *  nothing is outstanding. Never a single summed figure. */
+  balances: ContactBalance[];
+}
+
 /**
  * How much of a contact's credit limit their uncollected cheques use up.
  *

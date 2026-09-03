@@ -8,10 +8,12 @@ import {
   type ContactCreditStatus,
   type ContactStatementCurrency,
   type ContactStatementView,
+  type ContactBalance,
+  type ContactListItemView,
   type ContactView,
   type Paginated,
 } from '@cheque-flow/shared-types';
-import { moneyToString, toMoney, type Prisma } from '@cheque-flow/database';
+import { moneyToString, Prisma, toMoney } from '@cheque-flow/database';
 import type {
   CreateContactInput,
   ListContactsQuery,
@@ -54,7 +56,7 @@ export class ContactsService {
     private readonly audit: AuditService,
   ) {}
 
-  async list(user: RequestUser, query: ListContactsQuery): Promise<Paginated<ContactView>> {
+  async list(user: RequestUser, query: ListContactsQuery): Promise<Paginated<ContactListItemView>> {
     const where: Prisma.ContactWhereInput = {
       organizationId: user.organizationId,
       ...(query.type ? { type: query.type } : {}),
@@ -82,8 +84,19 @@ export class ContactsService {
       this.prisma.db.contact.count({ where }),
     ]);
 
+    // Only the page's own contacts, so the cost of this is bounded by the page
+    // size rather than by how many contacts the organisation has.
+    const stats = await this.chequeStats(
+      user.organizationId,
+      rows.map((row) => row.id),
+    );
+
     return {
-      data: rows.map(toView),
+      data: rows.map((row) => ({
+        ...toView(row),
+        chequeCount: stats.get(row.id)?.chequeCount ?? 0,
+        balances: stats.get(row.id)?.balances ?? [],
+      })),
       meta: {
         page: query.page,
         pageSize: query.pageSize,
@@ -332,6 +345,70 @@ export class ContactsService {
         )
         .map((entry) => ({ currency: entry.currency, ...entry.pending })),
     };
+  }
+
+  /**
+   * How many cheques each of these contacts is on, and what they still owe
+   * (or are owed) in each currency.
+   *
+   * Raw SQL because a contact sits in one of two columns — the party a cheque
+   * came from, or the party it was handed to — and Prisma's `groupBy` can only
+   * group by one of them at a time. Running it twice and adding the results
+   * would double-count a cheque that went back to the same contact it came
+   * from. The lateral unpivot plus `DISTINCT` counts each such cheque once.
+   */
+  private async chequeStats(
+    organizationId: string,
+    ids: readonly string[],
+  ): Promise<Map<string, { chequeCount: number; balances: ContactBalance[] }>> {
+    const result = new Map<string, { chequeCount: number; balances: ContactBalance[] }>();
+    if (ids.length === 0) return result;
+
+    const rows = await this.prisma.db.$queryRaw<
+      { contact_id: string; currency: string; cheque_count: bigint; net: Prisma.Decimal | null }[]
+    >`
+      SELECT contact_id,
+             currency,
+             COUNT(*)::bigint AS cheque_count,
+             -- Incoming counts towards us, outgoing against us, and only while
+             -- the cheque is still open: a cleared cheque is not a balance.
+             COALESCE(
+               SUM(
+                 CASE WHEN status = ANY(${OUTSTANDING_CHEQUE_STATUSES}::"ChequeStatus"[])
+                      THEN CASE WHEN direction = 'INCOMING' THEN amount ELSE -amount END
+                      ELSE 0 END
+               ),
+               0
+             ) AS net
+      FROM (
+        SELECT DISTINCT c.id, party.contact_id, c.currency, c.status, c.direction, c.amount
+        FROM cheques c
+        CROSS JOIN LATERAL (
+          VALUES (c.original_source_id), (c.current_recipient_id)
+        ) AS party(contact_id)
+        WHERE c.organization_id = ${organizationId}::uuid
+          AND c.deleted_at IS NULL
+          AND party.contact_id = ANY(${ids}::uuid[])
+      ) involved
+      GROUP BY contact_id, currency
+      ORDER BY contact_id, currency
+    `;
+
+    for (const row of rows) {
+      const entry = result.get(row.contact_id) ?? { chequeCount: 0, balances: [] };
+      entry.chequeCount += Number(row.cheque_count);
+
+      const net = toMoney(row.net ?? 0);
+      // A currency where everything has settled nets to zero; listing it would
+      // be a row that says nothing.
+      if (!net.isZero()) {
+        entry.balances.push({ currency: row.currency, net: moneyToString(net) });
+      }
+
+      result.set(row.contact_id, entry);
+    }
+
+    return result;
   }
 
   async statement(user: RequestUser, id: string, limit = 50): Promise<ContactStatementView> {

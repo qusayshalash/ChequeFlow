@@ -13,12 +13,22 @@ import { useTranslator } from '@/components/providers';
  * contacts silently became a list of fifty — the same defect that made a
  * truncated CSV export look complete.
  */
+/** Sizes offered when a list lets you choose. */
+const PAGE_SIZES = [10, 20, 50, 100] as const;
+
 export function Pagination({
   meta,
   onPageChange,
+  onPageSizeChange,
 }: {
   meta: Paginated<unknown>['meta'];
   onPageChange: (page: number) => void;
+  /**
+   * Given only by lists where the size is worth changing. Without it the
+   * control is left out rather than shown inert — a select that cannot change
+   * anything is worse than no select.
+   */
+  onPageSizeChange?: (pageSize: number) => void;
 }) {
   const t = useTranslator();
   const shown = Math.min(meta.page * meta.pageSize, meta.total);
@@ -39,8 +49,28 @@ export function Pagination({
         {t('common.previous')}
       </Button>
 
-      <span className="order-first w-full text-center text-sm text-slate-500 tabular-nums sm:order-none sm:w-auto">
+      <span className="order-first flex w-full items-center justify-center gap-3 text-center text-sm text-slate-500 tabular-nums sm:order-none sm:w-auto">
         {t('common.showingOf', { shown, total: meta.total })}
+
+        {onPageSizeChange ? (
+          <select
+            aria-label={t('common.rowsPerPage')}
+            className="h-9 rounded-lg border border-slate-200 bg-white px-2 text-sm font-semibold text-slate-700 outline-none hover:border-slate-300"
+            value={meta.pageSize}
+            onChange={(event) => onPageSizeChange(Number(event.target.value))}
+          >
+            {/* The list's own size is always offered, even when it is not one
+                of the four — otherwise the select would show a value it does
+                not contain and silently read as one of them. */}
+            {[...new Set([...PAGE_SIZES, meta.pageSize])]
+              .sort((a, b) => a - b)
+              .map((size) => (
+                <option key={size} value={size}>
+                  {t('common.perPage', { count: size })}
+                </option>
+              ))}
+          </select>
+        ) : null}
       </span>
 
       {meta.totalPages > 1 ? (

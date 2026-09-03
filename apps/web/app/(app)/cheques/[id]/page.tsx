@@ -81,6 +81,32 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
   const unreviewed =
     data.status === ChequeStatus.DRAFT || data.status === ChequeStatus.PENDING_REVIEW;
 
+  // Six groups, each small enough to read at a glance, rather than the three
+  // long lists this page used to stack: "which bank" and "where is it kept"
+  // are different questions and were answered eleven rows apart.
+  const info: Fact[] = [
+    { label: t('cheque.number'), value: data.chequeNumber, ltr: true },
+    { label: t('common.amount'), value: money(locale, data.amount, data.currency), ltr: true },
+    { label: t('cheque.currency'), value: data.currency, ltr: true },
+    { label: t('cheque.direction'), value: t(`direction.${data.direction}`) },
+    { label: t('cheque.referenceNumber'), value: data.referenceNumber ?? unknown, ltr: true },
+    { label: t('cheque.purpose'), value: data.purpose ?? unknown },
+  ];
+
+  const parties: Fact[] = [
+    { label: t('cheque.drawerName'), value: data.drawerName ?? unknown },
+    { label: t('cheque.originalPayee'), value: data.originalPayeeName ?? unknown },
+    { label: t('cheque.originalSource'), value: data.originalSourceName ?? unknown },
+    { label: t('cheque.currentRecipient'), value: data.currentRecipientName ?? unknown },
+  ];
+
+  const bank: Fact[] = [
+    { label: t('cheque.bank'), value: data.bankName ?? unknown },
+    { label: t('cheque.bankBranch'), value: data.bankBranchRaw ?? unknown },
+    // Always the masked form; the full number never leaves the server.
+    { label: t('cheque.accountNumber'), value: data.accountNumberMasked ?? unknown, ltr: true },
+  ];
+
   const dates: Fact[] = [
     { label: t('cheque.dueDate'), value: formatDate(locale, data.dueDate), ltr: true },
     {
@@ -102,23 +128,10 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
     },
   ];
 
-  const parties: Fact[] = [
-    { label: t('cheque.drawerName'), value: data.drawerName ?? unknown },
-    { label: t('cheque.originalPayee'), value: data.originalPayeeName ?? unknown },
-    { label: t('cheque.originalSource'), value: data.originalSourceName ?? unknown },
-    { label: t('cheque.currentRecipient'), value: data.currentRecipientName ?? unknown },
+  const place: Fact[] = [
     { label: t('cheque.currentLocation'), value: data.currentLocationName ?? unknown },
     { label: t('cheque.branch'), value: data.branchName ?? unknown },
-  ];
-
-  const bank: Fact[] = [
-    { label: t('cheque.bank'), value: data.bankName ?? unknown },
-    { label: t('cheque.bankBranch'), value: data.bankBranchRaw ?? unknown },
-    // Always the masked form; the full number never leaves the server.
-    { label: t('cheque.accountNumber'), value: data.accountNumberMasked ?? unknown, ltr: true },
-    { label: t('cheque.referenceNumber'), value: data.referenceNumber ?? unknown, ltr: true },
-    { label: t('cheque.purpose'), value: data.purpose ?? unknown },
-    { label: t('cheque.currency'), value: data.currency, ltr: true },
+    { label: t('cheque.status'), value: t(`status.${data.status}`) },
   ];
 
   return (
@@ -167,8 +180,6 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
           {/* Panels are hidden rather than unmounted: switching tabs must not
               refetch the timeline or drop a half-written action. */}
           <div hidden={tab !== 'overview'} className="flex flex-col gap-5">
-            <CustodyStrip cheque={data} />
-
             {/* Only when it happened, and then near the top: a bank's refusal is
               the most consequential thing on the page. */}
             {data.bounceReason ? (
@@ -209,17 +220,32 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
               </Panel>
             ) : null}
 
-            <Panel title={t('cheque.dates')}>
-              <FactGrid facts={dates} />
-            </Panel>
+            {/* A grid of small cards rather than a stack of long lists.
+                Three across on a wide screen, two on a laptop, one on a
+                phone — so a fact is found by looking, not by scrolling. */}
+            <div className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
+              <CustodyStrip cheque={data} />
 
-            <Panel title={t('cheque.parties')}>
-              <FactGrid facts={parties} />
-            </Panel>
+              <Panel title={t('cheque.parties')}>
+                <FactGrid facts={parties} columns={1} />
+              </Panel>
 
-            <Panel title={t('cheque.bank')}>
-              <FactGrid facts={bank} />
-            </Panel>
+              <Panel title={t('cheque.infoGroup')}>
+                <FactGrid facts={info} columns={1} />
+              </Panel>
+
+              <Panel title={t('cheque.bankGroup')}>
+                <FactGrid facts={bank} columns={1} />
+              </Panel>
+
+              <Panel title={t('cheque.dates')}>
+                <FactGrid facts={dates} columns={1} />
+              </Panel>
+
+              <Panel title={t('cheque.locationGroup')}>
+                <FactGrid facts={place} columns={1} />
+              </Panel>
+            </div>
 
             {data.notes ? (
               <Panel title={t('cheque.notesGroup')}>

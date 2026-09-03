@@ -19,6 +19,7 @@ import {
 
 import { DataTable } from '@/components/data-table';
 import { IconClose, IconPlus } from '@/components/icons';
+import { FilterSearch } from '@/components/filter-search';
 import { PageHeader } from '@/components/page-header';
 import { Panel } from '@/components/panel';
 import { useApi, useApp, useTranslator } from '@/components/providers';
@@ -140,7 +141,6 @@ function UsersManager() {
       <PageHeader
         title={t('user.title')}
         subtitle={t('pageDescription.users')}
-        search={{ value: search, onChange: setSearch, placeholder: t('common.search') }}
         actions={
           <Button onClick={() => setCreateOpen(true)}>
             <IconPlus width="18" height="18" />
@@ -272,6 +272,16 @@ function UsersManager() {
           retryLabel={t('common.retry')}
         />
       ) : null}
+
+      {/* Directly above the rows it narrows, rather than in the page heading
+          where it read as a second global search. */}
+      <div className="flex justify-end">
+        <FilterSearch
+          value={search}
+          onChange={setSearch}
+          placeholder={t('user.searchPlaceholder')}
+        />
+      </div>
 
       <Panel title={t('user.title')} bodyClassName="">
         {users.isPending ? (

@@ -314,5 +314,48 @@ describeWithDb('replacement chain and credit limit (e2e)', () => {
       expect(statement.body.creditLimit.otherCurrencies[0].currency).toBe('ILS');
       expect(statement.body.creditLimit.otherCurrencies[0].total).toBe('7000.00');
     });
+
+    it('carries the same figures into the contacts list, one line per currency', async () => {
+      const list = await request(app.getHttpServer())
+        .get(`${API}/contacts`)
+        .query({ search: 'عميل بسقف' })
+        .set(auth())
+        .expect(200);
+
+      const row = list.body.data.find((entry: { id: string }) => entry.id === contactId);
+
+      // The three cheques written above, counted once each even though the
+      // contact is on both sides of the record.
+      expect(row.chequeCount).toBe(3);
+
+      // Two currencies, never added together — this is the whole reason the
+      // list carries an array rather than one number.
+      const balances = [...row.balances].sort((a: { currency: string }, b: { currency: string }) =>
+        a.currency.localeCompare(b.currency),
+      );
+      expect(balances).toEqual([
+        { currency: 'ILS', net: '7000.00' },
+        { currency: 'USD', net: '5900.00' },
+      ]);
+    });
+
+    it('leaves out a contact with nothing outstanding rather than showing a zero', async () => {
+      const created = await request(app.getHttpServer())
+        .post(`${API}/contacts`)
+        .set(auth())
+        .send({ type: 'CUSTOMER', name: 'عميل بلا شيكات' })
+        .expect(201);
+
+      const list = await request(app.getHttpServer())
+        .get(`${API}/contacts`)
+        .query({ search: 'عميل بلا شيكات' })
+        .set(auth())
+        .expect(200);
+
+      const row = list.body.data.find((entry: { id: string }) => entry.id === created.body.id);
+
+      expect(row.chequeCount).toBe(0);
+      expect(row.balances).toEqual([]);
+    });
   });
 });

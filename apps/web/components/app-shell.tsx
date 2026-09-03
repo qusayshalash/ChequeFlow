@@ -124,7 +124,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return (
       <section className="mt-5 first:mt-0">
         <p
-          className={`mb-2 px-3 text-[11px] font-semibold tracking-[0.12em] text-white/35 ${
+          className={`mb-2 px-3 text-[11px] font-semibold tracking-[0.12em] text-white/60 ${
             collapsed ? 'lg:hidden' : ''
           }`}
         >
@@ -155,7 +155,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   ) : null}
                   <Icon
                     className={`shrink-0 ${
-                      active ? 'text-emerald-300' : 'text-white/40 group-hover:text-white/70'
+                      active ? 'text-emerald-300' : 'text-white/60 group-hover:text-white'
                     }`}
                   />
                   <span className={collapsed ? 'lg:hidden' : ''}>{label}</span>
@@ -187,8 +187,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <aside
         id="main-nav"
-        className={`fixed inset-y-0 end-0 z-50 flex shrink-0 flex-col bg-[var(--app-sidebar)] text-white shadow-2xl transition-[width,transform] duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:shadow-none ${
-          menuOpen ? 'translate-x-0' : 'translate-x-full'
+        // `start-0`, not `end-0`: the drawer belongs on the side the menu
+        // button is on, which in this right-to-left layout is the right — and
+        // it is the side the sidebar sits on at desktop width, so the panel
+        // does not jump across the screen at the breakpoint.
+        //
+        // Closed, it is `hidden` rather than merely pushed off-screen. A
+        // drawer parked outside the viewport is still part of the document:
+        // it gave every page 87px of sideways scroll on a phone, an empty
+        // column the whole layout could be swiped into, and it kept its
+        // seventeen links in the tab order where keyboard focus walked into a
+        // menu nobody could see. Clipping the overflow away instead is not an
+        // option here — in a right-to-left page it crops the side the content
+        // starts on. The cost is the closing slide; the opening one still
+        // plays, and a drawer that shuts instantly is a fair trade for a
+        // layout that does not shift.
+        className={`fixed inset-y-0 start-0 z-50 shrink-0 flex-col bg-[var(--app-sidebar)] text-white shadow-2xl transition-[width,transform] duration-200 lg:sticky lg:top-0 lg:flex lg:h-screen lg:translate-x-0 lg:shadow-none ${
+          menuOpen ? 'flex translate-x-0' : 'hidden translate-x-full'
         } ${collapsed ? 'w-[292px] lg:w-[84px]' : 'w-[292px] lg:w-[272px]'}`}
         aria-label={t('common.appName')}
       >
@@ -205,7 +220,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span className="block truncate text-base font-bold tracking-tight text-white">
                 {t('common.appName')}
               </span>
-              <span className="block text-[10px] font-medium tracking-[0.18em] text-white/35">
+              <span className="block text-[10px] font-medium tracking-[0.18em] text-white/60">
                 CHEQUE OPERATIONS
               </span>
             </span>
@@ -213,7 +228,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           <button
             type="button"
-            className="flex size-10 items-center justify-center rounded-xl text-white/55 hover:bg-white/10 hover:text-white lg:hidden"
+            className="flex size-11 items-center justify-center rounded-xl text-white/75 hover:bg-white/10 hover:text-white lg:hidden"
             aria-label={t('common.close')}
             onClick={() => setMenuOpen(false)}
           >
@@ -234,7 +249,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             aria-expanded={!collapsed}
             aria-controls="main-nav"
             title={collapsed ? t('nav.expandMenu') : t('nav.collapseMenu')}
-            className={`mt-2 hidden min-h-10 w-full items-center gap-2 rounded-xl px-3 text-xs text-white/35 hover:bg-white/[0.05] hover:text-white/70 lg:flex ${
+            className={`mt-2 hidden min-h-10 w-full items-center gap-2 rounded-xl px-3 text-xs text-white/60 hover:bg-white/[0.05] hover:text-white lg:flex ${
               collapsed ? 'justify-center px-0' : ''
             }`}
           >

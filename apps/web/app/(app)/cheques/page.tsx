@@ -18,7 +18,9 @@ import {
   type DateRange,
 } from '@/components/date-range';
 import { IconColumns, IconFilter, IconPlus } from '@/components/icons';
+import { FilterSearch } from '@/components/filter-search';
 import { PageHeader } from '@/components/page-header';
+import { Pagination } from '@/components/pagination';
 import { Panel } from '@/components/panel';
 import { useApi, useTranslator } from '@/components/providers';
 
@@ -53,6 +55,8 @@ export default function ChequesPage() {
   const [tab, setTab] = useState<Tab>('ALL');
   const [search, setSearch] = useState(searchParams.get('search') ?? '');
   const [status, setStatus] = useState<string>('');
+  const [bankId, setBankId] = useState<string>('');
+  const [pageSize, setPageSize] = useState(20);
   const [range, setRange] = useState<DateRange>(EMPTY_RANGE);
   const [amountMin, setAmountMin] = useState('');
   const [amountMax, setAmountMax] = useState('');
@@ -92,17 +96,30 @@ export default function ChequesPage() {
   const query = useQuery<Paginated<ChequeSummaryView>>({
     queryKey: [
       'cheques',
-      { tab, search, status, applied, amountMin, amountMax, sortBy, sortOrder, page },
+      {
+        tab,
+        search,
+        status,
+        bankId,
+        applied,
+        amountMin,
+        amountMax,
+        sortBy,
+        sortOrder,
+        page,
+        pageSize,
+      },
     ],
     queryFn: () =>
       api.listCheques({
         page,
-        pageSize: 20,
+        pageSize,
         ...tabQuery,
         ...(search ? { search } : {}),
         ...(status ? { status: [status as ChequeStatus] } : {}),
         ...(applied.from ? { dueFrom: applied.from } : {}),
         ...(applied.to ? { dueTo: applied.to } : {}),
+        ...(bankId ? { bankId } : {}),
         ...(amountMin ? { amountMin } : {}),
         ...(amountMax ? { amountMax } : {}),
         sortBy,
@@ -122,6 +139,7 @@ export default function ChequesPage() {
    * a count of cheques is not money and can be added safely.
    */
   const summary = useQuery({ queryKey: ['dashboard'], queryFn: () => api.getDashboard() });
+  const banks = useQuery({ queryKey: ['banks'], queryFn: () => api.listBanks() });
 
   const tabCounts: Record<string, number | undefined> = (() => {
     const data = summary.data;
@@ -178,9 +196,19 @@ export default function ChequesPage() {
     });
   }
 
+  /** How many filters are narrowing the list right now. */
+  const activeFilters =
+    (tab === 'ALL' ? 0 : 1) +
+    (status ? 1 : 0) +
+    (bankId ? 1 : 0) +
+    (applied.from || applied.to ? 1 : 0) +
+    (amountMin || amountMax ? 1 : 0) +
+    (search ? 1 : 0);
+
   function clearFilters(): void {
     setTab('ALL');
     setStatus('');
+    setBankId('');
     setRange(EMPTY_RANGE);
     setAmountMin('');
     setAmountMax('');
@@ -193,37 +221,23 @@ export default function ChequesPage() {
       <PageHeader
         title={t('cheque.listTitle')}
         subtitle={t('pageDescription.cheques')}
-        search={{
-          value: search,
-          onChange: (value) => {
-            setSearch(value);
-            setPage(1);
-          },
-          placeholder: t('dashboard.searchPlaceholder'),
-        }}
+        // No "new cheque" button here: the top bar carries one on every page,
+        // and it offers the batch form this one could not.
         actions={
-          <>
-            <ExportButton
-              query={{
-                ...tabQuery,
-                ...(search ? { search } : {}),
-                ...(status ? { status: [status as ChequeStatus] } : {}),
-                ...(applied.from ? { dueFrom: applied.from } : {}),
-                ...(applied.to ? { dueTo: applied.to } : {}),
-                ...(amountMin ? { amountMin } : {}),
-                ...(amountMax ? { amountMax } : {}),
-                sortBy,
-                sortOrder,
-              }}
-            />
-            <Link
-              href="/cheques/new"
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-teal-700 px-4 text-sm font-semibold text-white shadow-sm hover:bg-teal-800"
-            >
-              <IconPlus />
-              {t('cheque.newTitle')}
-            </Link>
-          </>
+          <ExportButton
+            query={{
+              ...tabQuery,
+              ...(search ? { search } : {}),
+              ...(status ? { status: [status as ChequeStatus] } : {}),
+              ...(bankId ? { bankId } : {}),
+              ...(applied.from ? { dueFrom: applied.from } : {}),
+              ...(applied.to ? { dueTo: applied.to } : {}),
+              ...(amountMin ? { amountMin } : {}),
+              ...(amountMax ? { amountMax } : {}),
+              sortBy,
+              sortOrder,
+            }}
+          />
         }
       />
 
@@ -245,7 +259,7 @@ export default function ChequesPage() {
                   type="button"
                   onClick={() => changeTab(entry.key)}
                   aria-pressed={tab === entry.key}
-                  className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3.5 text-sm font-semibold ${
+                  className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-lg px-3.5 text-sm font-semibold sm:h-9 ${
                     tab === entry.key
                       ? 'bg-white text-slate-950 shadow-sm ring-1 ring-slate-200'
                       : 'text-slate-500 hover:text-slate-900'
@@ -267,6 +281,15 @@ export default function ChequesPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <FilterSearch
+              value={search}
+              onChange={(value) => {
+                setSearch(value);
+                setPage(1);
+              }}
+              placeholder={t('cheque.filterPlaceholder')}
+            />
+
             <label className="inline-flex h-11 min-w-40 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 hover:border-slate-300">
               <span className="text-xs font-medium text-slate-400">{t('cheque.status')}</span>
               <select
@@ -286,6 +309,28 @@ export default function ChequesPage() {
               </select>
             </label>
 
+            {/* Which bank the cheque is drawn on. Missing until now, and the
+                filter people reach for most after status: a deposit run is
+                organised one bank at a time. */}
+            <label className="inline-flex h-11 min-w-40 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 hover:border-slate-300">
+              <span className="text-xs font-medium text-slate-400">{t('cheque.bank')}</span>
+              <select
+                className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-slate-700 outline-none"
+                value={bankId}
+                onChange={(event) => {
+                  setBankId(event.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="">{t('common.all')}</option>
+                {(banks.data ?? []).map((bank) => (
+                  <option key={bank.id} value={bank.id}>
+                    {bank.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
             <DateRangePicker
               value={range}
               onChange={(next) => {
@@ -293,6 +338,14 @@ export default function ChequesPage() {
                 setPage(1);
               }}
             />
+
+            {/* Only once something is actually filtered: a permanently visible
+                "clear" is a button that does nothing most of the time. */}
+            {activeFilters > 0 ? (
+              <Button variant="ghost" onClick={clearFilters}>
+                {t('common.clearFilters')} ({activeFilters})
+              </Button>
+            ) : null}
 
             <Button
               variant={filtersOpen ? 'outline' : 'secondary'}
@@ -308,7 +361,12 @@ export default function ChequesPage() {
                 <IconColumns width="18" height="18" />
                 {t('common.columns')}
               </summary>
-              <div className="absolute end-0 z-20 mt-2 w-56 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
+              {/* `start-0`, not `end-0`. In a right-to-left page the inline end is
+                  the left, so anchoring there made the panel grow rightwards out
+                  of the window — 95px past the edge on a phone, which is where
+                  the page's sideways scroll came from. Anchored at the inline
+                  start it opens inwards, away from the edge. */}
+              <div className="absolute start-0 z-20 mt-2 w-56 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
                 {CHEQUE_COLUMN_KEYS.map((key) => {
                   const labelKey =
                     key === 'number'
@@ -378,9 +436,6 @@ export default function ChequesPage() {
                 className="h-11 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10"
               />
             </label>
-            <Button variant="ghost" onClick={clearFilters}>
-              {t('common.clearFilters')}
-            </Button>
           </div>
         ) : null}
       </section>
@@ -431,28 +486,24 @@ export default function ChequesPage() {
         )}
       </Panel>
 
-      {query.data && query.data.meta.totalPages > 1 ? (
-        <nav className="mt-4 flex items-center justify-between gap-3" aria-label={t('common.page')}>
-          <Button
-            variant="secondary"
-            disabled={query.data.meta.page <= 1}
-            onClick={() => setPage((current) => Math.max(1, current - 1))}
-          >
-            {t('common.previous')}
-          </Button>
-          <span className="text-sm text-slate-500 tabular-nums">
-            {t('common.page')} {query.data.meta.page} {t('common.of')} {query.data.meta.totalPages}
-            {' · '}
-            {t('common.total')}: {query.data.meta.total}
-          </span>
-          <Button
-            variant="secondary"
-            disabled={!query.data.meta.hasNextPage}
-            onClick={() => setPage((current) => current + 1)}
-          >
-            {t('common.next')}
-          </Button>
-        </nav>
+      {/* The shared control, so this list numbers its pages and offers a
+          page size like every other one — it used to carry a bespoke
+          prev/next pair that could only step one page at a time. */}
+      {query.data ? (
+        <Pagination
+          meta={query.data.meta}
+          onPageChange={(next) => {
+            setPage(next);
+            // Selection is per page; carrying it across would apply a bulk
+            // action to rows that are no longer on screen.
+            setSelected(new Set());
+          }}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setPage(1);
+            setSelected(new Set());
+          }}
+        />
       ) : null}
 
       {/* Docked to the bottom of the window, so it is reachable from anywhere

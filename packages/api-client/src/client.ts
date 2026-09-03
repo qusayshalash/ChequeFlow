@@ -7,6 +7,7 @@ import type {
   ChequeImageView,
   ChequeSummaryView,
   ContactStatementView,
+  ContactListItemView,
   ContactView,
   DashboardSummary,
   DepositSlipView,
@@ -404,7 +405,7 @@ export class ChequeFlowApiClient {
   // ── contacts and reference data ───────────────────────────────────────────
 
   listContacts(query: Partial<ListContactsQuery> = {}) {
-    return this.request<Paginated<ContactView>>('/contacts', {
+    return this.request<Paginated<ContactListItemView>>('/contacts', {
       query: query,
     });
   }

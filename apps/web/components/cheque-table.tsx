@@ -52,6 +52,8 @@ export function ChequeTable({
   const today = utcToday();
 
   const columns: Array<Column<ChequeSummaryView>> = [
+    // Column order follows the supplied design: what the cheque is,
+    // then its state and value, then when, then who and where.
     {
       key: 'number',
       header: t('cheque.number'),
@@ -67,19 +69,19 @@ export function ChequeTable({
       ),
     },
     {
-      key: 'party',
-      header: t('cheque.party'),
-      cell: (cheque) => cheque.originalSourceName ?? cheque.drawerName ?? '—',
+      key: 'status',
+      header: t('cheque.status'),
+      sortKey: 'status',
+      cell: (cheque) => <StatusBadge status={cheque.status} label={t(`status.${cheque.status}`)} />,
     },
     {
-      key: 'bank',
-      header: t('cheque.bank'),
-      // The mark is what the eye latches onto while scrolling a long list; the
-      // name is what confirms it.
+      key: 'amount',
+      header: t('common.amount'),
+      sortKey: 'amount',
+      numeric: true,
       cell: (cheque) => (
-        <span className="flex items-center gap-2.5">
-          <BankMark name={cheque.bankName} size="sm" />
-          <span className="truncate">{cheque.bankName ?? '—'}</span>
+        <span className="font-semibold text-slate-950">
+          {money(locale, cheque.amount, cheque.currency)}
         </span>
       ),
     },
@@ -119,26 +121,37 @@ export function ChequeTable({
       ),
     },
     {
-      key: 'amount',
-      header: t('common.amount'),
-      sortKey: 'amount',
-      numeric: true,
+      key: 'bank',
+      header: t('cheque.drawnOnBank'),
+      // The mark is what the eye latches onto while scrolling a long list; the
+      // name is what confirms it.
       cell: (cheque) => (
-        <span className="font-semibold text-slate-950">
-          {money(locale, cheque.amount, cheque.currency)}
+        <span className="flex items-center gap-2.5">
+          <BankMark name={cheque.bankName} size="sm" />
+          <span className="truncate">{cheque.bankName ?? '—'}</span>
+        </span>
+      ),
+    },
+    {
+      key: 'party',
+      header: t('cheque.beneficiary'),
+      // Whoever the cheque is *about* from this organisation's side: for one
+      // coming in that is the party it came from, for one going out the party
+      // it was handed to. The drawer is the fallback when neither is on file.
+      cell: (cheque) => (
+        <span className="truncate">
+          {(cheque.direction === 'OUTGOING'
+            ? cheque.currentRecipientName
+            : cheque.originalSourceName) ??
+            cheque.drawerName ??
+            '—'}
         </span>
       ),
     },
     {
       key: 'location',
-      header: t('cheque.currentLocation'),
+      header: t('cheque.storageLocation'),
       cell: (cheque) => cheque.currentLocationName ?? '—',
-    },
-    {
-      key: 'status',
-      header: t('cheque.status'),
-      sortKey: 'status',
-      cell: (cheque) => <StatusBadge status={cheque.status} label={t(`status.${cheque.status}`)} />,
     },
     {
       key: 'actions',
