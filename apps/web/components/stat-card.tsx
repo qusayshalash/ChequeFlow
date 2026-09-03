@@ -1,81 +1,107 @@
+'use client';
+
+import Link from 'next/link';
 import type { ComponentType, SVGProps } from 'react';
+
+import { IconDots } from '@/components/icons';
+import { useTranslator } from '@/components/providers';
 
 /**
  * Accents carry meaning, not decoration: red is money that needs chasing,
- * amber is money due soon, teal is money in hand, slate is not yet real.
+ * amber is money due soon, teal is money in hand, green is money on its way.
  */
-export type StatTone = 'neutral' | 'teal' | 'amber' | 'red';
+export type StatTone = 'neutral' | 'teal' | 'green' | 'amber' | 'red';
 
-const TONES: Record<StatTone, { dot: string; iconBg: string; iconFg: string; value: string }> = {
-  neutral: {
-    dot: 'bg-slate-400',
-    iconBg: 'bg-slate-50 ring-slate-100',
-    iconFg: 'text-slate-500',
-    value: 'text-slate-950',
-  },
-  teal: {
-    dot: 'bg-teal-500',
-    iconBg: 'bg-teal-50 ring-teal-100',
-    iconFg: 'text-teal-700',
-    value: 'text-teal-950',
-  },
-  amber: {
-    dot: 'bg-amber-500',
-    iconBg: 'bg-amber-50 ring-amber-100',
-    iconFg: 'text-amber-700',
-    value: 'text-amber-950',
-  },
-  red: {
-    dot: 'bg-red-500',
-    iconBg: 'bg-red-50 ring-red-100',
-    iconFg: 'text-red-600',
-    value: 'text-red-950',
-  },
+const TONES: Record<StatTone, { iconBg: string; iconFg: string; amount: string }> = {
+  neutral: { iconBg: 'bg-slate-100', iconFg: 'text-slate-500', amount: 'text-slate-700' },
+  teal: { iconBg: 'bg-teal-50', iconFg: 'text-teal-700', amount: 'text-teal-700' },
+  green: { iconBg: 'bg-emerald-50', iconFg: 'text-emerald-600', amount: 'text-emerald-600' },
+  amber: { iconBg: 'bg-amber-50', iconFg: 'text-amber-500', amount: 'text-amber-500' },
+  red: { iconBg: 'bg-red-50', iconFg: 'text-red-500', amount: 'text-red-500' },
 };
 
+/**
+ * One headline figure on the dashboard.
+ *
+ * Three tiers, in the order the eye needs them: what this counts, how many,
+ * and what that is worth. The amount is the only coloured text on the card —
+ * it is the part that says whether the count is good news.
+ *
+ * `href` makes the whole card the link to the list behind it, so the number
+ * and the way to act on it are the same target rather than a figure with a
+ * separate link hidden underneath.
+ */
 export function StatCard({
   label,
   value,
-  hint,
+  amountLabel,
+  amount,
   tone = 'neutral',
   Icon,
+  href,
 }: {
   label: string;
   value: string;
-  hint?: string;
+  /** Caption above the money, e.g. "total amount". */
+  amountLabel?: string;
+  /** Already formatted, and per currency where there is more than one. */
+  amount?: string;
   tone?: StatTone;
   Icon: ComponentType<SVGProps<SVGSVGElement>>;
+  href?: string;
 }) {
+  const t = useTranslator();
   const palette = TONES[tone];
 
-  return (
-    <div className="group relative overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-5 shadow-[0_1px_2px_rgb(16_24_40/0.035)] transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_14px_30px_-24px_rgb(16_24_40/0.45)]">
+  const body = (
+    <>
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="flex items-center gap-2 text-sm font-medium text-slate-500">
-            <span className={`size-1.5 rounded-full ${palette.dot}`} aria-hidden="true" />
-            {label}
-          </p>
-          <p
-            className={`mt-2 text-3xl font-bold tracking-[-0.035em] tabular-nums ${palette.value}`}
-          >
-            {value}
-          </p>
-        </div>
         <span
-          className={`flex size-10 shrink-0 items-center justify-center rounded-xl ring-1 ${palette.iconBg} ${palette.iconFg}`}
+          className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${palette.iconBg} ${palette.iconFg}`}
         >
-          <Icon />
+          <Icon width="22" height="22" />
+        </span>
+
+        <span className="min-w-0 flex-1 text-end">
+          <span className="block truncate text-[13px] font-medium text-slate-500">{label}</span>
+          <span className="mt-1 block text-[28px] leading-none font-bold tracking-[-0.03em] text-slate-900 tabular-nums">
+            {value}
+          </span>
+        </span>
+
+        {/* Present because the card is a shortcut, not a control surface: it
+            opens the list this figure counts. Rendered as a plain mark rather
+            than a menu button so it never looks like an action that is
+            missing its menu. */}
+        <span className="-me-1 -mt-1 shrink-0 text-slate-300" aria-hidden="true">
+          <IconDots width="16" height="16" />
         </span>
       </div>
 
-      {/* Wraps rather than truncates: a hint reading "ILS 9,000 • USD 16,5…"
-          cuts a figure in half, which is worse than a second line. */}
-      {hint ? (
-        <p className="mt-3 border-t border-slate-100 pt-3 text-xs leading-relaxed text-slate-500 tabular-nums">
-          {hint}
-        </p>
+      {amount ? (
+        <div className="mt-4">
+          <span className="block text-[11px] font-medium text-slate-400">
+            {amountLabel ?? t('common.amount')}
+          </span>
+          <span className={`mt-0.5 block text-sm font-bold tabular-nums ${palette.amount}`}>
+            {amount}
+          </span>
+        </div>
       ) : null}
-    </div>
+    </>
+  );
+
+  const shell =
+    'block rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_1px_2px_rgb(16_24_40/0.04)]';
+
+  if (!href) return <div className={shell}>{body}</div>;
+
+  return (
+    <Link
+      href={href}
+      className={`${shell} transition hover:border-slate-300 hover:shadow-[0_10px_26px_-20px_rgb(16_24_40/0.45)]`}
+    >
+      {body}
+    </Link>
   );
 }

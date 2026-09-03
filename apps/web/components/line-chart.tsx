@@ -7,6 +7,14 @@ export interface ChartSeries {
   color: string;
   /** Fills the area under the line, for the series being emphasised. */
   fill?: string;
+  /**
+   * Index from which the line is drawn dashed.
+   *
+   * Used to separate what happened from what is merely due: a cheque dated
+   * next Tuesday is a forecast, and drawing it in the same solid stroke as
+   * money already collected states more than the data supports.
+   */
+  dashedFrom?: number;
 }
 
 /**
@@ -25,11 +33,17 @@ export function LineChart({
   labels,
   axisLabel,
   height = 220,
+  showPoints = true,
+  labelEvery = 1,
 }: {
   series: ChartSeries[];
   labels: string[];
   axisLabel?: string;
   height?: number;
+  /** Off for dense series, where a marker per day becomes a solid band. */
+  showPoints?: boolean;
+  /** Print every nth x label, so thirty dates do not overlap into a smudge. */
+  labelEvery?: number;
 }) {
   const width = 640;
   const padding = { top: 16, end: 12, bottom: 34, start: 46 };
@@ -83,6 +97,12 @@ export function LineChart({
 
         {series.map((entry) => {
           const points = entry.values.map((value, index) => `${x(index)},${y(value)}`);
+          // The solid run keeps the joining point so the two halves meet
+          // rather than leaving a gap where the forecast begins.
+          const cut = entry.dashedFrom ?? entry.values.length;
+          const solid = points.slice(0, Math.min(cut + 1, points.length));
+          const dashed = points.slice(cut);
+
           return (
             <g key={entry.label}>
               {entry.fill ? (
@@ -95,41 +115,61 @@ export function LineChart({
                   fill={entry.fill}
                 />
               ) : null}
-              <polyline
-                points={points.join(' ')}
-                fill="none"
-                stroke={entry.color}
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              {entry.values.map((value, index) => (
-                <circle
-                  key={index}
-                  cx={x(index)}
-                  cy={y(value)}
-                  r="4"
-                  fill={entry.color}
-                  stroke="#FFFFFF"
+
+              {solid.length > 1 ? (
+                <polyline
+                  points={solid.join(' ')}
+                  fill="none"
+                  stroke={entry.color}
                   strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 />
-              ))}
+              ) : null}
+
+              {dashed.length > 1 ? (
+                <polyline
+                  points={dashed.join(' ')}
+                  fill="none"
+                  stroke={entry.color}
+                  strokeWidth="2"
+                  strokeDasharray="5 4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              ) : null}
+
+              {showPoints
+                ? entry.values.map((value, index) => (
+                    <circle
+                      key={index}
+                      cx={x(index)}
+                      cy={y(value)}
+                      r="3.5"
+                      fill="#FFFFFF"
+                      stroke={entry.color}
+                      strokeWidth="2"
+                    />
+                  ))
+                : null}
             </g>
           );
         })}
 
-        {labels.map((label, index) => (
-          <text
-            key={label}
-            x={x(index)}
-            y={height - 12}
-            textAnchor="middle"
-            className="fill-slate-400"
-            fontSize="11"
-          >
-            {label}
-          </text>
-        ))}
+        {labels.map((label, index) =>
+          index % labelEvery === 0 || index === labels.length - 1 ? (
+            <text
+              key={`${label}-${index}`}
+              x={x(index)}
+              y={height - 12}
+              textAnchor="middle"
+              className="fill-slate-400"
+              fontSize="11"
+            >
+              {label}
+            </text>
+          ) : null,
+        )}
 
         {axisLabel ? (
           <text x={padding.start - 38} y={12} className="fill-slate-400" fontSize="10">

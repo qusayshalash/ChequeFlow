@@ -34,9 +34,14 @@
   --app-primary: #087f6d;
   --app-primary-hover: #066d5f;
   --app-primary-soft: #e8f7f3;
-  --app-sidebar: #111c1b;
-  --app-sidebar-muted: #91a29f;
-  --app-sidebar-line: rgb(255 255 255 / 8%);
+  --app-sidebar: #ffffff;
+  --app-sidebar-text: #16211f;
+  --app-sidebar-muted: #5b6b68;
+  --app-sidebar-section: #687572;
+  --app-sidebar-line: #e6ebea;
+  --app-sidebar-hover: #f3f6f5;
+  --app-sidebar-active-bg: #e8f7f3;
+  --app-sidebar-active-text: #05564a;
   --app-danger: #c43d42;
   --app-warning: #b56a0b;
   --app-success: #12805c;
@@ -65,9 +70,14 @@
   --app-primary: #42b9a3;
   --app-primary-hover: #58c7b2;
   --app-primary-soft: #153e37;
-  --app-sidebar: #090f0f;
-  --app-sidebar-muted: #91a29f;
-  --app-sidebar-line: rgb(255 255 255 / 10%);
+  --app-sidebar: #0d1514;
+  --app-sidebar-text: #edf4f2;
+  --app-sidebar-muted: #a7b6b3;
+  --app-sidebar-section: #93a29f;
+  --app-sidebar-line: #223230;
+  --app-sidebar-hover: #16211f;
+  --app-sidebar-active-bg: #14332d;
+  --app-sidebar-active-text: #6fd8bf;
 }
 
 html {

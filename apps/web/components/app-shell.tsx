@@ -15,7 +15,9 @@ import {
   IconClose,
   IconContacts,
   IconDashboard,
+  IconLayers,
   IconLogo,
+  IconPlus,
   IconReports,
   IconReturn,
   IconSafe,
@@ -36,11 +38,18 @@ interface NavItem {
   permission?: Permission;
 }
 
-const WORKSPACE_NAV: NavItem[] = [
-  { href: '/dashboard', labelKey: 'nav.dashboard', Icon: IconDashboard },
+/**
+ * The rail, in the four groups of the reference design.
+ *
+ * Every entry points at a route that exists. The reference also shows
+ * "recurring payments", a "download centre" and separate "collected" and
+ * "withdrawn" lists; this system has none of those, and a nav item that leads
+ * nowhere is worse than an absent one — it teaches people the menu lies.
+ */
+const CHEQUES_NAV: NavItem[] = [
   { href: '/cheques', labelKey: 'nav.cheques', Icon: IconCheque },
-  { href: '/cheques/review', labelKey: 'nav.review', Icon: IconSearch },
   { href: '/cheques/due', labelKey: 'nav.due', Icon: IconCalendar },
+  { href: '/cheques/review', labelKey: 'nav.review', Icon: IconSearch },
   { href: '/cheques/bounced', labelKey: 'nav.bounced', Icon: IconReturn },
   // Beside the due list because it answers the next question: not just what
   // is due, but what to put in an envelope this morning.
@@ -48,16 +57,24 @@ const WORKSPACE_NAV: NavItem[] = [
   { href: '/notifications', labelKey: 'nav.notifications', Icon: IconBell },
 ];
 
-const MANAGEMENT_NAV: NavItem[] = [
-  { href: '/contacts', labelKey: 'nav.contacts', Icon: IconContacts },
-  { href: '/branches', labelKey: 'nav.branches', Icon: IconBranch },
-  { href: '/locations', labelKey: 'nav.locations', Icon: IconSafe },
+const MANAGE_NAV: NavItem[] = [
+  { href: '/cheques/new', labelKey: 'nav.newCheque', Icon: IconPlus },
+  { href: '/cheques/new?mode=batch', labelKey: 'nav.chequeBatch', Icon: IconLayers },
+];
+
+const REPORTS_NAV: NavItem[] = [
   {
     href: '/reports',
     labelKey: 'nav.reports',
     Icon: IconReports,
     permission: Permission.REPORT_VIEW,
   },
+];
+
+const SETTINGS_NAV: NavItem[] = [
+  { href: '/contacts', labelKey: 'nav.contacts', Icon: IconContacts },
+  { href: '/branches', labelKey: 'nav.branches', Icon: IconBranch },
+  { href: '/locations', labelKey: 'nav.locations', Icon: IconSafe },
   {
     href: '/users',
     labelKey: 'nav.users',
@@ -120,17 +137,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     });
   }
 
-  function renderNav(items: NavItem[], labelKey: string) {
+  function renderNav(items: NavItem[], labelKey?: string) {
+    if (items.length === 0) return null;
+
     return (
       <section className="mt-5 first:mt-0">
-        <p
-          className={`mb-2 px-3 text-[11px] font-semibold tracking-[0.12em] text-white/60 ${
-            collapsed ? 'lg:hidden' : ''
-          }`}
-        >
-          {t(labelKey)}
-        </p>
-        <ul className="flex flex-col gap-1">
+        {labelKey ? (
+          <p
+            className={`mb-1.5 px-3 text-[11px] font-semibold text-[var(--app-sidebar-section)] ${
+              collapsed ? 'lg:hidden' : ''
+            }`}
+          >
+            {t(labelKey)}
+          </p>
+        ) : null}
+        <ul className="flex flex-col gap-0.5">
           {items.map(({ href, labelKey: itemLabelKey, Icon }) => {
             const active = isActive(href);
             const label = t(itemLabelKey);
@@ -142,20 +163,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   aria-current={active ? 'page' : undefined}
                   aria-label={collapsed ? label : undefined}
                   title={collapsed ? label : undefined}
-                  className={`group relative flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm ${
+                  className={`group relative flex min-h-10 items-center gap-3 rounded-xl px-3 text-[13px] transition-colors ${
                     collapsed ? 'lg:justify-center lg:px-0' : ''
                   } ${
                     active
-                      ? 'bg-white/[0.09] font-semibold text-white shadow-[inset_0_0_0_1px_rgb(255_255_255/0.06)]'
-                      : 'text-[var(--app-sidebar-muted)] hover:bg-white/[0.05] hover:text-white'
+                      ? 'bg-[var(--app-sidebar-active-bg)] font-semibold text-[var(--app-sidebar-active-text)]'
+                      : 'text-[var(--app-sidebar-muted)] hover:bg-[var(--app-sidebar-hover)] hover:text-[var(--app-sidebar-text)]'
                   }`}
                 >
+                  {/* A bar on the leading edge of the current page. The tinted
+                      pill alone reads as a hover state on a light rail. */}
                   {active ? (
-                    <span className="absolute inset-y-2 start-0 w-0.5 rounded-full bg-emerald-400" />
+                    <span className="absolute inset-y-1.5 start-0 w-[3px] rounded-full bg-[var(--app-primary)]" />
                   ) : null}
                   <Icon
+                    width="18"
+                    height="18"
                     className={`shrink-0 ${
-                      active ? 'text-emerald-300' : 'text-white/60 group-hover:text-white'
+                      active
+                        ? 'text-[var(--app-sidebar-active-text)]'
+                        : 'text-[var(--app-sidebar-muted)] group-hover:text-[var(--app-sidebar-text)]'
                     }`}
                   />
                   <span className={collapsed ? 'lg:hidden' : ''}>{label}</span>
@@ -202,7 +229,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         // starts on. The cost is the closing slide; the opening one still
         // plays, and a drawer that shuts instantly is a fair trade for a
         // layout that does not shift.
-        className={`fixed inset-y-0 start-0 z-50 shrink-0 flex-col bg-[var(--app-sidebar)] text-white shadow-2xl transition-[width,transform] duration-200 lg:sticky lg:top-0 lg:flex lg:h-screen lg:translate-x-0 lg:shadow-none ${
+        className={`fixed inset-y-0 start-0 z-50 shrink-0 flex-col border-e border-[var(--app-sidebar-line)] bg-[var(--app-sidebar)] text-[var(--app-sidebar-text)] shadow-2xl transition-[width,transform] duration-200 lg:sticky lg:top-0 lg:flex lg:h-screen lg:translate-x-0 lg:shadow-none ${
           menuOpen ? 'flex translate-x-0' : 'hidden translate-x-full'
         } ${collapsed ? 'w-[292px] lg:w-[84px]' : 'w-[292px] lg:w-[272px]'}`}
         aria-label={t('common.appName')}
@@ -213,14 +240,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           }`}
         >
           <Link href="/dashboard" className="flex min-w-0 items-center gap-3">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-400 text-emerald-950 shadow-[0_8px_24px_-12px_rgb(52_211_153/0.9)]">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--app-primary)] text-white shadow-[0_8px_22px_-14px_rgb(8_127_109/0.9)]">
               <IconLogo width="23" height="23" strokeWidth="1.9" />
             </span>
             <span className={`min-w-0 ${collapsed ? 'lg:hidden' : ''}`}>
-              <span className="block truncate text-base font-bold tracking-tight text-white">
+              <span className="block truncate text-base font-bold tracking-tight text-[var(--app-sidebar-text)]">
                 {t('common.appName')}
               </span>
-              <span className="block text-[10px] font-medium tracking-[0.18em] text-white/60">
+              <span className="block text-[10px] font-medium tracking-[0.18em] text-[var(--app-sidebar-section)]">
                 CHEQUE OPERATIONS
               </span>
             </span>
@@ -228,7 +255,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           <button
             type="button"
-            className="flex size-11 items-center justify-center rounded-xl text-white/75 hover:bg-white/10 hover:text-white lg:hidden"
+            className="flex size-11 items-center justify-center rounded-xl text-[var(--app-sidebar-muted)] hover:bg-[var(--app-sidebar-hover)] hover:text-[var(--app-sidebar-text)] lg:hidden"
             aria-label={t('common.close')}
             onClick={() => setMenuOpen(false)}
           >
@@ -236,10 +263,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
-        <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-5">
-          {renderNav(permitted(WORKSPACE_NAV), 'nav.workspace')}
-          <div className="my-5 border-t border-[var(--app-sidebar-line)]" />
-          {renderNav(permitted(MANAGEMENT_NAV), 'nav.management')}
+        <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
+          {/* Ungrouped and first, as in the reference: the dashboard is not
+              one of the cheque views, it is where you land. */}
+          {renderNav([{ href: '/dashboard', labelKey: 'nav.dashboard', Icon: IconDashboard }])}
+          {renderNav(permitted(CHEQUES_NAV), 'nav.groupCheques')}
+          {renderNav(permitted(MANAGE_NAV), 'nav.groupManage')}
+          {renderNav(permitted(REPORTS_NAV), 'nav.groupReports')}
+          {renderNav(permitted(SETTINGS_NAV), 'nav.groupSettings')}
         </nav>
 
         <div className="border-t border-[var(--app-sidebar-line)] p-3">
@@ -249,7 +280,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             aria-expanded={!collapsed}
             aria-controls="main-nav"
             title={collapsed ? t('nav.expandMenu') : t('nav.collapseMenu')}
-            className={`mt-2 hidden min-h-10 w-full items-center gap-2 rounded-xl px-3 text-xs text-white/60 hover:bg-white/[0.05] hover:text-white lg:flex ${
+            className={`mt-2 hidden min-h-10 w-full items-center gap-2 rounded-xl px-3 text-xs text-[var(--app-sidebar-muted)] hover:bg-[var(--app-sidebar-hover)] hover:text-[var(--app-sidebar-text)] lg:flex ${
               collapsed ? 'justify-center px-0' : ''
             }`}
           >

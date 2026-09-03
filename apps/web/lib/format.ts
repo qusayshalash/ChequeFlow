@@ -1,12 +1,13 @@
 import {
   formatDate,
   formatDateTime,
+  formatDayMonth,
   formatDueDistance,
   formatMoney,
   type Locale,
 } from '@cheque-flow/localization';
 
-export { formatDate, formatDateTime, formatDueDistance, formatMoney };
+export { formatDate, formatDateTime, formatDayMonth, formatDueDistance, formatMoney };
 
 /** Days until a due date; negative means the date has passed. */
 export function daysUntil(isoDate: string, today = new Date()): number {

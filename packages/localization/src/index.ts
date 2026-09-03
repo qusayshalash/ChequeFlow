@@ -226,6 +226,25 @@ function formatClock(date: Date): string {
  * rendered in local time — "who moved this cheque, and when, from where I am
  * standing".
  */
+/**
+ * "26 May" — a date without its year.
+ *
+ * For axes and other places where thirty dates sit side by side and the year
+ * is the same on all of them, so printing it four hundred times costs width
+ * and says nothing. Gregorian only: this is a chart tick, not a record, and a
+ * Hijri conversion per point would be thirty `Intl` formatters for labels
+ * nobody reads individually.
+ */
+export function formatDayMonth(locale: Locale, isoDate: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
+  if (!match) return isoDate;
+
+  const month = Number(match[2]);
+  if (month < 1 || month > 12) return isoDate;
+
+  return `${Number(match[3])} ${monthName(locale, month)}`;
+}
+
 export function formatDateTime(
   locale: Locale,
   isoDateTime: string,
