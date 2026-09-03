@@ -12,7 +12,9 @@ import {
   type TableSelection,
   type TableSort,
 } from '@/components/data-table';
+import { BankMark } from '@/components/bank-mark';
 import { IconClock } from '@/components/icons';
+import { RowActions } from '@/components/row-actions';
 import { useApp, useTranslator } from '@/components/providers';
 import { formatDate, formatDueDistance, money } from '@/lib/format';
 
@@ -72,7 +74,14 @@ export function ChequeTable({
     {
       key: 'bank',
       header: t('cheque.bank'),
-      cell: (cheque) => cheque.bankName ?? '—',
+      // The mark is what the eye latches onto while scrolling a long list; the
+      // name is what confirms it.
+      cell: (cheque) => (
+        <span className="flex items-center gap-2.5">
+          <BankMark name={cheque.bankName} size="sm" />
+          <span className="truncate">{cheque.bankName ?? '—'}</span>
+        </span>
+      ),
     },
     {
       key: 'due',
@@ -131,6 +140,32 @@ export function ChequeTable({
       sortKey: 'status',
       cell: (cheque) => <StatusBadge status={cheque.status} label={t(`status.${cheque.status}`)} />,
     },
+    {
+      key: 'actions',
+      header: '',
+      cell: (cheque) => (
+        <RowActions
+          label={cheque.chequeNumber}
+          actions={[
+            {
+              key: 'open',
+              label: t('cheque.openCheque'),
+              href: `/cheques/${cheque.id}`,
+            },
+            {
+              key: 'timeline',
+              label: t('cheque.openTimeline'),
+              href: `/cheques/${cheque.id}/timeline`,
+            },
+            {
+              key: 'copy',
+              label: t('cheque.copyNumber'),
+              onSelect: () => void navigator.clipboard?.writeText(cheque.chequeNumber),
+            },
+          ]}
+        />
+      ),
+    },
   ];
 
   return (
@@ -147,7 +182,12 @@ export function ChequeTable({
           action={emptyAction}
         />
       }
-      columns={columns.filter((column) => !visibleColumns || visibleColumns.has(column.key))}
+      // The actions column is furniture, not data: it is exempt from the
+      // column picker, because a row you cannot act on is a row with a dead
+      // end, and nobody chooses that deliberately.
+      columns={columns.filter(
+        (column) => column.key === 'actions' || !visibleColumns || visibleColumns.has(column.key),
+      )}
     />
   );
 }

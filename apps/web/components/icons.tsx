@@ -314,3 +314,14 @@ export function IconCheck(props: IconProps) {
     </Icon>
   );
 }
+
+/** The universal "more actions" affordance at the end of a row. */
+export function IconDots(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="5" cy="12" r="1.4" />
+      <circle cx="12" cy="12" r="1.4" />
+      <circle cx="19" cy="12" r="1.4" />
+    </Icon>
+  );
+}
