@@ -234,6 +234,56 @@ export function IconUser(props: IconProps) {
   );
 }
 
+export function IconMenu(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 7h16M4 12h16M4 17h16" />
+    </Icon>
+  );
+}
+
+export function IconClose(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="m6 6 12 12M18 6 6 18" />
+    </Icon>
+  );
+}
+
+export function IconLogout(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M10 5H5v14h5M14 8l4 4-4 4M18 12H9" />
+    </Icon>
+  );
+}
+
+export function IconSpark(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="m12 3 1.15 3.35L16.5 7.5l-3.35 1.15L12 12l-1.15-3.35L7.5 7.5l3.35-1.15L12 3Z" />
+      <path d="m18.5 14 .7 2.05 2.05.7-2.05.7-.7 2.05-.7-2.05-2.05-.7 2.05-.7.7-2.05ZM5.5 13l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z" />
+    </Icon>
+  );
+}
+
+export function IconFilter(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 6h16M7 12h10M10 18h4" />
+    </Icon>
+  );
+}
+
+export function IconColumns(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M9 4v16M15 4v16" />
+    </Icon>
+  );
+}
+
 /** The product mark: a cheque with a line of writing on it. */
 export function IconLogo(props: IconProps) {
   return (

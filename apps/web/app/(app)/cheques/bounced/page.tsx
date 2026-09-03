@@ -19,7 +19,7 @@ export default function BouncedChequesPage() {
   const [page, setPage] = useState(1);
 
   const query = useQuery({
-    queryKey: ['cheques', 'bounced'],
+    queryKey: ['cheques', 'bounced', page],
     queryFn: () =>
       api.listCheques({
         status: [ChequeStatus.BOUNCED, ChequeStatus.RETURNED],
@@ -31,8 +31,8 @@ export default function BouncedChequesPage() {
   });
 
   return (
-    <div className="mx-auto flex max-w-[1180px] flex-col gap-5">
-      <PageHeader title={t('nav.bounced')} />
+    <div className="mx-auto flex max-w-[1440px] flex-col gap-5">
+      <PageHeader title={t('nav.bounced')} subtitle={t('pageDescription.bounced')} />
       {query.isPending ? <LoadingState label={t('common.loading')} /> : null}
       {query.isError ? (
         <ErrorState

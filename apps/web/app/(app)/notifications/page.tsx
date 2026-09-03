@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 
 import type { ReminderRow } from '@cheque-flow/api-client';
-import { Badge, Button, EmptyState, ErrorState, LoadingState } from '@cheque-flow/ui';
+import { Badge, Button, EmptyState, ErrorState, LoadingState, StatCard } from '@cheque-flow/ui';
 
 import { PageHeader } from '@/components/page-header';
 import { Panel } from '@/components/panel';
@@ -51,8 +51,15 @@ export default function NotificationsPage() {
   const upcoming = rows.filter((row) => !row.isDue);
 
   return (
-    <div className="mx-auto flex max-w-[1180px] flex-col gap-5">
-      <PageHeader title={t('nav.notifications')} />
+    <div className="mx-auto flex max-w-[1280px] flex-col gap-5">
+      <PageHeader title={t('nav.notifications')} subtitle={t('pageDescription.notifications')} />
+
+      {!query.isPending && rows.length > 0 ? (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <StatCard label={t('reminders.due')} value={String(due.length)} tone="warning" />
+          <StatCard label={t('reminders.upcoming')} value={String(upcoming.length)} />
+        </div>
+      ) : null}
 
       {query.isError ? (
         <ErrorState
@@ -133,7 +140,7 @@ function ReminderCard({
 }) {
   return (
     <li
-      className={`rounded-xl border p-4 ${due ? 'border-amber-200 bg-amber-50/40' : 'border-slate-200'}`}
+      className={`rounded-xl border p-4 transition-colors hover:border-slate-300 ${due ? 'border-amber-200 bg-amber-50/40' : 'border-slate-200 bg-white'}`}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
@@ -157,18 +164,24 @@ function ReminderCard({
           {row.note ? <p className="mt-1 text-sm text-slate-700">{row.note}</p> : null}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-slate-500">{t('reminders.snooze')}</span>
-          {SNOOZE.map((option) => (
-            <button
-              key={option.minutes}
-              type="button"
-              onClick={() => onSnooze(option.minutes)}
-              className="h-9 rounded-lg border border-slate-200 px-3 text-sm text-slate-600 hover:bg-white"
-            >
-              {t(option.labelKey)}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-start gap-2">
+          <details className="group relative">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 shadow-sm hover:bg-slate-50">
+              {t('reminders.snooze')}
+            </summary>
+            <div className="absolute end-0 z-20 mt-2 flex w-36 flex-col rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
+              {SNOOZE.map((option) => (
+                <button
+                  key={option.minutes}
+                  type="button"
+                  onClick={() => onSnooze(option.minutes)}
+                  className="min-h-9 rounded-lg px-3 text-start text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-950"
+                >
+                  {t(option.labelKey)}
+                </button>
+              ))}
+            </div>
+          </details>
           <Button variant="secondary" onClick={onAcknowledge}>
             {t('reminders.acknowledge')}
           </Button>

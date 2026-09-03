@@ -2,14 +2,15 @@
 
 import { useQuery } from '@tanstack/react-query';
 
-import { Card, ErrorState, LoadingState, StatCard } from '@cheque-flow/ui';
-
-import { ExportButton } from '@/components/export-button';
 import { Permission } from '@cheque-flow/shared-types';
+import { EmptyState, ErrorState, LoadingState, StatCard } from '@cheque-flow/ui';
 
+import { DataTable } from '@/components/data-table';
+import { ExportButton } from '@/components/export-button';
 import { PageHeader } from '@/components/page-header';
-import { RequirePermission } from '@/components/session';
+import { Panel } from '@/components/panel';
 import { useApi, useApp, useTranslator } from '@/components/providers';
+import { RequirePermission } from '@/components/session';
 import { money } from '@/lib/format';
 
 function isoDate(offsetDays: number): string {
@@ -40,12 +41,30 @@ function ReportsPageBody() {
       api.getCashFlowReport({ from: isoDate(0), to: isoDate(90), granularity: 'week' }),
   });
 
-  return (
-    <div className="mx-auto flex max-w-[1180px] flex-col gap-5">
-      <PageHeader title={t('reports.title')} actions={<ExportButton />} />
+  const custodyRows =
+    custody.data?.entries.map((entry, index) => ({ ...entry, key: String(index) })) ?? [];
+  const cashFlowRows =
+    cashFlow.data?.periods.flatMap((period) =>
+      period.byCurrency.map((entry) => ({ ...entry, period: period.period })),
+    ) ?? [];
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold text-slate-900">{t('reports.custody')}</h2>
+  return (
+    <div className="mx-auto flex max-w-[1440px] flex-col gap-5">
+      <PageHeader
+        title={t('reports.title')}
+        subtitle={t('pageDescription.reports')}
+        actions={<ExportButton />}
+      />
+
+      <section className="flex flex-col gap-4" aria-labelledby="custody-heading">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-teal-700">
+            {t('reports.title')}
+          </p>
+          <h2 id="custody-heading" className="mt-1 text-lg font-bold text-slate-950">
+            {t('reports.custody')}
+          </h2>
+        </div>
         {custody.isPending ? <LoadingState label={t('common.loading')} /> : null}
         {custody.isError ? (
           <ErrorState
@@ -68,92 +87,111 @@ function ReportsPageBody() {
                 }
               />
             </div>
-            <Card>
-              <table className="w-full text-sm">
-                <thead className="text-slate-500">
-                  <tr>
-                    <th scope="col" className="p-3 text-start text-xs font-medium">
-                      {t('cheque.currentLocation')}
-                    </th>
-                    <th scope="col" className="p-3 text-start text-xs font-medium">
-                      {t('cheque.currentHolder')}
-                    </th>
-                    <th scope="col" className="p-3 text-start text-xs font-medium">
-                      {t('common.count')}
-                    </th>
-                    <th scope="col" className="p-3 text-start text-xs font-medium">
-                      {t('common.total')}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {custody.data.entries.map((entry, index) => (
-                    <tr key={`${entry.locationName ?? ''}-${entry.holderName ?? ''}-${index}`}>
-                      <td className="p-3 text-slate-700">
+            <Panel bodyClassName="">
+              <DataTable
+                rows={custodyRows}
+                rowKey={(entry) => entry.key}
+                empty={<EmptyState title={t('reports.empty')} />}
+                columns={[
+                  {
+                    key: 'location',
+                    header: t('cheque.currentLocation'),
+                    cell: (entry) => (
+                      <span className="font-semibold text-slate-900">
                         {entry.locationName ?? t('common.unknown')}
-                      </td>
-                      <td className="p-3 text-slate-700">
-                        {entry.holderName ?? t('common.unknown')}
-                      </td>
-                      <td className="p-3 tabular-nums text-slate-700">{entry.count}</td>
-                      <td className="p-3 tabular-nums text-slate-700">
+                      </span>
+                    ),
+                  },
+                  {
+                    key: 'holder',
+                    header: t('cheque.currentHolder'),
+                    cell: (entry) => entry.holderName ?? t('common.unknown'),
+                  },
+                  {
+                    key: 'count',
+                    header: t('common.count'),
+                    numeric: true,
+                    cell: (entry) => entry.count,
+                  },
+                  {
+                    key: 'total',
+                    header: t('common.total'),
+                    numeric: true,
+                    cell: (entry) => (
+                      <span className="font-semibold text-slate-900">
                         {entry.byCurrency
                           .map((bucket) => money(locale, bucket.total, bucket.currency))
                           .join(' · ')}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </Card>
+                      </span>
+                    ),
+                  },
+                ]}
+              />
+            </Panel>
           </>
         ) : null}
       </section>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold text-slate-900">{t('reports.cashFlow')}</h2>
+      <section className="flex flex-col gap-4" aria-labelledby="cash-flow-heading">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-teal-700">
+            {t('reports.title')}
+          </p>
+          <h2 id="cash-flow-heading" className="mt-1 text-lg font-bold text-slate-950">
+            {t('reports.cashFlow')}
+          </h2>
+        </div>
         {cashFlow.isPending ? <LoadingState label={t('common.loading')} /> : null}
+        {cashFlow.isError ? (
+          <ErrorState
+            title={t('errors.INTERNAL_ERROR')}
+            onRetry={() => void cashFlow.refetch()}
+            retryLabel={t('common.retry')}
+          />
+        ) : null}
         {cashFlow.data ? (
-          <Card>
-            <table className="w-full text-sm">
-              <thead className="text-slate-500">
-                <tr>
-                  <th scope="col" className="p-3 text-start text-xs font-medium">
-                    {t('common.date')}
-                  </th>
-                  <th scope="col" className="p-3 text-start text-xs font-medium">
-                    {t('reports.expectedInflow')}
-                  </th>
-                  <th scope="col" className="p-3 text-start text-xs font-medium">
-                    {t('reports.expectedOutflow')}
-                  </th>
-                  <th scope="col" className="p-3 text-start text-xs font-medium">
-                    {t('reports.net')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {cashFlow.data.periods.flatMap((period) =>
-                  period.byCurrency.map((entry) => (
-                    <tr key={`${period.period}-${entry.currency}`}>
-                      <td className="p-3 tabular-nums text-slate-700" dir="ltr">
-                        {period.period} · {entry.currency}
-                      </td>
-                      <td className="p-3 tabular-nums text-slate-700">
-                        {money(locale, entry.inflow, entry.currency)}
-                      </td>
-                      <td className="p-3 tabular-nums text-slate-700">
-                        {money(locale, entry.outflow, entry.currency)}
-                      </td>
-                      <td className="p-3 tabular-nums text-slate-700">
-                        {money(locale, entry.net, entry.currency)}
-                      </td>
-                    </tr>
-                  )),
-                )}
-              </tbody>
-            </table>
-          </Card>
+          <Panel bodyClassName="">
+            <DataTable
+              rows={cashFlowRows}
+              rowKey={(entry) => `${entry.period}-${entry.currency}`}
+              empty={<EmptyState title={t('reports.empty')} />}
+              columns={[
+                {
+                  key: 'date',
+                  header: t('common.date'),
+                  cell: (entry) => (
+                    <span className="font-mono text-xs font-semibold text-slate-900" dir="ltr">
+                      {entry.period} · {entry.currency}
+                    </span>
+                  ),
+                },
+                {
+                  key: 'inflow',
+                  header: t('reports.expectedInflow'),
+                  numeric: true,
+                  cell: (entry) => money(locale, entry.inflow, entry.currency),
+                },
+                {
+                  key: 'outflow',
+                  header: t('reports.expectedOutflow'),
+                  numeric: true,
+                  cell: (entry) => money(locale, entry.outflow, entry.currency),
+                },
+                {
+                  key: 'net',
+                  header: t('reports.net'),
+                  numeric: true,
+                  cell: (entry) => (
+                    <span
+                      className={`font-bold ${Number(entry.net) < 0 ? 'text-red-700' : 'text-teal-700'}`}
+                    >
+                      {money(locale, entry.net, entry.currency)}
+                    </span>
+                  ),
+                },
+              ]}
+            />
+          </Panel>
         ) : null}
       </section>
     </div>

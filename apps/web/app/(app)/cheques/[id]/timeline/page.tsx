@@ -12,13 +12,18 @@ export default function ChequeTimelinePage({ params }: { params: Promise<{ id: s
   const t = useTranslator();
 
   return (
-    <div className="mx-auto flex max-w-[1180px] flex-col gap-5">
-      <div className="flex items-center gap-3">
-        <PageHeader title={t('cheque.timeline')} />
-        <Link href={`/cheques/${id}`} className="ms-auto text-teal-800 hover:underline">
-          {t('common.back')}
-        </Link>
-      </div>
+    <div className="mx-auto flex max-w-[1200px] flex-col gap-5">
+      <PageHeader
+        title={t('cheque.timeline')}
+        actions={
+          <Link
+            href={`/cheques/${id}`}
+            className="inline-flex min-h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+          >
+            {t('common.back')}
+          </Link>
+        }
+      />
       <ChequeTimeline chequeId={id} />
     </div>
   );

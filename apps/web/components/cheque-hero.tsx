@@ -24,20 +24,21 @@ export function ChequeHero({ cheque, today }: { cheque: ChequeDetailView; today:
   const distance = formatDueDistance(locale, cheque.dueDate, today);
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6">
+    <section className="relative overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-6 shadow-[0_1px_2px_rgb(16_24_40/0.035)] sm:p-7">
+      <span className="absolute inset-y-0 start-0 w-1 bg-teal-600" aria-hidden="true" />
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2.5">
             <span className="text-sm text-slate-500">{t('cheque.number')}</span>
-            <span className="font-mono text-lg font-bold text-slate-900" dir="ltr">
+            <span className="font-mono text-lg font-bold tracking-wide text-slate-950" dir="ltr">
               {cheque.chequeNumber}
             </span>
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600">
               {t(`direction.${cheque.direction}`)}
             </span>
           </div>
 
-          <p className="mt-3 text-4xl font-bold text-slate-900 tabular-nums">
+          <p className="mt-4 text-[clamp(2rem,4vw,3.25rem)] font-bold tracking-[-0.045em] text-slate-950 tabular-nums">
             {money(locale, cheque.amount, cheque.currency)}
           </p>
 
@@ -48,10 +49,10 @@ export function ChequeHero({ cheque, today }: { cheque: ChequeDetailView; today:
           ) : null}
         </div>
 
-        <div className="flex flex-col items-start gap-3">
+        <div className="flex min-w-48 flex-col items-start gap-3 sm:items-end">
           <StatusBadge status={cheque.status} label={t(`status.${cheque.status}`)} />
 
-          <div className="rounded-xl bg-slate-50 px-4 py-3">
+          <div className="w-full rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 sm:text-end">
             <p className="text-xs text-slate-500">{t('cheque.dueDate')}</p>
             <p className="mt-0.5 font-semibold text-slate-900 tabular-nums">
               {formatDate(locale, cheque.dueDate)}

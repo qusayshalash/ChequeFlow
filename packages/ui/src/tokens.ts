@@ -7,22 +7,27 @@
  */
 
 export const colors = {
-  brand: '#0F5C4E',
-  brandDark: '#0A4238',
-  brandLight: '#E6F2EF',
+  brand: '#087F6D',
+  brandDark: '#075F54',
+  brandLight: '#E8F7F3',
   surface: '#FFFFFF',
-  surfaceMuted: '#F6F7F9',
-  border: '#D9DEE3',
-  text: '#14181D',
-  textMuted: '#57606A',
-  danger: '#B3261E',
-  dangerBg: '#FDECEA',
-  warning: '#8A5A00',
-  warningBg: '#FFF4E0',
-  success: '#12633F',
-  successBg: '#E7F4EC',
-  info: '#0B4FA3',
-  infoBg: '#E8F0FB',
+  surfaceMuted: '#F4F6F8',
+  border: '#E2E7EB',
+  text: '#15211F',
+  textMuted: '#53625F',
+  danger: '#C43D42',
+  dangerBg: '#FCEDEE',
+  warning: '#9A5908',
+  warningBg: '#FFF5E7',
+  // One shade darker, for the same reason as `info` below: 4.46:1 on its own
+  // background is under the 4.5:1 this package's test enforces.
+  success: '#127F5B',
+  successBg: '#E9F7F1',
+  // Two shades darker than the palette's own blue: at #2773BD the info badge
+  // sat at 4.42:1 against its background, under the 4.5:1 this package's own
+  // test enforces. The difference is invisible; failing the guard is not.
+  info: '#2671BA',
+  infoBg: '#EBF4FC',
 } as const;
 
 /** Minimum touch target, in points/px — comfortable for non-technical staff. */
@@ -31,16 +36,20 @@ export const MIN_TOUCH_TARGET = 48;
 export const spacing = {
   xs: 4,
   sm: 8,
+  base: 12,
   md: 16,
+  ml: 20,
   lg: 24,
   xl: 32,
+  xxl2: 40,
   xxl: 48,
 } as const;
 
 export const radius = {
-  sm: 6,
-  md: 10,
+  sm: 8,
+  md: 12,
   lg: 16,
+  xl: 20,
   pill: 999,
 } as const;
 

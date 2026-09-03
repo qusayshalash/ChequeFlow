@@ -128,13 +128,16 @@ export default function NewChequePage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-5">
-      <PageHeader title={mode === 'batch' ? t('cheque.batchTitle') : t('cheque.newTitle')} />
+    <div className="mx-auto flex max-w-[1040px] flex-col gap-5">
+      <PageHeader
+        title={mode === 'batch' ? t('cheque.batchTitle') : t('cheque.newTitle')}
+        subtitle={t('pageDescription.newCheque')}
+      />
 
       <div
         role="tablist"
         aria-label={t('cheque.newTitle')}
-        className="inline-flex self-start rounded-xl border border-slate-200 bg-white p-1"
+        className="grid grid-cols-2 gap-1 rounded-2xl border border-slate-200/90 bg-white p-1.5 shadow-[0_1px_2px_rgb(16_24_40/0.035)] sm:self-start"
       >
         {(['single', 'batch'] as const).map((value) => (
           <button
@@ -145,8 +148,8 @@ export default function NewChequePage() {
             onClick={() => setMode(value)}
             className={
               mode === value
-                ? 'rounded-lg bg-slate-900 px-4 py-1.5 text-sm font-medium text-white'
-                : 'rounded-lg px-4 py-1.5 text-sm text-slate-600 hover:bg-slate-50'
+                ? 'min-h-10 rounded-xl bg-[#15211f] px-5 text-sm font-semibold text-white shadow-sm'
+                : 'min-h-10 rounded-xl px-5 text-sm font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-900'
             }
           >
             {value === 'single' ? t('cheque.singleMode') : t('cheque.batchMode')}
@@ -389,7 +392,7 @@ export default function NewChequePage() {
         {/* The save bar sticks to the bottom: the form is now five panels tall,
             and a submit button you have to go looking for is a form people
             abandon halfway. */}
-        <div className="sticky bottom-0 -mx-1 flex flex-wrap gap-3 rounded-2xl border border-slate-200 bg-white/95 p-4 backdrop-blur">
+        <div className="sticky bottom-4 z-10 -mx-1 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-[0_18px_48px_-30px_rgb(16_24_40/0.6)] backdrop-blur-xl">
           <Button type="submit" size="lg" loading={mutation.isPending}>
             {t('common.save')}
           </Button>

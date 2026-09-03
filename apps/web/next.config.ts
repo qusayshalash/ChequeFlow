@@ -2,6 +2,9 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // A separate output directory can be used by CI or verification builds
+  // without interrupting a local development server using `.next`.
+  distDir: process.env.NEXT_DIST_DIR ?? '.next',
   // Next writes AGENTS.md/CLAUDE.md on dev start; this repo manages its own docs.
   agentRules: false,
   // Workspace packages ship TypeScript-compiled JS; Next transpiles them so

@@ -41,7 +41,7 @@ export function CustodyStrip({ cheque }: { cheque: ChequeDetailView }) {
   ];
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-5">
+    <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-[0_1px_2px_rgb(16_24_40/0.035)]">
       <h2 className="mb-4 text-base font-bold text-slate-900">{t('cheque.journey')}</h2>
 
       <ol className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
@@ -50,9 +50,9 @@ export function CustodyStrip({ cheque }: { cheque: ChequeDetailView }) {
             <div
               className={`flex-1 rounded-xl border p-4 ${
                 step.current
-                  ? 'border-teal-200 bg-teal-50'
+                  ? 'border-teal-200 bg-teal-50/80 shadow-[inset_0_0_0_1px_rgb(13_148_136/0.03)]'
                   : step.done
-                    ? 'border-slate-200 bg-white'
+                    ? 'border-slate-200 bg-slate-50/40'
                     : 'border-dashed border-slate-200 bg-slate-50'
               }`}
             >

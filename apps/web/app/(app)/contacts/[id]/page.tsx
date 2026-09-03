@@ -11,6 +11,7 @@ import { Badge, Button, ErrorState, LoadingState, SuccessBanner } from '@cheque-
 import { ChequeTable } from '@/components/cheque-table';
 import { ContactEditForm } from '@/components/contact-edit-form';
 import { FactGrid } from '@/components/fact-grid';
+import { IconClose } from '@/components/icons';
 import { PageHeader } from '@/components/page-header';
 import { Panel } from '@/components/panel';
 import { useApi, useApp, useTranslator } from '@/components/providers';
@@ -30,6 +31,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
   const [error, setError] = useState<string | null>(null);
   const [mergeTarget, setMergeTarget] = useState('');
   const [editing, setEditing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const statement = useQuery<ContactStatementView>({
     queryKey: ['contact-statement', id],
@@ -50,6 +52,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
       // contact; say which happened rather than claiming a deletion.
       if (result.deleted) router.replace('/contacts');
       else {
+        setConfirmDelete(false);
         setNotice(t('contact.deactivated'));
         void statement.refetch();
       }
@@ -83,19 +86,16 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
   const { contact, currencies, creditLimit, cheques, totalCheques } = statement.data;
 
   return (
-    <div className="mx-auto flex max-w-[1180px] flex-col gap-5">
+    <div className="mx-auto flex max-w-[1360px] flex-col gap-5">
       <PageHeader
         title={contact.name}
         subtitle={t(`contactType.${contact.type}`)}
         actions={
           canManage ? (
             <Button
-              variant="danger"
-              loading={remove.isPending}
-              onClick={() => {
-                setError(null);
-                remove.mutate();
-              }}
+              variant="secondary"
+              className="border-red-200 text-red-700 hover:border-red-300 hover:bg-red-50"
+              onClick={() => setConfirmDelete(true)}
             >
               {t('common.delete')}
             </Button>
@@ -105,6 +105,40 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
 
       {notice ? <SuccessBanner message={notice} /> : null}
       {error ? <ErrorState title={error} /> : null}
+
+      {confirmDelete ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-contact-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-[2px]"
+        >
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <div className="flex size-11 items-center justify-center rounded-xl bg-red-50 text-red-600">
+              !
+            </div>
+            <h2 id="delete-contact-title" className="mt-4 text-xl font-bold text-slate-950">
+              {t('common.confirmDelete')}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500">{contact.name}</p>
+            <div className="mt-6 flex justify-end gap-3">
+              <Button variant="secondary" onClick={() => setConfirmDelete(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button
+                variant="danger"
+                loading={remove.isPending}
+                onClick={() => {
+                  setError(null);
+                  remove.mutate();
+                }}
+              >
+                {t('common.delete')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {!contact.isActive ? (
         <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
           {t('userStatus.DISABLED')}
@@ -112,45 +146,78 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
       ) : null}
 
       <Panel
-        title={editing ? t('contact.editTitle') : t('contact.title')}
+        title={t('contact.title')}
         action={
-          canManage && !editing ? (
+          canManage ? (
             <Button variant="secondary" onClick={() => setEditing(true)}>
               {t('common.edit')}
             </Button>
           ) : undefined
         }
       >
-        {editing ? (
-          <ContactEditForm
-            contact={contact}
-            onCancel={() => setEditing(false)}
-            onDone={() => {
-              setEditing(false);
-              setNotice(t('contact.updateSuccess'));
-              void statement.refetch();
-            }}
-          />
-        ) : (
-          <FactGrid
-            facts={[
-              // A missing number is the most consequential blank here: it is
-              // what stops a reminder being sent, so it is said plainly rather
-              // than shown as another dash.
-              {
-                label: t('contact.phone'),
-                value: contact.phone ?? t('contact.noPhone'),
-                ltr: contact.phone !== null,
-              },
-              { label: t('contact.email'), value: contact.email ?? '—', ltr: true },
-              { label: t('contact.companyName'), value: contact.companyName ?? '—' },
-              { label: t('contact.nationalId'), value: contact.nationalId ?? '—', ltr: true },
-              { label: t('contact.taxNumber'), value: contact.taxNumber ?? '—', ltr: true },
-              { label: t('contact.address'), value: contact.address ?? '—' },
-            ]}
-          />
-        )}
+        <FactGrid
+          facts={[
+            // A missing number is the most consequential blank here: it is
+            // what stops a reminder being sent, so it is said plainly rather
+            // than shown as another dash.
+            {
+              label: t('contact.phone'),
+              value: contact.phone ?? t('contact.noPhone'),
+              ltr: contact.phone !== null,
+            },
+            { label: t('contact.email'), value: contact.email ?? '—', ltr: true },
+            { label: t('contact.companyName'), value: contact.companyName ?? '—' },
+            { label: t('contact.nationalId'), value: contact.nationalId ?? '—', ltr: true },
+            { label: t('contact.taxNumber'), value: contact.taxNumber ?? '—', ltr: true },
+            { label: t('contact.address'), value: contact.address ?? '—' },
+          ]}
+        />
       </Panel>
+
+      {editing ? (
+        <>
+          <button
+            type="button"
+            aria-label={t('common.close')}
+            className="fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-[2px]"
+            onClick={() => setEditing(false)}
+          />
+          <aside
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-contact-title"
+            className="fixed inset-y-0 end-0 z-50 flex w-full max-w-2xl flex-col bg-white shadow-2xl"
+          >
+            <div className="flex h-20 shrink-0 items-center justify-between border-b border-slate-200 px-6">
+              <div>
+                <p className="text-xs font-semibold text-teal-700">{contact.name}</p>
+                <h2 id="edit-contact-title" className="mt-1 text-xl font-bold text-slate-950">
+                  {t('contact.editTitle')}
+                </h2>
+              </div>
+              <button
+                type="button"
+                aria-label={t('common.close')}
+                className="flex size-10 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                onClick={() => setEditing(false)}
+              >
+                <IconClose />
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto p-6">
+              <ContactEditForm
+                contact={contact}
+                onCancel={() => setEditing(false)}
+                onDone={() => {
+                  setEditing(false);
+                  setNotice(t('contact.updateSuccess'));
+                  void statement.refetch();
+                }}
+              />
+            </div>
+          </aside>
+        </>
+      ) : null}
 
       {/* Above the statement on purpose: whether this customer is already
           holding more than agreed is the question you ask before taking

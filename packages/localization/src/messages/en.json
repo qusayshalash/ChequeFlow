@@ -22,6 +22,10 @@
     "biometricPrompt": "Unlock with biometrics",
     "biometricUnavailable": "No biometric is enrolled on this device",
     "email": "Email",
+    "featureOperations": "Every due date and daily action in one workspace",
+    "featureSecurity": "Granular permissions and an immutable movement history",
+    "featureTracking": "Know where every cheque is and what state it is in",
+    "hidePassword": "Hide password",
     "invalidCredentials": "Incorrect email or password",
     "locked": "The app is locked",
     "loggingIn": "Signing in…",
@@ -29,7 +33,10 @@
     "loginTitle": "Sign in",
     "password": "Password",
     "passwordHint": "At least 8 characters, with an upper case letter, a lower case letter and a digit",
+    "productSubtitle": "A secure financial operations platform for the complete cheque lifecycle",
+    "productTitle": "Clear control of every cheque, from receipt to collection",
     "sessionExpired": "Your session expired, please sign in again",
+    "showPassword": "Show password",
     "submit": "Sign in",
     "unlock": "Unlock",
     "unlockFailed": "Verification failed — try again",
@@ -160,6 +167,7 @@
     "originalPayee": "Payee on the cheque",
     "originalSource": "Original source",
     "overdue": "Overdue",
+    "overdueLabel": "Past its due date",
     "parties": "Parties",
     "party": "Party",
     "purpose": "Purpose",
@@ -201,7 +209,9 @@
     "call": "Call",
     "cancel": "Cancel",
     "clear": "Clear",
+    "clearFilters": "Clear filters",
     "close": "Close",
+    "columns": "Columns",
     "confirm": "Confirm",
     "confirm2": "Confirm",
     "confirmDelete": "Delete this?",
@@ -215,6 +225,7 @@
     "edit": "Edit",
     "export": "Export",
     "filter": "Filter",
+    "filters": "Filters",
     "home": "Home",
     "language": "Language",
     "loading": "Loading…",
@@ -247,7 +258,10 @@
     "selected": "{count} selected",
     "share": "Share",
     "showMore": "Show more",
+    "show": "Show",
+    "hide": "Hide",
     "showingOf": "Showing {shown} of {total}",
+    "skipToContent": "Skip to content",
     "sort": "Sort",
     "status": "Status",
     "success": "Done",
@@ -308,6 +322,7 @@
     "SUPPLIER": "Supplier"
   },
   "dashboard": {
+    "allClear": "Nothing needs action today",
     "amountAxis": "Amount",
     "baseTotal": "Total in base currency",
     "baseTotalHint": "Converted at the rate recorded the day each cheque arrived",
@@ -454,12 +469,14 @@
     "due": "Due",
     "expandMenu": "Expand menu",
     "locations": "Locations",
+    "management": "Administration",
     "notifications": "Notifications",
     "reports": "Reports",
     "review": "Pending review",
     "roles": "Roles",
     "settings": "Settings",
-    "users": "Users"
+    "users": "Users",
+    "workspace": "Workspace"
   },
   "ocr": {
     "confidence": "Confidence",
@@ -473,10 +490,54 @@
     "reviewTitle": "Review extracted data",
     "suggestionNotice": "These values are automatic suggestions and are not confirmed yet"
   },
+  "pageDescription": {
+    "bounced": "Follow returned cheques and the actions required to resolve them",
+    "branches": "A unified view of organization branches and their contact details",
+    "cheques": "Search, filter, and manage every cheque from one operational workspace",
+    "contacts": "Manage customers and suppliers alongside their cheque activity",
+    "due": "Prioritize current and overdue commitments within the selected period",
+    "locations": "Approved storage locations for tracking cheque custody",
+    "newCheque": "Enter the core details or upload an image, then review everything before saving",
+    "notifications": "Items that need attention now and reminders coming up next",
+    "reports": "Operational summaries for custody and expected cash flow decisions",
+    "review": "Verify new cheques and approve extracted data before processing",
+    "roles": "Compare default permissions by role and review your own access",
+    "users": "Manage team members, roles, and access status"
+  },
   "period": {
     "next30": "Next 30 days",
     "next90": "Next 90 days",
     "thisMonth": "This month"
+  },
+  "permission": {
+    "audit": {
+      "view": "View audit logs"
+    },
+    "cheque": {
+      "bounce": "Mark a cheque as bounced or returned",
+      "cancel": "Cancel a cheque or change a reviewed amount",
+      "clear": "Mark a cheque as cleared",
+      "create": "Create cheques",
+      "deposit": "Deposit a cheque into a bank account",
+      "export": "Export cheque data",
+      "handover": "Hand a cheque over to another party",
+      "review": "Review extracted cheque data",
+      "update": "Update cheque data",
+      "view": "View cheques",
+      "view_image": "View or download cheque images"
+    },
+    "contact": {
+      "manage": "Manage contacts"
+    },
+    "report": {
+      "view": "View reports"
+    },
+    "settings": {
+      "manage": "Manage organization settings"
+    },
+    "user": {
+      "manage": "Manage users and roles"
+    }
   },
   "range": {
     "all": "All time",
@@ -542,6 +603,13 @@
     "overdue": "Overdue",
     "range": "Period",
     "title": "Reports"
+  },
+  "settings": {
+    "branchId": "Branch identifier",
+    "languageHint": "The interface language and local formatting used across the product",
+    "organizationId": "Organization identifier",
+    "organizationTitle": "Organization and branch",
+    "subtitle": "Manage system health, backups, and organization preferences"
   },
   "role": {
     "ACCOUNTANT": "Accountant",

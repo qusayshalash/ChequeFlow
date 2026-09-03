@@ -4,12 +4,13 @@ import {
   Permission,
   ALL_PERMISSIONS,
   DEFAULT_ROLE_PERMISSIONS,
-  PERMISSION_DESCRIPTIONS,
   SystemRole,
 } from '@cheque-flow/shared-types';
-import { Badge, Card } from '@cheque-flow/ui';
+import { Badge } from '@cheque-flow/ui';
 
+import { IconShield } from '@/components/icons';
 import { PageHeader } from '@/components/page-header';
+import { Panel } from '@/components/panel';
 import { useTranslator } from '@/components/providers';
 import { useSession, RequirePermission } from '@/components/session';
 
@@ -33,49 +34,77 @@ function RolesPageBody() {
   const mine = new Set(user?.permissions ?? []);
 
   return (
-    <div className="mx-auto flex max-w-[1180px] flex-col gap-5">
-      <PageHeader title={t('nav.roles')} />
+    <div className="mx-auto flex max-w-[1440px] flex-col gap-5">
+      <PageHeader title={t('nav.roles')} subtitle={t('pageDescription.roles')} />
 
-      <Card className="overflow-x-auto">
-        <table className="w-full min-w-[820px] text-sm">
-          <thead className="text-slate-500">
-            <tr>
-              <th scope="col" className="p-3 text-start text-xs font-medium">
-                {t('nav.roles')}
-              </th>
-              {Object.values(SystemRole).map((role) => (
-                <th key={role} scope="col" className="p-3 text-center text-xs font-medium">
-                  {role}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {ALL_PERMISSIONS.map((permission) => (
-              <tr key={permission}>
-                <th scope="row" className="p-3 text-start font-normal text-slate-700">
-                  <span className="flex flex-col">
-                    <code dir="ltr" className="text-xs text-slate-500">
-                      {permission}
-                    </code>
-                    <span className="text-slate-800">{PERMISSION_DESCRIPTIONS[permission]}</span>
-                  </span>
-                  {mine.has(permission) ? (
-                    <Badge tone="success" className="mt-1">
-                      {t('common.yes')}
-                    </Badge>
-                  ) : null}
+      <Panel bodyClassName="">
+        <div className="overflow-auto">
+          <table className="w-full min-w-[920px] border-separate border-spacing-0 text-sm">
+            <thead className="sticky top-0 z-20 bg-slate-50/95 text-slate-500 backdrop-blur-sm">
+              <tr>
+                <th
+                  scope="col"
+                  className="sticky start-0 z-30 min-w-72 border-b border-slate-200 bg-slate-50/95 px-5 py-4 text-start text-xs font-bold"
+                >
+                  {t('nav.roles')}
                 </th>
                 {Object.values(SystemRole).map((role) => (
-                  <td key={role} className="p-3 text-center">
-                    {DEFAULT_ROLE_PERMISSIONS[role].includes(permission) ? '✓' : '—'}
-                  </td>
+                  <th
+                    key={role}
+                    scope="col"
+                    className="border-b border-slate-200 px-4 py-4 text-center text-xs font-bold"
+                  >
+                    <span className="inline-flex items-center gap-2 whitespace-nowrap">
+                      <IconShield width="15" height="15" className="text-slate-400" />
+                      {t(`role.${role}`)}
+                    </span>
+                  </th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </Card>
+            </thead>
+            <tbody>
+              {ALL_PERMISSIONS.map((permission) => (
+                <tr key={permission} className="group hover:bg-slate-50/70">
+                  <th
+                    scope="row"
+                    className="sticky start-0 z-10 border-b border-slate-100 bg-white px-5 py-4 text-start font-normal text-slate-700 group-hover:bg-slate-50"
+                  >
+                    <span className="flex flex-col">
+                      <code dir="ltr" className="text-xs text-slate-500">
+                        {permission}
+                      </code>
+                      <span className="mt-1 font-semibold text-slate-800">
+                        {t(`permission.${permission}`)}
+                      </span>
+                    </span>
+                    {mine.has(permission) ? (
+                      <Badge tone="success" className="mt-1">
+                        {t('common.yes')}
+                      </Badge>
+                    ) : null}
+                  </th>
+                  {Object.values(SystemRole).map((role) => (
+                    <td key={role} className="border-b border-slate-100 px-4 py-4 text-center">
+                      {DEFAULT_ROLE_PERMISSIONS[role].includes(permission) ? (
+                        <span
+                          className="inline-flex size-7 items-center justify-center rounded-full bg-teal-50 font-bold text-teal-700 ring-1 ring-teal-100"
+                          aria-label={t('common.yes')}
+                        >
+                          ✓
+                        </span>
+                      ) : (
+                        <span className="text-slate-300" aria-label={t('common.no')}>
+                          —
+                        </span>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
     </div>
   );
 }

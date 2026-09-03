@@ -114,9 +114,9 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
   ];
 
   return (
-    <div className="mx-auto max-w-[1180px]">
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <nav className="flex items-center gap-1.5 text-sm text-slate-500">
+    <div className="mx-auto max-w-[1360px]">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-5">
+        <nav className="flex items-center gap-1.5 text-sm text-slate-500" aria-label="breadcrumb">
           <Link href="/cheques" className="hover:text-teal-700">
             {t('cheque.listTitle')}
           </Link>
@@ -141,7 +141,7 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
         </p>
       ) : null}
 
-      <div className="grid gap-5 lg:grid-cols-[1.65fr_1fr] lg:items-start">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(330px,0.85fr)] xl:items-start">
         {/* Main column: what this cheque is and where it has been. */}
         <div className="flex min-w-0 flex-col gap-5">
           <ChequeHero cheque={data} today={today} />
@@ -212,7 +212,7 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
 
         {/* Aside: the things you do, kept beside the facts rather than below
             them, so acting never means scrolling past the whole record. */}
-        <div className="flex min-w-0 flex-col gap-5 lg:sticky lg:top-5">
+        <div className="flex min-w-0 flex-col gap-5 xl:sticky xl:top-20">
           {unreviewed ? <OcrReviewPanel cheque={data} /> : null}
 
           <ChequeActionsPanel

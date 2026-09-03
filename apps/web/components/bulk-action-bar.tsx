@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { ApiClientError, type BulkActionSkip } from '@cheque-flow/api-client';
 import { BULK_CHEQUE_ACTIONS, type BulkChequeActionInput } from '@cheque-flow/validation';
@@ -45,6 +45,37 @@ export function BulkActionBar({
   const [blocked, setBlocked] = useState<BulkActionSkip[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<number | null>(null);
+
+  /**
+   * Publishes the bar's real height so the table can scroll clear of it.
+   *
+   * WCAG 2.2 asks that a focused control never end up hidden behind fixed
+   * furniture, and the bar's height changes with the action chosen and with
+   * how far the controls wrap. A hard-coded reservation was right for one
+   * layout and silently wrong after the next restyle, so it is measured.
+   */
+  const barRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const node = barRef.current;
+    const root = document.documentElement;
+    if (!node) {
+      root.style.removeProperty('--bulk-bar-height');
+      return;
+    }
+
+    const publish = () => {
+      root.style.setProperty('--bulk-bar-height', `${node.offsetHeight}px`);
+    };
+    publish();
+
+    const observer = new ResizeObserver(publish);
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty('--bulk-bar-height');
+    };
+  });
 
   const locations = useQuery({ queryKey: ['locations'], queryFn: () => api.listLocations() });
   const contacts = useQuery({
@@ -93,7 +124,7 @@ export function BulkActionBar({
     return done !== null ? (
       <div
         role="status"
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-teal-200 bg-teal-50 p-3 text-center text-sm text-teal-900"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-teal-200 bg-teal-50/95 p-3 text-center text-sm font-medium text-teal-900 shadow-[0_-12px_30px_-22px_rgb(16_24_40/0.45)] backdrop-blur-xl"
       >
         {t('bulk.applied')}: {done}
       </div>
@@ -107,77 +138,94 @@ export function BulkActionBar({
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 p-3 backdrop-blur">
-      <div className="mx-auto flex max-w-[1180px] flex-wrap items-center gap-3">
+    <div
+      ref={barRef}
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-12px_30px_-22px_rgb(16_24_40/0.45)] backdrop-blur-xl"
+    >
+      <div className="mx-auto flex max-w-[1440px] flex-wrap items-center gap-3">
         <span className="text-sm font-semibold text-slate-900">
           {t('bulk.selected')}: <span className="tabular-nums">{selected.size}</span>
         </span>
 
-        <select
-          aria-label={t('common.actions')}
-          className={`${inputClassName} w-44`}
-          value={action}
-          onChange={(event) => {
-            setAction(event.target.value as BulkAction);
-            setBlocked([]);
-          }}
-        >
-          {BULK_CHEQUE_ACTIONS.map((value) => (
-            <option key={value} value={value}>
-              {t(`action.${value}`)}
-            </option>
-          ))}
-        </select>
-
-        {NEEDS_LOCATION.has(action) ? (
+        {/* The shared input style is `w-full`, so a width utility alongside it
+            does not win. Each control is sized by the box it fills instead —
+            otherwise every one of them claims a full row and the bar grows
+            tall enough to cover a third of the screen. */}
+        <div className="w-44">
           <select
-            aria-label={t('cheque.currentLocation')}
-            className={`${inputClassName} w-44`}
-            value={locationId}
-            onChange={(event) => setLocationId(event.target.value)}
+            aria-label={t('common.actions')}
+            className={inputClassName}
+            value={action}
+            onChange={(event) => {
+              setAction(event.target.value as BulkAction);
+              setBlocked([]);
+            }}
           >
-            <option value="">{t('cheque.currentLocation')}</option>
-            {(locations.data ?? []).map((location) => (
-              <option key={location.id} value={location.id}>
-                {location.name}
+            {BULK_CHEQUE_ACTIONS.map((value) => (
+              <option key={value} value={value}>
+                {t(`action.${value}`)}
               </option>
             ))}
           </select>
+        </div>
+
+        {NEEDS_LOCATION.has(action) ? (
+          <div className="w-44">
+            <select
+              aria-label={t('cheque.currentLocation')}
+              className={inputClassName}
+              value={locationId}
+              onChange={(event) => setLocationId(event.target.value)}
+            >
+              <option value="">{t('cheque.currentLocation')}</option>
+              {(locations.data ?? []).map((location) => (
+                <option key={location.id} value={location.id}>
+                  {location.name}
+                </option>
+              ))}
+            </select>
+          </div>
         ) : null}
 
         {NEEDS_CONTACT.has(action) || action === 'RECEIVE' ? (
-          <select
-            aria-label={t('cheque.party')}
-            className={`${inputClassName} w-44`}
-            value={contactId}
-            onChange={(event) => setContactId(event.target.value)}
-          >
-            <option value="">{t('cheque.party')}</option>
-            {(contacts.data?.data ?? []).map((contact) => (
-              <option key={contact.id} value={contact.id}>
-                {contact.name}
-              </option>
-            ))}
-          </select>
+          <div className="w-44">
+            <select
+              aria-label={t('cheque.party')}
+              className={inputClassName}
+              value={contactId}
+              onChange={(event) => setContactId(event.target.value)}
+            >
+              <option value="">{t('cheque.party')}</option>
+              {(contacts.data?.data ?? []).map((contact) => (
+                <option key={contact.id} value={contact.id}>
+                  {contact.name}
+                </option>
+              ))}
+            </select>
+          </div>
         ) : null}
 
         {NEEDS_DATE.has(action) ? (
-          <input
-            type="date"
-            aria-label={t('cheque.dueDate')}
-            className={`${inputClassName} w-44`}
-            value={effectiveDate}
-            onChange={(event) => setEffectiveDate(event.target.value)}
-          />
+          <div className="w-44">
+            <input
+              type="date"
+              aria-label={t('cheque.dueDate')}
+              className={inputClassName}
+              value={effectiveDate}
+              onChange={(event) => setEffectiveDate(event.target.value)}
+            />
+          </div>
         ) : null}
 
-        <input
-          aria-label={t('common.notes')}
-          placeholder={t('common.notes')}
-          className={`${inputClassName} w-48`}
-          value={notes}
-          onChange={(event) => setNotes(event.target.value)}
-        />
+        <div className="w-48">
+          <input
+            aria-label={t('common.notes')}
+            placeholder={t('common.notes')}
+            className={inputClassName}
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
+          />
+        </div>
 
         <div className="ms-auto flex gap-2">
           <Button variant="secondary" onClick={onClear}>

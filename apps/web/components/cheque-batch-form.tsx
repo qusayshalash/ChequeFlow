@@ -356,9 +356,9 @@ export function ChequeBatchForm() {
         <p className="mb-3 text-sm text-slate-500">{t('cheque.batchAutoHint')}</p>
 
         {/* The grid scrolls inside its own box so the page never moves sideways. */}
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto rounded-xl border border-slate-200">
           <table className="w-full min-w-[560px] border-separate border-spacing-0 text-sm">
-            <thead>
+            <thead className="bg-slate-50">
               <tr className="text-slate-500">
                 <th className="w-10 border-b border-slate-200 px-2 py-2 text-start font-medium">
                   #
@@ -506,7 +506,7 @@ export function ChequeBatchForm() {
         </p>
       ) : null}
 
-      <div className="sticky bottom-0 -mx-1 flex flex-wrap gap-3 rounded-2xl border border-slate-200 bg-white/95 p-4 backdrop-blur">
+      <div className="sticky bottom-4 z-10 -mx-1 flex flex-wrap gap-3 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-[0_18px_48px_-30px_rgb(16_24_40/0.6)] backdrop-blur-xl">
         <Button type="submit" size="lg" loading={mutation.isPending}>
           {t('common.save')}
         </Button>

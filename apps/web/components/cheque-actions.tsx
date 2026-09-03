@@ -7,6 +7,7 @@ import { ApiClientError } from '@cheque-flow/api-client';
 import { ChequeAction, type ChequeDetailView } from '@cheque-flow/shared-types';
 import { Button, Card, Field, inputClassName } from '@cheque-flow/ui';
 
+import { IconClose } from '@/components/icons';
 import { useApi, useTranslator } from '@/components/providers';
 
 /** Actions that need a counterparty or a reason before they can be submitted. */
@@ -141,111 +142,149 @@ export function ChequeActionsPanel({
       </div>
 
       {action ? (
-        <form
-          className="grid gap-4 border-t border-slate-200 pt-4 sm:grid-cols-2"
-          onSubmit={(event) => {
-            event.preventDefault();
-            setError(null);
-            mutation.mutate(action);
-          }}
-        >
-          {NEEDS_CONTACT.has(action) ? (
-            <Field label={t('cheque.originalSource')} htmlFor="action-contact" required>
-              <select
-                id="action-contact"
-                required
-                className={inputClassName}
-                value={contactId}
-                onChange={(event) => setContactId(event.target.value)}
+        <>
+          <button
+            type="button"
+            aria-label={t('common.close')}
+            className="fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-[2px]"
+            onClick={() => setAction(null)}
+          />
+          <aside
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cheque-action-title"
+            className="fixed inset-y-0 end-0 z-50 flex w-full max-w-lg flex-col bg-white shadow-2xl"
+          >
+            <div className="flex h-20 shrink-0 items-center justify-between border-b border-slate-200 px-6">
+              <div>
+                <p className="text-xs font-semibold text-teal-700" dir="ltr">
+                  {cheque.chequeNumber}
+                </p>
+                <h2 id="cheque-action-title" className="mt-1 text-xl font-bold text-slate-950">
+                  {t(`action.${action}`)}
+                </h2>
+              </div>
+              <button
+                type="button"
+                aria-label={t('common.close')}
+                className="flex size-10 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                onClick={() => setAction(null)}
               >
-                <option value="">{t('common.unknown')}</option>
-                {contacts.map((contact) => (
-                  <option key={contact.id} value={contact.id}>
-                    {contact.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
-          ) : null}
+                <IconClose />
+              </button>
+            </div>
 
-          {NEEDS_LOCATION.has(action) ? (
-            <Field label={t('cheque.currentLocation')} htmlFor="action-location" required>
-              <select
-                id="action-location"
-                required
-                className={inputClassName}
-                value={locationId}
-                onChange={(event) => setLocationId(event.target.value)}
-              >
-                <option value="">{t('common.unknown')}</option>
-                {locations.map((location) => (
-                  <option key={location.id} value={location.id}>
-                    {location.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
-          ) : null}
-
-          {NEEDS_FEE.has(action) ? (
-            <Field
-              label={t('cheque.bounceFee')}
-              htmlFor="action-fee"
-              hint={t('common.optionalField')}
+            <form
+              className="flex min-h-0 flex-1 flex-col"
+              onSubmit={(event) => {
+                event.preventDefault();
+                setError(null);
+                mutation.mutate(action);
+              }}
             >
-              <input
-                id="action-fee"
-                dir="ltr"
-                inputMode="decimal"
-                placeholder="0.00"
-                className={inputClassName}
-                value={fee}
-                onChange={(event) => setFee(event.target.value)}
-              />
-            </Field>
-          ) : null}
+              <div className="flex-1 space-y-5 overflow-y-auto p-6">
+                {NEEDS_CONTACT.has(action) ? (
+                  <Field label={t('cheque.originalSource')} htmlFor="action-contact" required>
+                    <select
+                      id="action-contact"
+                      required
+                      className={inputClassName}
+                      value={contactId}
+                      onChange={(event) => setContactId(event.target.value)}
+                    >
+                      <option value="">{t('common.unknown')}</option>
+                      {contacts.map((contact) => (
+                        <option key={contact.id} value={contact.id}>
+                          {contact.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                ) : null}
 
-          {NEEDS_DATE.has(action) ? (
-            <Field label={t('cheque.dueDate')} htmlFor="action-date" required>
-              <input
-                id="action-date"
-                type="date"
-                required
-                className={inputClassName}
-                value={newDate}
-                onChange={(event) => setNewDate(event.target.value)}
-              />
-            </Field>
-          ) : null}
+                {NEEDS_LOCATION.has(action) ? (
+                  <Field label={t('cheque.currentLocation')} htmlFor="action-location" required>
+                    <select
+                      id="action-location"
+                      required
+                      className={inputClassName}
+                      value={locationId}
+                      onChange={(event) => setLocationId(event.target.value)}
+                    >
+                      <option value="">{t('common.unknown')}</option>
+                      {locations.map((location) => (
+                        <option key={location.id} value={location.id}>
+                          {location.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                ) : null}
 
-          <div className="sm:col-span-2">
-            <Field
-              label={NEEDS_REASON.has(action) ? t('common.reason') : t('common.notes')}
-              htmlFor="action-reason"
-              required={NEEDS_REASON.has(action)}
-            >
-              <input
-                id="action-reason"
-                required={NEEDS_REASON.has(action)}
-                className={inputClassName}
-                value={reason}
-                onChange={(event) => setReason(event.target.value)}
-              />
-            </Field>
-          </div>
+                {NEEDS_FEE.has(action) ? (
+                  <Field
+                    label={t('cheque.bounceFee')}
+                    htmlFor="action-fee"
+                    hint={t('common.optionalField')}
+                  >
+                    <input
+                      id="action-fee"
+                      dir="ltr"
+                      inputMode="decimal"
+                      placeholder="0.00"
+                      className={inputClassName}
+                      value={fee}
+                      onChange={(event) => setFee(event.target.value)}
+                    />
+                  </Field>
+                ) : null}
 
-          {error ? (
-            <p role="alert" className="sm:col-span-2 rounded-lg bg-red-50 p-3 text-sm text-red-800">
-              {error}
-            </p>
-          ) : null}
+                {NEEDS_DATE.has(action) ? (
+                  <Field label={t('cheque.dueDate')} htmlFor="action-date" required>
+                    <input
+                      id="action-date"
+                      type="date"
+                      required
+                      className={inputClassName}
+                      value={newDate}
+                      onChange={(event) => setNewDate(event.target.value)}
+                    />
+                  </Field>
+                ) : null}
 
-          <div className="sm:col-span-2">
-            <Button type="submit" loading={mutation.isPending}>
-              {t('common.confirm')}
-            </Button>
-          </div>
-        </form>
+                <div>
+                  <Field
+                    label={NEEDS_REASON.has(action) ? t('common.reason') : t('common.notes')}
+                    htmlFor="action-reason"
+                    required={NEEDS_REASON.has(action)}
+                  >
+                    <input
+                      id="action-reason"
+                      required={NEEDS_REASON.has(action)}
+                      className={inputClassName}
+                      value={reason}
+                      onChange={(event) => setReason(event.target.value)}
+                    />
+                  </Field>
+                </div>
+
+                {error ? (
+                  <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-800">
+                    {error}
+                  </p>
+                ) : null}
+              </div>
+              <div className="flex shrink-0 justify-end gap-3 border-t border-slate-200 bg-slate-50/70 p-4">
+                <Button type="button" variant="secondary" onClick={() => setAction(null)}>
+                  {t('common.cancel')}
+                </Button>
+                <Button type="submit" loading={mutation.isPending}>
+                  {t('common.confirm')}
+                </Button>
+              </div>
+            </form>
+          </aside>
+        </>
       ) : null}
     </Card>
   );

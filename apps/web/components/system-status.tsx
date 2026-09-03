@@ -2,6 +2,8 @@
 
 import { useQuery } from '@tanstack/react-query';
 
+import { ErrorState, LoadingState } from '@cheque-flow/ui';
+
 import { Panel } from '@/components/panel';
 import { useApi, useTranslator } from '@/components/providers';
 
@@ -29,7 +31,25 @@ export function SystemStatus() {
     refetchInterval: 120_000,
   });
 
-  if (!query.data) return null;
+  if (query.isPending) {
+    return (
+      <Panel title={t('diagnostics.title')}>
+        <LoadingState label={t('common.loading')} />
+      </Panel>
+    );
+  }
+
+  if (query.isError || !query.data) {
+    return (
+      <Panel title={t('diagnostics.title')}>
+        <ErrorState
+          title={t('errors.loadFailed')}
+          onRetry={() => void query.refetch()}
+          retryLabel={t('common.retry')}
+        />
+      </Panel>
+    );
+  }
 
   const rows = [
     { key: 'ocr', label: t('diagnostics.ocr'), status: query.data.ocr },
@@ -41,8 +61,22 @@ export function SystemStatus() {
     <Panel title={t('diagnostics.title')}>
       <ul className="flex flex-col gap-3">
         {rows.map((row) => (
-          <li key={row.key} className="flex flex-wrap items-center justify-between gap-3">
-            <span className="text-sm font-medium text-slate-700">{row.label}</span>
+          <li
+            key={row.key}
+            className="flex min-h-14 flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3"
+          >
+            <span className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+              <span
+                className={`size-2 rounded-full ${
+                  row.status.state === 'ok'
+                    ? 'bg-emerald-500'
+                    : row.status.state === 'degraded'
+                      ? 'bg-amber-500'
+                      : 'bg-red-500'
+                }`}
+              />
+              {row.label}
+            </span>
             <span
               className={`rounded-full px-3 py-1 text-xs font-semibold ${STATE_STYLES[row.status.state]}`}
             >

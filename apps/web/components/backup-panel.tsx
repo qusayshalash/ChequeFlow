@@ -128,26 +128,34 @@ function RestoreSection() {
       <p className="mt-1 text-sm text-slate-500">{t('backup.restoreMissing')}</p>
       <p className="mt-1 text-sm font-medium text-red-700">{t('backup.restoreWarning')}</p>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <input
-          type="file"
-          accept="application/json,.json"
-          aria-label={t('backup.restorePick')}
-          className="text-sm text-slate-600 file:me-3 file:rounded-lg file:border file:border-slate-200 file:bg-white file:px-3 file:py-2 file:text-sm"
-          onChange={(event) => {
-            setFile(event.target.files?.[0] ?? null);
-            setResult(null);
-            setError(null);
-          }}
-        />
+      <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(220px,0.7fr)_auto] sm:items-end">
+        <label className="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50/60 px-4 py-3 text-center hover:border-teal-400 hover:bg-teal-50/50">
+          <span className="text-sm font-semibold text-slate-700">{t('backup.restorePick')}</span>
+          <span className="mt-1 max-w-full truncate text-xs text-slate-500">
+            {file?.name ?? 'JSON'}
+          </span>
+          <input
+            type="file"
+            accept="application/json,.json"
+            className="sr-only"
+            onChange={(event) => {
+              setFile(event.target.files?.[0] ?? null);
+              setResult(null);
+              setError(null);
+            }}
+          />
+        </label>
 
-        <input
-          aria-label={t('backup.restoreConfirm')}
-          placeholder={t('backup.restoreConfirm')}
-          className={`${inputClassName} w-56`}
-          value={word}
-          onChange={(event) => setWord(event.target.value)}
-        />
+        <label className="flex flex-col gap-2">
+          <span className="text-sm font-semibold text-slate-700">{t('backup.restoreConfirm')}</span>
+          <input
+            aria-label={t('backup.restoreConfirm')}
+            placeholder={t('backup.restoreConfirm')}
+            className={inputClassName}
+            value={word}
+            onChange={(event) => setWord(event.target.value)}
+          />
+        </label>
 
         <Button
           variant="danger"

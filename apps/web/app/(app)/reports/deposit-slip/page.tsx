@@ -32,7 +32,7 @@ export default function DepositSlipPage() {
   });
 
   return (
-    <div className="mx-auto max-w-[1000px]">
+    <div className="mx-auto max-w-[1100px]">
       <style>{`
         @media print {
           /* Everything that is not the slip: the sidebar, the header, the
@@ -48,6 +48,7 @@ export default function DepositSlipPage() {
       <div className="no-print">
         <PageHeader
           title={t('reports.depositSlipTitle')}
+          subtitle={t('reports.depositSlipHint')}
           actions={
             <Button variant="secondary" onClick={() => window.print()}>
               {t('reports.depositSlipPrint')}
@@ -55,17 +56,20 @@ export default function DepositSlipPage() {
           }
         />
 
-        <p className="mb-4 max-w-[70ch] text-sm text-slate-600">{t('reports.depositSlipHint')}</p>
-
-        <label className="mb-5 inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3">
-          <span className="text-sm text-slate-500">{t('reports.depositSlipDate')}</span>
-          <input
-            type="date"
-            className={`${inputClassName} h-8 border-0 bg-transparent px-0`}
-            value={on}
-            onChange={(event) => setOn(event.target.value || utcToday())}
-          />
-        </label>
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/90 bg-white p-3 shadow-[0_1px_2px_rgb(16_24_40/0.035)]">
+          <span className="text-sm font-semibold text-slate-700">
+            {t('reports.depositSlipDate')}
+          </span>
+          <label className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 focus-within:border-teal-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-teal-500/10">
+            <input
+              type="date"
+              aria-label={t('reports.depositSlipDate')}
+              className={`${inputClassName} h-8 min-h-0 border-0 bg-transparent px-0 shadow-none focus:ring-0`}
+              value={on}
+              onChange={(event) => setOn(event.target.value || utcToday())}
+            />
+          </label>
+        </div>
       </div>
 
       {slip.isError ? (
@@ -79,7 +83,9 @@ export default function DepositSlipPage() {
       {slip.isPending ? <LoadingState label={t('common.loading')} /> : null}
 
       {slip.data && slip.data.totalCount === 0 ? (
-        <EmptyState title={t('reports.depositSlipEmpty')} />
+        <Panel>
+          <EmptyState title={t('reports.depositSlipEmpty')} />
+        </Panel>
       ) : null}
 
       {slip.data && slip.data.overdueCount > 0 ? (
@@ -97,33 +103,44 @@ export default function DepositSlipPage() {
                 slip.data!.on,
               )}`}
             >
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[560px] text-sm">
-                  <thead>
+              <div className="overflow-x-auto rounded-xl border border-slate-200">
+                <table className="w-full min-w-[620px] border-separate border-spacing-0 text-sm">
+                  <thead className="bg-slate-50/90">
                     <tr className="text-slate-500">
-                      <th className="p-2 text-start text-xs font-medium">{t('cheque.number')}</th>
-                      <th className="p-2 text-start text-xs font-medium">{t('cheque.party')}</th>
-                      <th className="p-2 text-start text-xs font-medium">{t('cheque.dueDate')}</th>
-                      <th className="p-2 text-start text-xs font-medium">{t('common.amount')}</th>
+                      <th className="border-b border-slate-200 p-3 text-start text-xs font-bold">
+                        {t('cheque.number')}
+                      </th>
+                      <th className="border-b border-slate-200 p-3 text-start text-xs font-bold">
+                        {t('cheque.party')}
+                      </th>
+                      <th className="border-b border-slate-200 p-3 text-start text-xs font-bold">
+                        {t('cheque.dueDate')}
+                      </th>
+                      <th className="border-b border-slate-200 p-3 text-start text-xs font-bold">
+                        {t('common.amount')}
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {bank.cheques.map((cheque) => (
                       <tr key={cheque.id}>
-                        <td className="p-2 font-semibold text-slate-900 tabular-nums" dir="ltr">
+                        <td
+                          className="border-b border-slate-100 p-3 font-semibold text-slate-900 tabular-nums"
+                          dir="ltr"
+                        >
                           {cheque.chequeNumber}
                         </td>
-                        <td className="p-2 text-slate-700">
+                        <td className="border-b border-slate-100 p-3 text-slate-700">
                           {cheque.originalSourceName ?? cheque.drawerName ?? '—'}
                         </td>
                         <td
-                          className={`p-2 tabular-nums ${
+                          className={`border-b border-slate-100 p-3 tabular-nums ${
                             cheque.isOverdue ? 'font-semibold text-red-600' : 'text-slate-700'
                           }`}
                         >
                           {formatDate(locale, cheque.dueDate)}
                         </td>
-                        <td className="p-2 font-semibold text-slate-900 tabular-nums">
+                        <td className="border-b border-slate-100 p-3 font-semibold text-slate-900 tabular-nums">
                           {money(locale, cheque.amount, cheque.currency)}
                         </td>
                       </tr>

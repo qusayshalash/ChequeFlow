@@ -15,6 +15,7 @@ import {
   IconClipboard,
   IconClock,
   IconPlus,
+  IconSearch,
   IconWallet,
 } from '@/components/icons';
 import {
@@ -24,7 +25,6 @@ import {
   type DateRange,
 } from '@/components/date-range';
 import { LineChart } from '@/components/line-chart';
-import { NotificationBell } from '@/components/notification-bell';
 import { PageHeader } from '@/components/page-header';
 import { StatCard } from '@/components/stat-card';
 import { useApi, useApp, useTranslator } from '@/components/providers';
@@ -152,8 +152,8 @@ export default function DashboardPage() {
       currency: pick,
       labels: WEEK_LABEL_KEYS.map((key) => t(key)),
       series: [
-        { label: t('dashboard.incoming'), values: inflow, color: '#2E9E92', fill: '#2E9E9214' },
-        { label: t('dashboard.outgoing'), values: outflow, color: '#26356B' },
+        { label: t('dashboard.incoming'), values: inflow, color: '#087F6D', fill: '#087F6D12' },
+        { label: t('dashboard.outgoing'), values: outflow, color: '#526179' },
       ],
     };
   }, [cashFlow.data, currency, currencies, chartFrom, t]);
@@ -181,28 +181,22 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[1180px]">
+    <div className="mx-auto max-w-[1440px]">
       <PageHeader
         title={t('dashboard.title')}
         subtitle={t('dashboard.subtitle')}
-        search={{
-          value: search,
-          onChange: setSearch,
-          placeholder: t('dashboard.searchPlaceholder'),
-        }}
         actions={
           <>
-            <NotificationBell />
             <Link
               href="/cheques/new"
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-teal-800 px-4 text-sm font-semibold text-white hover:bg-teal-900"
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-teal-700 px-4 text-sm font-semibold text-white shadow-sm hover:bg-teal-800"
             >
               <IconCamera />
               {t('cheque.captureNew')}
             </Link>
             <Link
               href="/cheques/new"
-              className="inline-flex h-11 items-center gap-2 rounded-xl border border-teal-700 px-4 text-sm font-semibold text-teal-800 hover:bg-teal-50"
+              className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50"
             >
               <IconPlus />
               {t('cheque.addManually')}
@@ -211,11 +205,31 @@ export default function DashboardPage() {
         }
       />
 
+      {/* The book-currency total is the dashboard's headline financial figure,
+          so it belongs at the top before controls and operational counts. */}
+      <section className="relative mb-5 overflow-hidden rounded-2xl border border-emerald-900/20 bg-[#132421] px-5 py-5 text-white shadow-[0_16px_34px_-26px_rgb(8_39_34/0.8)]">
+        <div className="absolute inset-y-0 end-0 w-1/3 bg-[radial-gradient(circle_at_center,rgb(52_211_153/0.12),transparent_70%)]" />
+        <div className="relative flex flex-wrap items-baseline gap-x-4 gap-y-1">
+          <h2 className="text-sm font-semibold text-white/65">{t('dashboard.baseTotal')}</h2>
+          <p className="text-2xl font-bold tracking-[-0.02em] text-white tabular-nums">
+            {money(locale, dashboard.data.baseTotal.total, dashboard.data.baseTotal.currency)}
+          </p>
+          <p className="text-xs text-white/45">{t('dashboard.baseTotalHint')}</p>
+          {dashboard.data.baseTotal.unconvertedCount > 0 ? (
+            <p className="w-full text-xs font-medium text-amber-300">
+              {t('dashboard.unconverted', {
+                count: String(dashboard.data.baseTotal.unconvertedCount),
+              })}
+            </p>
+          ) : null}
+        </div>
+      </section>
+
       {/* Currency and period. Currency first because it changes what the
           numbers mean, not merely which ones are shown. */}
-      <div className="mb-5 flex flex-wrap items-center gap-3">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/90 bg-white p-3 shadow-[0_1px_2px_rgb(16_24_40/0.035)]">
         <div
-          className="inline-flex rounded-xl border border-slate-200 bg-white p-1"
+          className="inline-flex rounded-xl bg-slate-100/80 p-1"
           role="group"
           aria-label={t('cheque.currency')}
         >
@@ -234,7 +248,12 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        <DateRangePicker value={range} onChange={setRange} />
+        <div className="flex items-center gap-2">
+          <span className="hidden text-xs font-semibold text-slate-400 sm:inline">
+            {t('common.period')}
+          </span>
+          <DateRangePicker value={range} onChange={setRange} />
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -267,37 +286,16 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* One figure for the bank and the accountant, kept deliberately apart
-          from the cards above: those never mix currencies, and this one only
-          adds cheques whose rate was recorded when they arrived. It says out
-          loud how many it had to leave out. */}
-      {dashboard.data ? (
-        <section className="mt-4 flex flex-wrap items-baseline gap-x-4 gap-y-1 rounded-2xl border border-slate-200 bg-white px-5 py-4">
-          <h2 className="text-sm font-semibold text-slate-600">{t('dashboard.baseTotal')}</h2>
-          <p className="text-2xl font-bold text-slate-900 tabular-nums">
-            {money(locale, dashboard.data.baseTotal.total, dashboard.data.baseTotal.currency)}
-          </p>
-          <p className="text-xs text-slate-500">{t('dashboard.baseTotalHint')}</p>
-          {dashboard.data.baseTotal.unconvertedCount > 0 ? (
-            <p className="w-full text-xs font-medium text-amber-700">
-              {t('dashboard.unconverted', {
-                count: String(dashboard.data.baseTotal.unconvertedCount),
-              })}
-            </p>
-          ) : null}
-        </section>
-      ) : null}
-
       <div className="mt-5 grid gap-4 lg:grid-cols-[1.6fr_1fr]">
-        <section className="rounded-2xl border border-slate-200 bg-white p-5">
+        <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-[0_1px_2px_rgb(16_24_40/0.035)]">
           <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="text-base font-bold text-slate-900">
               {t('dashboard.cashFlowUpcoming')}
             </h2>
             {chart ? (
               <div className="flex items-center gap-4 text-xs text-slate-500">
-                <Legend color="#2E9E92" label={t('dashboard.incoming')} />
-                <Legend color="#26356B" label={t('dashboard.outgoing')} />
+                <Legend color="#087F6D" label={t('dashboard.incoming')} />
+                <Legend color="#526179" label={t('dashboard.outgoing')} />
               </div>
             ) : null}
           </div>
@@ -328,7 +326,7 @@ export default function DashboardPage() {
           )}
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5">
+        <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-[0_1px_2px_rgb(16_24_40/0.035)]">
           <h2 className="mb-4 text-base font-bold text-slate-900">{t('dashboard.needsAction')}</h2>
           <ul className="flex flex-col gap-2.5">
             <ActionRow
@@ -359,16 +357,31 @@ export default function DashboardPage() {
         </section>
       </div>
 
-      <section className="mt-5 rounded-2xl border border-slate-200 bg-white">
-        <div className="flex items-center justify-between gap-3 border-b border-slate-100 p-5">
+      <section className="mt-5 overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_1px_2px_rgb(16_24_40/0.035)]">
+        <div className="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-base font-bold text-slate-900">{t('dashboard.upcomingCheques')}</h2>
-          <Link
-            href="/cheques"
-            className="inline-flex items-center gap-1 text-sm font-semibold text-teal-700 hover:text-teal-900"
-          >
-            {t('common.viewAll')}
-            <IconChevronEnd width="16" height="16" />
-          </Link>
+          <div className="flex min-w-0 items-center gap-3">
+            <label className="relative min-w-0 flex-1 sm:w-72">
+              <span className="pointer-events-none absolute inset-y-0 start-3 flex items-center text-slate-400">
+                <IconSearch width="17" height="17" />
+              </span>
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder={t('dashboard.searchPlaceholder')}
+                aria-label={t('common.search')}
+                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 ps-9 pe-3 text-sm outline-none focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/10"
+              />
+            </label>
+            <Link
+              href="/cheques"
+              className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-teal-700 hover:text-teal-900"
+            >
+              {t('common.viewAll')}
+              <IconChevronEnd width="16" height="16" />
+            </Link>
+          </div>
         </div>
 
         {due.isPending ? <LoadingState label={t('common.loading')} /> : null}
@@ -379,8 +392,8 @@ export default function DashboardPage() {
 
         {upcoming.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-sm">
-              <thead>
+            <table className="w-full min-w-[720px] border-separate border-spacing-0 text-sm">
+              <thead className="bg-slate-50/90">
                 <tr className="text-slate-500">
                   {[
                     'cheque.number',
@@ -390,16 +403,20 @@ export default function DashboardPage() {
                     'common.amount',
                     'cheque.status',
                   ].map((key) => (
-                    <th key={key} scope="col" className="p-4 text-start text-xs font-medium">
+                    <th
+                      key={key}
+                      scope="col"
+                      className="border-b border-slate-200 p-4 text-start text-[11px] font-bold tracking-wide"
+                    >
                       {t(key)}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {upcoming.map((cheque) => (
-                  <tr key={cheque.id} className="hover:bg-slate-50">
-                    <td className="p-4">
+                  <tr key={cheque.id} className="hover:bg-slate-50/80">
+                    <td className="border-b border-slate-100 p-4">
                       <Link
                         href={`/cheques/${cheque.id}`}
                         className="font-semibold text-slate-900 tabular-nums hover:text-teal-700"
@@ -408,17 +425,19 @@ export default function DashboardPage() {
                         {cheque.chequeNumber}
                       </Link>
                     </td>
-                    <td className="p-4 text-slate-700">
+                    <td className="border-b border-slate-100 p-4 text-slate-700">
                       {cheque.originalSourceName ?? cheque.drawerName ?? '—'}
                     </td>
-                    <td className="p-4 text-slate-700">{cheque.bankName ?? '—'}</td>
-                    <td className="p-4 text-slate-600 tabular-nums">
+                    <td className="border-b border-slate-100 p-4 text-slate-700">
+                      {cheque.bankName ?? '—'}
+                    </td>
+                    <td className="border-b border-slate-100 p-4 text-slate-600 tabular-nums">
                       {formatDate(locale, cheque.dueDate)}
                     </td>
-                    <td className="p-4 font-semibold text-slate-900 tabular-nums">
+                    <td className="border-b border-slate-100 p-4 font-semibold text-slate-900 tabular-nums">
                       {money(locale, cheque.amount, cheque.currency)}
                     </td>
-                    <td className="p-4">
+                    <td className="border-b border-slate-100 p-4">
                       <DuePill
                         isOverdue={cheque.isOverdue}
                         dueDate={cheque.dueDate}
@@ -451,7 +470,9 @@ function FilterChip({
       onClick={onClick}
       aria-pressed={active}
       className={`h-9 rounded-lg px-4 text-sm font-semibold transition-colors ${
-        active ? 'bg-teal-800 text-white' : 'text-slate-600 hover:bg-slate-50'
+        active
+          ? 'bg-white text-slate-950 shadow-sm ring-1 ring-slate-200'
+          : 'text-slate-500 hover:text-slate-900'
       }`}
     >
       {label}
@@ -497,10 +518,10 @@ function ActionRow({
     <li>
       <Link
         href={href}
-        className="flex items-center gap-3 rounded-xl border border-slate-200 p-3 hover:bg-slate-50"
+        className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/60 p-3.5 hover:border-slate-200 hover:bg-white hover:shadow-sm"
       >
         <span
-          className={`flex size-9 shrink-0 items-center justify-center rounded-full ${ACTION_TONES[tone]}`}
+          className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${ACTION_TONES[tone]}`}
         >
           <Icon width="18" height="18" />
         </span>

@@ -19,7 +19,7 @@ export default function ReviewQueuePage() {
   const [page, setPage] = useState(1);
 
   const query = useQuery({
-    queryKey: ['cheques', 'pending-review'],
+    queryKey: ['cheques', 'pending-review', page],
     queryFn: () =>
       api.listCheques({
         status: [ChequeStatus.PENDING_REVIEW, ChequeStatus.DRAFT],
@@ -29,9 +29,12 @@ export default function ReviewQueuePage() {
   });
 
   return (
-    <div className="mx-auto flex max-w-[1180px] flex-col gap-5">
-      <PageHeader title={t('nav.review')} />
-      <Card className="bg-amber-50 text-amber-900">{t('ocr.suggestionNotice')}</Card>
+    <div className="mx-auto flex max-w-[1440px] flex-col gap-5">
+      <PageHeader title={t('nav.review')} subtitle={t('pageDescription.review')} />
+      <Card className="flex items-start gap-3 border-amber-200 bg-amber-50/70 text-sm leading-6 text-amber-900">
+        <span className="mt-1 size-2 shrink-0 rounded-full bg-amber-500" aria-hidden="true" />
+        {t('ocr.suggestionNotice')}
+      </Card>
       {query.isPending ? <LoadingState label={t('common.loading')} /> : null}
       {query.isError ? (
         <ErrorState

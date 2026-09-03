@@ -25,16 +25,18 @@ export function ChequeTimeline({ chequeId }: { chequeId: string }) {
   }
 
   return (
-    <Card>
-      <h2 className="mb-4 text-lg font-semibold text-slate-900">{t('cheque.timeline')}</h2>
-      <ol className="relative flex flex-col gap-4 border-s-2 border-slate-200 ps-5">
+    <Card className="p-0">
+      <div className="border-b border-slate-100 px-5 py-4">
+        <h2 className="text-[15px] font-bold text-slate-900">{t('cheque.timeline')}</h2>
+      </div>
+      <ol className="relative m-5 flex flex-col gap-5 border-s border-slate-200 ps-6">
         {query.data.data.map((event) => (
           <li key={event.id} className="relative">
             <span
               aria-hidden="true"
-              className="absolute -start-[27px] top-1.5 size-3 rounded-full bg-teal-700"
+              className="absolute -start-[31px] top-1 size-3 rounded-full border-2 border-white bg-teal-600 ring-2 ring-teal-100"
             />
-            <p className="font-medium text-slate-900">{t(`event.${event.eventType}`)}</p>
+            <p className="font-semibold text-slate-950">{t(`event.${event.eventType}`)}</p>
             <p className="text-sm text-slate-600">
               {event.fromStatus ? `${t(`status.${event.fromStatus}`)} ← ` : ''}
               {event.toStatus ? t(`status.${event.toStatus}`) : ''}

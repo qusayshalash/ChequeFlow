@@ -13,6 +13,7 @@ import {
   type DateRange,
 } from '@/components/date-range';
 import { PageHeader } from '@/components/page-header';
+import { Panel } from '@/components/panel';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { money } from '@/lib/format';
 
@@ -40,8 +41,8 @@ export default function DueChequesPage() {
   });
 
   return (
-    <div className="mx-auto flex max-w-[1180px] flex-col gap-5">
-      <PageHeader title={t('nav.due')} />
+    <div className="mx-auto flex max-w-[1440px] flex-col gap-5">
+      <PageHeader title={t('nav.due')} subtitle={t('pageDescription.due')} />
 
       <DateRangePicker value={range} onChange={setRange} />
 
@@ -75,7 +76,9 @@ export default function DueChequesPage() {
               tone="danger"
             />
           </div>
-          <ChequeTable cheques={query.data.cheques} />
+          <Panel bodyClassName="">
+            <ChequeTable cheques={query.data.cheques} emptyDescription={t('reports.empty')} />
+          </Panel>
         </>
       ) : null}
     </div>
