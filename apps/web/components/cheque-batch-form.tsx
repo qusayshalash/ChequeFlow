@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 
 import { ApiClientError } from '@cheque-flow/api-client';
 import {
@@ -19,6 +19,10 @@ import { useApi, useApp, useTranslator } from '@/components/providers';
 import { formatMoney } from '@/lib/format';
 
 const CURRENCIES = ['USD', 'ILS', 'JOD', 'EUR'];
+
+/** The three editable columns, in the order the eye and the keyboard cross them. */
+const GRID_FIELDS = ['chequeNumber', 'amount', 'dueDate'] as const;
+type GridField = (typeof GRID_FIELDS)[number];
 
 /** A grid row plus the local id React needs to keep inputs stable while rows move. */
 interface Row extends SerialChequeRow {
@@ -84,6 +88,125 @@ export function ChequeBatchForm() {
   });
 
   const total = useMemo(() => sumAmounts(rows), [rows]);
+
+  /**
+   * Every input in the grid, so one can hand focus to the next.
+   *
+   * Keyed by row-and-column rather than held in an array of arrays: rows are
+   * added, copied and removed while the form is open, and a positional array
+   * would point at the wrong box the moment somebody deletes row three.
+   */
+  const cellRefs = useRef(new Map<string, HTMLInputElement | null>());
+  const cellKey = (index: number, field: GridField) => `${index}:${field}`;
+
+  function focusCell(index: number, field: GridField): boolean {
+    const input = cellRefs.current.get(cellKey(index, field));
+    if (!input) return false;
+    input.focus();
+    // Selected, not just focused: the next keystroke should replace the
+    // suggested number rather than land in the middle of it.
+    input.select?.();
+    return true;
+  }
+
+  /**
+   * Enter and the arrow keys move around the grid instead of submitting.
+   *
+   * Two things were wrong with leaving this to the browser. Enter inside a
+   * form submits it, so pressing it after typing the first amount saved a
+   * batch of twenty cheques with nineteen of them blank — the opposite of what
+   * the key means while filling a table. And reaching the next box meant Tab,
+   * which also walks the copy and remove buttons at the end of every row.
+   *
+   *   Enter        the next box, wrapping to the row below
+   *   Shift+Enter  the box before
+   *   Down / Up    the same column, one row along — for a book where only the
+   *                amounts are typed, which is what the hint above tells
+   *                people to expect
+   *
+   * On the last box of the last row Enter adds a row and lands in it, so a
+   * whole cheque book is entered without reaching for the mouse.
+   */
+  function onCellKeyDown(
+    event: KeyboardEvent<HTMLInputElement>,
+    index: number,
+    field: GridField,
+  ): void {
+    const column = GRID_FIELDS.indexOf(field);
+
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      // A date input spends the arrow keys on its own segments, and stealing
+      // them would stop people typing a date with the keyboard at all.
+      if (field === 'dueDate') return;
+
+      const target = index + (event.key === 'ArrowDown' ? 1 : -1);
+      if (target < 0) return;
+      if (target >= rows.length) {
+        if (event.key === 'ArrowUp' || atLimit) return;
+        event.preventDefault();
+        appendRows(1);
+        setPendingFocus({ index: target, field });
+        return;
+      }
+      event.preventDefault();
+      focusCell(target, field);
+      return;
+    }
+
+    if (event.key !== 'Enter') return;
+
+    // Always: even where there is nowhere to go, Enter must not submit a
+    // half-filled grid.
+    event.preventDefault();
+
+    if (event.shiftKey) {
+      const previous =
+        column > 0
+          ? { index, field: GRID_FIELDS[column - 1]! }
+          : index > 0
+            ? { index: index - 1, field: GRID_FIELDS[GRID_FIELDS.length - 1]! }
+            : null;
+      if (previous) focusCell(previous.index, previous.field);
+      return;
+    }
+
+    if (column < GRID_FIELDS.length - 1) {
+      focusCell(index, GRID_FIELDS[column + 1]!);
+      return;
+    }
+
+    if (index + 1 < rows.length) {
+      focusCell(index + 1, GRID_FIELDS[0]);
+      return;
+    }
+
+    // The end of the last row. Carry on into a fresh one rather than stopping.
+    if (atLimit) return;
+    appendRows(1);
+    setPendingFocus({ index: index + 1, field: GRID_FIELDS[0] });
+  }
+
+  /**
+   * A box that does not exist yet.
+   *
+   * Appending a row is a state update, so its input is not mounted until the
+   * next render; focusing it has to wait for that rather than run now.
+   */
+  const [pendingFocus, setPendingFocus] = useState<{ index: number; field: GridField } | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (!pendingFocus) return;
+
+    // Inlined rather than calling `focusCell`, which is redefined every render
+    // and would either re-run this effect constantly or need a dependency lie.
+    const input = cellRefs.current.get(cellKey(pendingFocus.index, pendingFocus.field));
+    if (!input) return;
+    input.focus();
+    input.select?.();
+    setPendingFocus(null);
+  }, [pendingFocus, rows.length]);
 
   function updateRow(index: number, key: keyof SerialChequeRow, value: string): void {
     setRows((current) =>
@@ -385,10 +508,14 @@ export function ChequeBatchForm() {
                     <td className="px-2 py-1.5">
                       <input
                         dir="ltr"
+                        ref={(node) => {
+                          cellRefs.current.set(cellKey(index, 'chequeNumber'), node);
+                        }}
                         aria-label={`${t('cheque.number')} ${index + 1}`}
                         className={inputClassName}
                         value={row.chequeNumber}
                         onChange={(event) => updateRow(index, 'chequeNumber', event.target.value)}
+                        onKeyDown={(event) => onCellKeyDown(event, index, 'chequeNumber')}
                         aria-invalid={Boolean(errors.chequeNumber)}
                       />
                       {errors.chequeNumber ? (
@@ -400,10 +527,14 @@ export function ChequeBatchForm() {
                         dir="ltr"
                         inputMode="decimal"
                         placeholder="0.00"
+                        ref={(node) => {
+                          cellRefs.current.set(cellKey(index, 'amount'), node);
+                        }}
                         aria-label={`${t('common.amount')} ${index + 1}`}
                         className={inputClassName}
                         value={row.amount}
                         onChange={(event) => updateRow(index, 'amount', event.target.value)}
+                        onKeyDown={(event) => onCellKeyDown(event, index, 'amount')}
                         aria-invalid={Boolean(errors.amount)}
                       />
                       {errors.amount ? (
@@ -413,10 +544,14 @@ export function ChequeBatchForm() {
                     <td className="px-2 py-1.5">
                       <input
                         type="date"
+                        ref={(node) => {
+                          cellRefs.current.set(cellKey(index, 'dueDate'), node);
+                        }}
                         aria-label={`${t('cheque.dueDate')} ${index + 1}`}
                         className={inputClassName}
                         value={row.dueDate}
                         onChange={(event) => updateRow(index, 'dueDate', event.target.value)}
+                        onKeyDown={(event) => onCellKeyDown(event, index, 'dueDate')}
                         aria-invalid={Boolean(errors.dueDate)}
                       />
                       {errors.dueDate ? (
