@@ -5,11 +5,11 @@ import { ScrollView, StyleSheet } from 'react-native';
 
 import { ApiClientError } from '@cheque-flow/api-client';
 import type { ChequeDetailView } from '@cheque-flow/shared-types';
-import { colors, spacing } from '@cheque-flow/ui/tokens';
 
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { Body, Button, Chip, DateField, ErrorView, Field, Section } from '@/components/ui';
 import { addDaysIso, isValidDate, todayIso } from '@/lib/dates';
+import { space, surface } from '@/theme';
 
 /**
  * A reminder the user sets themselves on one cheque.
@@ -115,6 +115,6 @@ export default function RemindScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: spacing.md, gap: spacing.md, backgroundColor: colors.surfaceMuted },
-  chips: { gap: spacing.sm },
+  container: { padding: space['4'], gap: space['4'], backgroundColor: surface.page },
+  chips: { gap: space['2'] },
 });

@@ -4,13 +4,14 @@ import { useRef, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ApiClientError } from '@cheque-flow/api-client';
-import { colors, radius, spacing } from '@cheque-flow/ui/tokens';
+import { colors } from '@cheque-flow/ui/tokens';
 
 import { useApi, useTranslator } from '@/components/providers';
 import { Body, Button, Card, Heading, Screen } from '@/components/ui';
 import { checkCaptureQuality } from '@/lib/image-quality';
 import { uploadCapturedCheque } from '@/lib/cheque-upload';
 import { saveDraft } from '@/lib/draft-store';
+import { radius, space, surface, text } from '@/theme';
 
 type Side = 'FRONT' | 'BACK';
 
@@ -163,19 +164,19 @@ export default function CaptureScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: spacing.md, gap: spacing.md, backgroundColor: colors.surfaceMuted },
+  container: { padding: space['4'], gap: space['4'], backgroundColor: surface.page },
   cameraBox: { height: 260, borderRadius: radius.md, overflow: 'hidden', backgroundColor: '#000' },
   camera: { flex: 1 },
-  thumbs: { flexDirection: 'row', gap: spacing.sm },
-  thumbBox: { flex: 1, gap: spacing.xs },
-  thumbLabel: { fontSize: 13, color: colors.textMuted, textAlign: 'right' },
+  thumbs: { flexDirection: 'row', gap: space['2'] },
+  thumbBox: { flex: 1, gap: space['1'] },
+  thumbLabel: { fontSize: 13, color: text.secondary, textAlign: 'right' },
   thumb: {
     width: '100%',
     height: 90,
     borderRadius: radius.sm,
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: surface.page,
   },
-  thumbEmpty: { borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed' },
+  thumbEmpty: { borderWidth: 1, borderColor: surface.line, borderStyle: 'dashed' },
   warning: { color: colors.warning, fontSize: 14, textAlign: 'right' },
   error: { color: colors.danger, fontSize: 14, textAlign: 'right' },
 });

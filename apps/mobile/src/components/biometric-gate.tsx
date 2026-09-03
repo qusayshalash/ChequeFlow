@@ -2,10 +2,12 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { AppState, StyleSheet, Text, View } from 'react-native';
 
-import { colors, spacing } from '@cheque-flow/ui/tokens';
+import { colors } from '@cheque-flow/ui/tokens';
 
+import { IconLock } from '@/components/icons';
 import { useApp, useTranslator } from '@/components/providers';
 import { Button, LoadingView } from '@/components/ui';
+import { accent, radius, space, surface, text } from '@/theme';
 
 /**
  * Holds the app closed until the device owner proves who they are.
@@ -67,7 +69,9 @@ export function BiometricGate({ children }: { children: ReactNode }) {
 
   return (
     <View style={styles.locked}>
-      <Text style={styles.glyph}>🔒</Text>
+      <View style={styles.lockMark}>
+        <IconLock size={26} color={accent.base} />
+      </View>
       <Text style={styles.title}>{t('auth.locked')}</Text>
       {failed ? <Text style={styles.error}>{t('auth.unlockFailed')}</Text> : null}
       <Button label={t('auth.unlock')} onPress={() => void authenticate()} large />
@@ -80,11 +84,18 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.md,
-    padding: spacing.xl,
-    backgroundColor: colors.surfaceMuted,
+    gap: space['4'],
+    padding: space['8'],
+    backgroundColor: surface.page,
   },
-  glyph: { fontSize: 48 },
-  title: { fontSize: 20, fontWeight: '700', color: colors.text, textAlign: 'center' },
+  lockMark: {
+    width: 64,
+    height: 64,
+    borderRadius: radius.pill,
+    backgroundColor: accent.wash,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: { fontSize: 20, fontWeight: '700', color: text.primary, textAlign: 'center' },
   error: { fontSize: 14, color: colors.danger, textAlign: 'center' },
 });

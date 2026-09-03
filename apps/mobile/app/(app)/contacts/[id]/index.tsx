@@ -5,8 +5,9 @@ import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'r
 
 import { ApiClientError } from '@cheque-flow/api-client';
 import type { ContactStatementView } from '@cheque-flow/shared-types';
-import { colors, radius, spacing } from '@cheque-flow/ui/tokens';
+import { colors } from '@cheque-flow/ui/tokens';
 
+import { IconMessage, IconPhone } from '@/components/icons';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import {
   Badge,
@@ -23,6 +24,7 @@ import {
   Sheet,
   StatusPill,
 } from '@/components/ui';
+import { accent, radius, space, surface, text } from '@/theme';
 
 /**
  * One contact's account statement.
@@ -123,7 +125,7 @@ export default function ContactStatementScreen() {
             style={styles.reachButton}
             onPress={() => void reach('tel')}
           >
-            <Text style={styles.reachGlyph}>📞</Text>
+            <IconPhone size={22} color={accent.base} />
             <Text style={styles.reachLabel}>{t('common.call')}</Text>
           </Pressable>
           <Pressable
@@ -131,7 +133,7 @@ export default function ContactStatementScreen() {
             style={styles.reachButton}
             onPress={() => void reach('whatsapp')}
           >
-            <Text style={styles.reachGlyph}>💬</Text>
+            <IconMessage size={22} color={accent.base} />
             <Text style={styles.reachLabel}>{t('common.whatsapp')}</Text>
           </Pressable>
         </View>
@@ -253,43 +255,42 @@ export default function ContactStatementScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: spacing.md,
-    gap: spacing.md,
-    backgroundColor: colors.surfaceMuted,
-    paddingBottom: spacing.xxl,
+    padding: space['4'],
+    gap: space['4'],
+    backgroundColor: surface.page,
+    paddingBottom: space['16'],
   },
   header: {
-    backgroundColor: colors.surface,
+    backgroundColor: surface.card,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
+    borderColor: surface.line,
+    padding: space['4'],
     gap: 4,
   },
-  meta: { fontSize: 13, color: colors.textMuted, textAlign: 'right' },
+  meta: { fontSize: 13, color: text.secondary, textAlign: 'right' },
   overdue: { color: colors.danger, fontWeight: '700' },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text, textAlign: 'right' },
-  reachRow: { flexDirection: 'row', gap: spacing.sm },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: text.primary, textAlign: 'right' },
+  reachRow: { flexDirection: 'row', gap: space['2'] },
   reachButton: {
     flex: 1,
     minHeight: 64,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
-    backgroundColor: colors.surface,
+    backgroundColor: surface.card,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: surface.line,
   },
-  reachGlyph: { fontSize: 22 },
-  reachLabel: { fontSize: 13, color: colors.text },
+  reachLabel: { fontSize: 13, color: text.primary },
   chequeRow: {
     gap: 4,
-    paddingVertical: spacing.sm,
+    paddingVertical: space['2'],
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: surface.line,
   },
   chequeHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  chequeNumber: { fontSize: 15, fontWeight: '700', color: colors.text, writingDirection: 'ltr' },
-  chequeMeta: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm },
+  chequeNumber: { fontSize: 15, fontWeight: '700', color: text.primary, writingDirection: 'ltr' },
+  chequeMeta: { flexDirection: 'row', justifyContent: 'space-between', gap: space['2'] },
 });

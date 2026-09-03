@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ApiClientError } from '@cheque-flow/api-client';
-import { colors, spacing } from '@cheque-flow/ui/tokens';
 
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import {
@@ -18,6 +17,7 @@ import {
 } from '@/components/ui';
 import { addDaysIso, todayIso } from '@/lib/dates';
 import { shareTextFile } from '@/lib/export-file';
+import { space, surface, text } from '@/theme';
 
 const WINDOWS = [7, 30, 90];
 
@@ -190,17 +190,17 @@ export default function ReportsScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: spacing.md,
-    gap: spacing.md,
-    backgroundColor: colors.surfaceMuted,
-    paddingBottom: spacing.xxl,
+    padding: space['4'],
+    gap: space['4'],
+    backgroundColor: surface.page,
+    paddingBottom: space['16'],
   },
-  chips: { gap: spacing.sm },
+  chips: { gap: space['2'] },
   flowBlock: {
     gap: 2,
-    paddingVertical: spacing.sm,
+    paddingVertical: space['2'],
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: surface.line,
   },
-  flowTitle: { fontSize: 14, fontWeight: '700', color: colors.text, textAlign: 'right' },
+  flowTitle: { fontSize: 14, fontWeight: '700', color: text.primary, textAlign: 'right' },
 });

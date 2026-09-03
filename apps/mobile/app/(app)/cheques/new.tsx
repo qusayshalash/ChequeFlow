@@ -1,17 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { ApiClientError } from '@cheque-flow/api-client';
 import { ChequeDirection, type DuplicateChequeMatch } from '@cheque-flow/shared-types';
 import { createChequeSchema } from '@cheque-flow/validation';
-import { colors, spacing } from '@cheque-flow/ui/tokens';
+import { colors } from '@cheque-flow/ui/tokens';
 
+import { FormScreen } from '@/components/form-screen';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { Banner, Button, DateField, ErrorView, Field, Picker, Section } from '@/components/ui';
 import { addDaysIso, todayIso } from '@/lib/dates';
 import { fieldErrorsFrom, validateForm, type FieldErrors } from '@/lib/form';
+import { space } from '@/theme';
 
 const CURRENCIES = ['ILS', 'USD', 'JOD', 'EUR'];
 
@@ -125,7 +127,14 @@ export default function NewChequeScreen() {
     errors[field] ? t(errors[field]) : undefined;
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <FormScreen
+      submitLabel={t('common.save')}
+      onSubmit={() => {
+        setFormError(null);
+        mutation.mutate(false);
+      }}
+      submitting={mutation.isPending}
+    >
       {!online ? <Banner text={t('common.offline')} /> : null}
 
       <Section title={t('cheque.identity')}>
@@ -311,32 +320,16 @@ export default function NewChequeScreen() {
       ) : null}
 
       {formError ? <ErrorView label={formError} /> : null}
-
-      <Button
-        label={t('common.save')}
-        onPress={() => {
-          setFormError(null);
-          mutation.mutate(false);
-        }}
-        loading={mutation.isPending}
-        large
-      />
-    </ScrollView>
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: spacing.md,
-    gap: spacing.md,
-    backgroundColor: colors.surfaceMuted,
-    paddingBottom: spacing.xxl,
-  },
   duplicateBox: {
     backgroundColor: colors.warningBg,
     borderRadius: 10,
-    padding: spacing.md,
-    gap: spacing.sm,
+    padding: space['4'],
+    gap: space['2'],
   },
   duplicateTitle: { fontSize: 15, fontWeight: '700', color: colors.warning, textAlign: 'right' },
   duplicateRow: { fontSize: 14, color: colors.warning, textAlign: 'right' },

@@ -1,15 +1,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
 
 import { ApiClientError } from '@cheque-flow/api-client';
 import { ContactType } from '@cheque-flow/shared-types';
 import { createContactSchema } from '@cheque-flow/validation';
-import { colors, spacing } from '@cheque-flow/ui/tokens';
 
+import { FormScreen } from '@/components/form-screen';
 import { useApi, useTranslator } from '@/components/providers';
-import { Button, ErrorView, Field, Picker, Section } from '@/components/ui';
+import { ErrorView, Field, Picker, Section } from '@/components/ui';
 import { fieldErrorsFrom, validateForm, type FieldErrors } from '@/lib/form';
 
 export default function NewContactScreen() {
@@ -73,7 +72,14 @@ export default function NewContactScreen() {
     errors[field] ? t(errors[field]) : undefined;
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <FormScreen
+      submitLabel={t('common.save')}
+      onSubmit={() => {
+        setFormError(null);
+        mutation.mutate();
+      }}
+      submitting={mutation.isPending}
+    >
       <Section title={t('contact.newTitle')}>
         {/* A party can be both a customer and a supplier; the type is how the
             contact is listed, not a restriction on what they can do. */}
@@ -149,25 +155,6 @@ export default function NewContactScreen() {
       </Section>
 
       {formError ? <ErrorView label={formError} /> : null}
-
-      <Button
-        label={t('common.save')}
-        onPress={() => {
-          setFormError(null);
-          mutation.mutate();
-        }}
-        loading={mutation.isPending}
-        large
-      />
-    </ScrollView>
+    </FormScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    padding: spacing.md,
-    gap: spacing.md,
-    backgroundColor: colors.surfaceMuted,
-    paddingBottom: spacing.xxl,
-  },
-});

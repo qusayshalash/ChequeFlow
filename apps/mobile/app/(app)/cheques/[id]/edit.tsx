@@ -1,15 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
 
 import { ApiClientError } from '@cheque-flow/api-client';
 import type { ChequeDetailView } from '@cheque-flow/shared-types';
 import { updateChequeSchema } from '@cheque-flow/validation';
-import { colors, spacing } from '@cheque-flow/ui/tokens';
 
+import { FormScreen } from '@/components/form-screen';
 import { useApi, useApp, useTranslator } from '@/components/providers';
-import { Banner, Button, DateField, ErrorView, Field, LoadingView, Section } from '@/components/ui';
+import { Banner, DateField, ErrorView, Field, LoadingView, Section } from '@/components/ui';
 import { fieldErrorsFrom, validateForm, type FieldErrors } from '@/lib/form';
 
 /**
@@ -127,7 +126,15 @@ export default function EditChequeScreen() {
     errors[field] ? t(errors[field]) : undefined;
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <FormScreen
+      submitLabel={t('common.save')}
+      onSubmit={() => {
+        setFormError(null);
+        mutation.mutate();
+      }}
+      submitting={mutation.isPending}
+      disabled={reasonRequired && reason.trim().length === 0}
+    >
       {!online ? <Banner text={t('common.offline')} /> : null}
 
       <Section title={t('cheque.identity')}>
@@ -220,26 +227,6 @@ export default function EditChequeScreen() {
       ) : null}
 
       {formError ? <ErrorView label={formError} /> : null}
-
-      <Button
-        label={t('common.save')}
-        onPress={() => {
-          setFormError(null);
-          mutation.mutate();
-        }}
-        loading={mutation.isPending}
-        disabled={reasonRequired && reason.trim().length === 0}
-        large
-      />
-    </ScrollView>
+    </FormScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    padding: spacing.md,
-    gap: spacing.md,
-    backgroundColor: colors.surfaceMuted,
-    paddingBottom: spacing.xxl,
-  },
-});

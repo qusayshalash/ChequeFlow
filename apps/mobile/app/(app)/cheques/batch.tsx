@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ApiClientError } from '@cheque-flow/api-client';
 import {
@@ -11,8 +11,9 @@ import {
   type SerialChequeRow,
 } from '@cheque-flow/shared-types';
 import { createChequeBatchSchema } from '@cheque-flow/validation';
-import { colors, radius, spacing } from '@cheque-flow/ui/tokens';
+import { colors } from '@cheque-flow/ui/tokens';
 
+import { FormScreen } from '@/components/form-screen';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import {
   Banner,
@@ -25,6 +26,7 @@ import {
   Section,
 } from '@/components/ui';
 import { todayIso } from '@/lib/dates';
+import { radius, space, surface, text } from '@/theme';
 
 const CURRENCIES = ['ILS', 'USD', 'JOD', 'EUR'];
 
@@ -195,7 +197,15 @@ export default function ChequeBatchScreen() {
   });
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <FormScreen
+      submitLabel={t('common.save')}
+      onSubmit={() => {
+        setFormError(null);
+        setDuplicateRows([]);
+        mutation.mutate(false);
+      }}
+      submitting={mutation.isPending}
+    >
       {!online ? <Banner text={t('common.offline')} /> : null}
 
       <Section title={t('cheque.batchShared')}>
@@ -359,55 +369,38 @@ export default function ChequeBatchScreen() {
       ) : null}
 
       {formError ? <ErrorView label={formError} /> : null}
-
-      <Button
-        label={t('common.save')}
-        onPress={() => {
-          setFormError(null);
-          setDuplicateRows([]);
-          mutation.mutate(false);
-        }}
-        loading={mutation.isPending}
-        large
-      />
-    </ScrollView>
+    </FormScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: spacing.md,
-    gap: spacing.md,
-    backgroundColor: colors.surfaceMuted,
-    paddingBottom: spacing.xxl,
-  },
   row: {
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: surface.line,
     borderRadius: radius.md,
-    padding: spacing.sm,
+    padding: space['2'],
     gap: 4,
-    backgroundColor: colors.surface,
+    backgroundColor: surface.card,
   },
   rowDuplicate: { borderColor: colors.warning, backgroundColor: colors.warningBg },
   rowHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  rowIndex: { fontSize: 13, fontWeight: '700', color: colors.textMuted },
+  rowIndex: { fontSize: 13, fontWeight: '700', color: text.secondary },
   removeGlyph: { fontSize: 16, color: colors.danger },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: spacing.sm,
+    paddingTop: space['2'],
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: surface.line,
   },
-  totalLabel: { fontSize: 14, color: colors.textMuted },
-  totalValue: { fontSize: 17, fontWeight: '700', color: colors.text },
+  totalLabel: { fontSize: 14, color: text.secondary },
+  totalValue: { fontSize: 17, fontWeight: '700', color: text.primary },
   duplicateBox: {
     backgroundColor: colors.warningBg,
     borderRadius: radius.md,
-    padding: spacing.md,
-    gap: spacing.sm,
+    padding: space['4'],
+    gap: space['2'],
   },
   duplicateTitle: { fontSize: 15, fontWeight: '700', color: colors.warning, textAlign: 'right' },
   duplicateRow: { fontSize: 14, color: colors.warning, textAlign: 'right' },

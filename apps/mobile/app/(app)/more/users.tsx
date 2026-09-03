@@ -5,7 +5,6 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ApiClientError } from '@cheque-flow/api-client';
 import { SystemRole, UserStatus, type UserView } from '@cheque-flow/shared-types';
 import { createUserSchema } from '@cheque-flow/validation';
-import { colors, radius, spacing } from '@cheque-flow/ui/tokens';
 
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import {
@@ -20,6 +19,7 @@ import {
   Sheet,
 } from '@/components/ui';
 import { fieldErrorsFrom, validateForm, type FieldErrors } from '@/lib/form';
+import { accent, radius, space, surface, text, type } from '@/theme';
 
 /**
  * Members of the organization and what they may do.
@@ -121,7 +121,10 @@ export default function UsersScreen() {
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
           <View style={styles.row}>
-            <View style={styles.header}>
+            <View style={styles.rowTop}>
+              <View style={styles.avatar}>
+                <Text style={styles.initial}>{item.name.trim().charAt(0) || '؟'}</Text>
+              </View>
               <Text style={styles.name}>{item.name}</Text>
               {item.status === UserStatus.ACTIVE ? null : (
                 <Badge label={t(`userStatus.${item.status}`)} />
@@ -205,24 +208,34 @@ export default function UsersScreen() {
 }
 
 const styles = StyleSheet.create({
+  rowTop: { flexDirection: 'row', alignItems: 'center', gap: space['3'] },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.pill,
+    backgroundColor: accent.wash,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  initial: { ...type.bodyStrong, color: accent.dark },
   container: {
     flex: 1,
-    backgroundColor: colors.surfaceMuted,
-    padding: spacing.md,
-    gap: spacing.sm,
+    backgroundColor: surface.page,
+    padding: space['4'],
+    gap: space['2'],
   },
-  list: { gap: spacing.sm, paddingBottom: spacing.md },
+  list: { gap: space['2'], paddingBottom: space['4'] },
   row: {
-    backgroundColor: colors.surface,
+    backgroundColor: surface.card,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
+    borderColor: surface.line,
+    padding: space['4'],
     gap: 4,
   },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  name: { fontSize: 16, fontWeight: '700', color: colors.text, textAlign: 'right' },
-  meta: { fontSize: 13, color: colors.textMuted, textAlign: 'right' },
+  header: { flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  name: { fontSize: 16, fontWeight: '700', color: text.primary, textAlign: 'right' },
+  meta: { fontSize: 13, color: text.secondary, textAlign: 'right' },
   statusToggle: { alignSelf: 'flex-start', minHeight: 40, justifyContent: 'center' },
-  statusToggleText: { fontSize: 14, color: colors.brand, fontWeight: '600' },
+  statusToggleText: { fontSize: 14, color: accent.base, fontWeight: '600' },
 });

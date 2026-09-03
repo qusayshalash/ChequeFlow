@@ -1,9 +1,10 @@
 import { useNavigation, useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { MIN_TOUCH_TARGET, colors, spacing } from '@cheque-flow/ui/tokens';
+import { MIN_TOUCH_TARGET } from '@cheque-flow/ui/tokens';
 
 import { useApp } from '@/components/providers';
+import { accent, space, surface, text } from '@/theme';
 
 /**
  * Back control for the stack headers.
@@ -42,8 +43,8 @@ export function stackScreenOptions() {
   return {
     headerTitleAlign: 'center' as const,
     headerLeft: () => <BackButton />,
-    headerStyle: { backgroundColor: colors.surface },
-    headerTintColor: colors.text,
+    headerStyle: { backgroundColor: surface.card },
+    headerTintColor: text.primary,
   };
 }
 
@@ -53,7 +54,7 @@ const styles = StyleSheet.create({
     minHeight: MIN_TOUCH_TARGET,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: space['2'],
   },
-  chevron: { fontSize: 34, lineHeight: 38, color: colors.brand, fontWeight: '300' },
+  chevron: { fontSize: 34, lineHeight: 38, color: accent.base, fontWeight: '300' },
 });

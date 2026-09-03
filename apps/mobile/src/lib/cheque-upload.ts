@@ -52,6 +52,9 @@ export async function uploadCapturedCheque(
       bankBranchRaw: null,
       accountNumber: null,
       drawerName: null,
+      // Nothing to replace: a photographed cheque is a new record, and the
+      // link to a bounced one is set later from the cheque's own screen.
+      replacesChequeId: null,
       originalSourceId: null,
       originalPayeeName: null,
       currentLocationId: null,

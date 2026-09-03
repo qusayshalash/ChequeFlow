@@ -2,15 +2,15 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { CALENDARS, CALENDAR_LABELS, LOCALES, LOCALE_LABELS } from '@cheque-flow/localization';
-import { colors, spacing } from '@cheque-flow/ui/tokens';
 
 import { useApi, useApp, useTranslator } from '@/components/providers';
-import { Banner, Body, Button, Card, InfoRow, Picker, Section } from '@/components/ui';
+import { Banner, Body, Button, InfoRow, Picker, Section } from '@/components/ui';
 import { clearDrafts, listDrafts, type CaptureDraft } from '@/lib/draft-store';
 import { syncDrafts } from '@/lib/draft-sync';
+import { accent, radius, space, surface, text, type } from '@/theme';
 
 export default function SettingsScreen() {
   const api = useApi();
@@ -117,14 +117,19 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Card>
-        <Body>{session.data?.name ?? ''}</Body>
-        <Text style={styles.meta}>{session.data?.email ?? ''}</Text>
-        <Text style={styles.meta}>
-          {t('user.roles')}:{' '}
-          {(session.data?.roles ?? []).map((role) => t(`role.${role}`)).join('، ') || '—'}
-        </Text>
-      </Card>
+      {/* Who is signed in, as an identity rather than three equal lines. */}
+      <View style={styles.identity}>
+        <View style={styles.avatar}>
+          <Text style={styles.initial}>{(session.data?.name ?? '؟').trim().charAt(0)}</Text>
+        </View>
+        <View style={styles.identityText}>
+          <Text style={styles.name}>{session.data?.name ?? ''}</Text>
+          <Text style={styles.meta}>{session.data?.email ?? ''}</Text>
+          <Text style={styles.meta}>
+            {(session.data?.roles ?? []).map((role) => t(`role.${role}`)).join('، ') || '—'}
+          </Text>
+        </View>
+      </View>
 
       <Section title={t('common.language')}>
         <Picker
@@ -220,11 +225,32 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: spacing.md,
-    gap: spacing.md,
-    backgroundColor: colors.surfaceMuted,
-    paddingBottom: spacing.xxl,
+  identity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space['3'],
+    backgroundColor: surface.card,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: surface.line,
+    padding: space['4'],
   },
-  meta: { fontSize: 13, color: colors.textMuted, textAlign: 'right' },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.pill,
+    backgroundColor: accent.wash,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  initial: { ...type.heading, color: accent.dark },
+  identityText: { flex: 1, gap: 1 },
+  name: { ...type.heading, color: text.primary, textAlign: 'right' },
+  container: {
+    padding: space['4'],
+    gap: space['4'],
+    backgroundColor: surface.page,
+    paddingBottom: space['16'],
+  },
+  meta: { fontSize: 13, color: text.secondary, textAlign: 'right' },
 });

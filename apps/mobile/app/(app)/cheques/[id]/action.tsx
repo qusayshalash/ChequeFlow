@@ -5,7 +5,6 @@ import { ScrollView, StyleSheet } from 'react-native';
 
 import { ApiClientError } from '@cheque-flow/api-client';
 import { ChequeAction, type ChequeDetailView } from '@cheque-flow/shared-types';
-import { colors, spacing } from '@cheque-flow/ui/tokens';
 
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import {
@@ -21,6 +20,7 @@ import {
   Section,
 } from '@/components/ui';
 import { isValidDate, todayIso } from '@/lib/dates';
+import { space, surface } from '@/theme';
 
 /** Which extra inputs each action needs. Drives the whole form. */
 const NEEDS_CONTACT = new Set<string>([
@@ -243,9 +243,9 @@ export default function PerformActionScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: spacing.md,
-    gap: spacing.md,
-    backgroundColor: colors.surfaceMuted,
-    paddingBottom: spacing.xxl,
+    padding: space['4'],
+    gap: space['4'],
+    backgroundColor: surface.page,
+    paddingBottom: space['16'],
   },
 });

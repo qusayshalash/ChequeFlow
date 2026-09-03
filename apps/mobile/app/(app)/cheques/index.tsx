@@ -4,8 +4,9 @@ import { useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { utcToday, type ChequeSummaryView, type ChequeStatus } from '@cheque-flow/shared-types';
-import { colors, radius, spacing } from '@cheque-flow/ui/tokens';
+import { colors } from '@cheque-flow/ui/tokens';
 
+import { IconAlert, IconArrowIn, IconArrowOut, IconFilter } from '@/components/icons';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import {
   Button,
@@ -20,6 +21,7 @@ import {
   Sheet,
   StatusPill,
 } from '@/components/ui';
+import { TAP, accent, radius, space, surface, text, type } from '@/theme';
 
 /**
  * The list tabs.
@@ -157,7 +159,7 @@ export default function ChequeListScreen() {
           onPress={() => setFiltersOpen(true)}
           style={styles.filterButton}
         >
-          <Text style={styles.filterGlyph}>⚙︎</Text>
+          <IconFilter size={20} color={text.primary} />
           {activeFilterCount > 0 ? (
             <View style={styles.filterCount}>
               <Text style={styles.filterCountText}>{activeFilterCount}</Text>
@@ -194,33 +196,43 @@ export default function ChequeListScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`${item.chequeNumber} ${money(item.amount, item.currency)}`}
-              style={[styles.row, item.isOverdue && styles.rowOverdue]}
+              style={({ pressed }) => [styles.row, pressed && styles.rowDown]}
               onPress={() => router.push(`/(app)/cheques/${item.id}`)}
             >
-              <View style={styles.rowHeader}>
-                <View style={styles.rowHeaderStart}>
-                  <Text style={styles.directionGlyph}>
-                    {item.direction === 'OUTGOING' ? '↑' : '↓'}
+              {/* A late cheque is marked by a bar down its leading edge as well
+                  as by the badge below: the row must still read as urgent in a
+                  black-and-white printout or to someone who cannot see red. */}
+              {item.isOverdue ? <View style={styles.overdueEdge} /> : null}
+
+              <View style={styles.rowBody}>
+                <View style={styles.rowTop}>
+                  <Text style={styles.amount} numberOfLines={1}>
+                    {money(item.amount, item.currency)}
                   </Text>
-                  <Text style={styles.number}>{item.chequeNumber}</Text>
+                  <StatusPill status={item.status} label={t(`status.${item.status}`)} />
                 </View>
-                <StatusPill status={item.status} label={t(`status.${item.status}`)} />
-              </View>
 
-              <Text style={styles.amount}>{money(item.amount, item.currency)}</Text>
-
-              <View style={styles.rowMetaLine}>
-                <Text style={styles.meta}>{date(item.dueDate)}</Text>
-                <Text style={[styles.meta, item.isOverdue && styles.metaOverdue]}>
-                  {dueDistance(item.dueDate, today)}
+                <Text style={styles.party} numberOfLines={1}>
+                  {item.drawerName ?? item.originalSourceName ?? t('common.unknown')}
                 </Text>
-              </View>
 
-              <Text style={styles.meta} numberOfLines={1}>
-                {[item.bankName, item.drawerName ?? item.originalSourceName]
-                  .filter(Boolean)
-                  .join(' — ') || t('common.unknown')}
-              </Text>
+                <View style={styles.rowBottom}>
+                  <View style={styles.numberGroup}>
+                    {item.direction === 'OUTGOING' ? (
+                      <IconArrowOut size={14} color={text.faint} />
+                    ) : (
+                      <IconArrowIn size={14} color={text.faint} />
+                    )}
+                    <Text style={styles.number}>{item.chequeNumber}</Text>
+                  </View>
+                  <View style={styles.dueGroup}>
+                    {item.isOverdue ? <IconAlert size={14} color={colors.danger} /> : null}
+                    <Text style={[styles.due, item.isOverdue && styles.dueLate]}>
+                      {date(item.dueDate)} · {dueDistance(item.dueDate, today)}
+                    </Text>
+                  </View>
+                </View>
+              </View>
             </Pressable>
           )}
         />
@@ -314,36 +326,31 @@ export default function ChequeListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.surfaceMuted,
-    padding: spacing.md,
-    gap: spacing.sm,
-  },
-  searchRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
+  container: { flex: 1, backgroundColor: surface.page, padding: space['4'], gap: space['3'] },
+
+  searchRow: { flexDirection: 'row', gap: space['2'], alignItems: 'center' },
   search: {
     flex: 1,
-    minHeight: 48,
+    minHeight: TAP,
     borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.sm,
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md,
-    fontSize: 16,
-    color: colors.text,
+    borderColor: surface.lineStrong,
+    borderRadius: radius.md,
+    backgroundColor: surface.card,
+    paddingHorizontal: space['4'],
+    ...type.body,
+    color: text.primary,
     textAlign: 'right',
   },
   filterButton: {
-    minWidth: 48,
-    minHeight: 48,
+    minWidth: TAP,
+    minHeight: TAP,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radius.sm,
+    borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: surface.lineStrong,
+    backgroundColor: surface.card,
   },
-  filterGlyph: { fontSize: 20, color: colors.text },
   filterCount: {
     position: 'absolute',
     top: 2,
@@ -351,32 +358,60 @@ const styles = StyleSheet.create({
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: colors.brand,
+    backgroundColor: accent.base,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  filterCountText: { color: colors.surface, fontSize: 11, fontWeight: '700' },
+  filterCountText: { color: text.onBrand, fontSize: 11, fontWeight: '700' },
 
-  list: { gap: spacing.sm, paddingBottom: spacing.xxl },
+  list: { gap: space['3'], paddingBottom: space['16'] },
+
+  /**
+   * A row, not a card of stacked labels.
+   *
+   * The amount leads because it is what people scan for, the party names the
+   * cheque, and the number and date sit underneath as reference. The old row
+   * opened with the cheque number — the one field nobody searches a list by.
+   */
   row: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    flexDirection: 'row',
+    backgroundColor: surface.card,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    gap: 4,
-    minHeight: 88,
+    borderColor: surface.line,
+    overflow: 'hidden',
+    minHeight: 92,
   },
-  // A late cheque is the thing the user is looking for; it gets a coloured
-  // edge as well as a badge so it is findable while scrolling fast.
-  rowOverdue: { borderColor: colors.danger, borderStartWidth: 4 },
-  rowHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  rowHeaderStart: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  directionGlyph: { fontSize: 16, color: colors.textMuted },
-  number: { fontSize: 16, fontWeight: '700', color: colors.text, writingDirection: 'ltr' },
-  amount: { fontSize: 18, color: colors.text, textAlign: 'right' },
-  rowMetaLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' },
-  meta: { fontSize: 13, color: colors.textMuted, textAlign: 'right' },
-  metaOverdue: { color: colors.danger, fontWeight: '700' },
-  chipRow: { flexDirection: 'row', gap: spacing.sm },
+  rowDown: { backgroundColor: surface.sunken },
+  overdueEdge: { width: 4, backgroundColor: colors.danger },
+  rowBody: { flex: 1, padding: space['4'], gap: space['1'] },
+
+  rowTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space['2'],
+  },
+  amount: { ...type.title, color: text.primary, flexShrink: 1, fontVariant: ['tabular-nums'] },
+  party: { ...type.callout, color: text.secondary, textAlign: 'right' },
+
+  rowBottom: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space['2'],
+    marginTop: space['1'],
+  },
+  numberGroup: { flexDirection: 'row', alignItems: 'center', gap: space['1'] },
+  number: {
+    ...type.caption,
+    color: text.faint,
+    writingDirection: 'ltr',
+    fontVariant: ['tabular-nums'],
+  },
+  dueGroup: { flexDirection: 'row', alignItems: 'center', gap: space['1'] },
+  due: { ...type.caption, color: text.secondary },
+  dueLate: { color: colors.danger, fontWeight: '700' },
+
+  chipRow: { flexDirection: 'row', gap: space['2'] },
 });

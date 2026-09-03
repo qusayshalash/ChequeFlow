@@ -3,10 +3,11 @@ import { useRouter } from 'expo-router';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { ReminderRow } from '@cheque-flow/api-client';
-import { colors, radius, spacing } from '@cheque-flow/ui/tokens';
+import { colors } from '@cheque-flow/ui/tokens';
 
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { Badge, Button, EmptyView, ErrorView, LoadingView } from '@/components/ui';
+import { radius, space, surface, text } from '@/theme';
 
 /** Snooze options, in minutes. */
 const SNOOZE = [
@@ -118,30 +119,30 @@ export default function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  list: { flex: 1, backgroundColor: colors.surfaceMuted },
-  content: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xxl },
+  list: { flex: 1, backgroundColor: surface.page },
+  content: { padding: space['4'], gap: space['2'], paddingBottom: space['16'] },
   row: {
-    backgroundColor: colors.surface,
+    backgroundColor: surface.card,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    gap: spacing.sm,
+    borderColor: surface.line,
+    padding: space['4'],
+    gap: space['2'],
   },
   rowDue: { borderColor: colors.warning, borderStartWidth: 4 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  number: { fontSize: 16, fontWeight: '700', color: colors.text, writingDirection: 'ltr' },
-  amount: { fontSize: 16, color: colors.text, textAlign: 'right' },
-  meta: { fontSize: 13, color: colors.textMuted, textAlign: 'right' },
-  note: { fontSize: 14, color: colors.text, textAlign: 'right' },
-  actions: { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' },
+  number: { fontSize: 16, fontWeight: '700', color: text.primary, writingDirection: 'ltr' },
+  amount: { fontSize: 16, color: text.primary, textAlign: 'right' },
+  meta: { fontSize: 13, color: text.secondary, textAlign: 'right' },
+  note: { fontSize: 14, color: text.primary, textAlign: 'right' },
+  actions: { flexDirection: 'row', gap: space['2'], flexWrap: 'wrap' },
   snoozeChip: {
     minHeight: 40,
     justifyContent: 'center',
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: space['4'],
     borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: surface.line,
   },
-  snoozeText: { fontSize: 14, color: colors.text },
+  snoozeText: { fontSize: 14, color: text.primary },
 });

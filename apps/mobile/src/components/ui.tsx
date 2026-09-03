@@ -9,22 +9,37 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import {
-  MIN_TOUCH_TARGET,
-  TONE_COLORS,
-  colors,
-  radius,
-  spacing,
-  toneFor,
-} from '@cheque-flow/ui/tokens';
+import { STATUS_TONES, TONE_COLORS, colors } from '@cheque-flow/ui/tokens';
 
+import { IconAlert, IconCheck, IconClock } from '@/components/icons';
 import { maskDateInput } from '@/lib/dates';
+import { TAP, accent, radius, sheetElevation, space, surface, text, type } from '@/theme';
 
-/** Native counterparts of the web primitives, sharing the same tokens. */
+/**
+ * The app's interface primitives.
+ *
+ * Rebuilt against the Swiss-minimal direction in `src/theme.ts`. The rules that
+ * shaped every component below:
+ *
+ *  - **A line, not a shadow.** Cards are separated by a hairline. The only
+ *    elevation in the app belongs to the sheet, which genuinely floats.
+ *  - **Whitespace groups things.** Labels sit close to their values and far
+ *    from the next pair, so the eye finds the structure without boxes inside
+ *    boxes.
+ *  - **Weight carries hierarchy**, not colour. The accent is spent on exactly
+ *    one thing per screen.
+ *  - **Every tap target clears 44/48pt**, and every one of them says something
+ *    when pressed.
+ */
 
 export function Screen({ children }: { children: ReactNode }) {
-  return <View style={styles.screen}>{children}</View>;
+  return (
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+      {children}
+    </SafeAreaView>
+  );
 }
 
 export function Card({ children }: { children: ReactNode }) {
@@ -39,22 +54,27 @@ export function Body({ children, muted }: { children: ReactNode; muted?: boolean
   return <Text style={[styles.body, muted === true && styles.muted]}>{children}</Text>;
 }
 
-/** A titled block of related fields or facts. */
+/**
+ * A titled block of related fields or facts.
+ *
+ * The title sits above the card rather than inside it: an eyebrow costs less
+ * vertical space than a header row, and the card stays a single quiet surface.
+ */
 export function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <View style={styles.card}>
+    <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
-      {children}
+      <View style={styles.card}>{children}</View>
     </View>
   );
 }
 
 /**
- * One label/value line.
+ * A label and its value.
  *
- * Values that are identifiers rather than prose — cheque numbers, account
- * numbers — are rendered left-to-right even in an Arabic layout, because a
- * digit sequence reversed by bidi is a different number.
+ * Stacked, not side by side. A long Arabic label and a long value competing for
+ * one line is what made the old detail screens ragged; stacking gives each the
+ * full width and lets the pair read as one unit.
  */
 export function InfoRow({
   label,
@@ -90,67 +110,98 @@ export function Button({
   loading = false,
   large = false,
 }: ButtonProps) {
-  const background =
-    variant === 'primary' ? colors.brand : variant === 'danger' ? colors.danger : colors.surface;
-  const textColor = variant === 'secondary' ? colors.text : colors.surface;
+  const busy = disabled || loading;
 
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityState={{ disabled: disabled || loading, busy: loading }}
-      disabled={disabled || loading}
+      accessibilityState={{ disabled: busy, busy: loading }}
+      disabled={busy}
       onPress={onPress}
+      android_ripple={{
+        color: variant === 'secondary' ? surface.sunken : 'rgba(255,255,255,0.18)',
+      }}
       style={({ pressed }) => [
         styles.button,
-        {
-          backgroundColor: background,
-          opacity: disabled || loading ? 0.6 : pressed ? 0.85 : 1,
-          borderWidth: variant === 'secondary' ? 1 : 0,
-          minHeight: large ? 64 : MIN_TOUCH_TARGET,
-        },
+        large && styles.buttonLarge,
+        variant === 'primary' && styles.buttonPrimary,
+        variant === 'danger' && styles.buttonDanger,
+        variant === 'secondary' && styles.buttonSecondary,
+        // Colour rather than opacity: a whole control fading out reads as
+        // broken, while a darker shade reads as held down.
+        pressed && (variant === 'secondary' ? styles.buttonSecondaryDown : styles.buttonDown),
+        busy && styles.buttonDisabled,
       ]}
     >
-      {loading ? <ActivityIndicator color={textColor} /> : null}
-      <Text style={[styles.buttonLabel, { color: textColor, fontSize: large ? 20 : 16 }]}>
-        {label}
-      </Text>
+      {loading ? (
+        <ActivityIndicator
+          size="small"
+          color={variant === 'secondary' ? accent.base : text.onBrand}
+        />
+      ) : (
+        <Text
+          style={[styles.buttonText, variant === 'secondary' && styles.buttonTextSecondary]}
+          numberOfLines={1}
+        >
+          {label}
+        </Text>
+      )}
     </Pressable>
   );
 }
 
+/**
+ * A cheque's status.
+ *
+ * Carries a shape as well as a colour — the same status must be tellable apart
+ * in a screenshot printed in black and white, and by someone who cannot
+ * separate the reds from the greens.
+ */
 export function StatusPill({ status, label }: { status: string; label: string }) {
-  const tone = TONE_COLORS[toneFor(status)];
+  const tone = STATUS_TONES[status] ?? 'neutral';
+  const palette = TONE_COLORS[tone];
+
   return (
-    <View style={[styles.pill, { backgroundColor: tone.bg }]}>
-      <Text style={{ color: tone.fg, fontSize: 13, fontWeight: '600' }}>{label}</Text>
+    <View style={[styles.pill, { backgroundColor: palette.bg }]}>
+      <View style={[styles.pillDot, { backgroundColor: palette.fg }]} />
+      <Text style={[styles.pillText, { color: palette.fg }]} numberOfLines={1}>
+        {label}
+      </Text>
     </View>
   );
 }
 
-/** A small standalone marker, e.g. the overdue flag on a list card. */
 export function Badge({ label, tone = 'danger' }: { label: string; tone?: 'danger' | 'info' }) {
   const palette = TONE_COLORS[tone];
   return (
-    <View style={[styles.pill, { backgroundColor: palette.bg }]}>
-      <Text style={{ color: palette.fg, fontSize: 12, fontWeight: '700' }}>{label}</Text>
-    </View>
-  );
-}
-
-export function LoadingView({ label }: { label: string }) {
-  return (
-    <View style={styles.centered}>
-      <ActivityIndicator color={colors.brand} size="large" />
-      <Text style={styles.body}>{label}</Text>
+    <View style={[styles.badge, { backgroundColor: palette.bg }]}>
+      {tone === 'danger' ? <IconClock size={13} color={palette.fg} /> : null}
+      <Text style={[styles.badgeText, { color: palette.fg }]}>{label}</Text>
     </View>
   );
 }
 
 /**
- * The empty state. Takes an optional action so a screen with nothing on it
- * still tells the user what to do next rather than just stating a fact.
+ * Waiting.
+ *
+ * A skeleton of the shape that is coming, not a spinner: the page does not jump
+ * when the content lands, and the wait looks like progress rather than a stall.
  */
+export function LoadingView({ label }: { label: string }) {
+  return (
+    <View style={styles.skeletonWrap} accessibilityRole="progressbar" accessibilityLabel={label}>
+      {[0, 1, 2].map((row) => (
+        <View key={row} style={styles.skeletonCard}>
+          <View style={[styles.skeletonBar, { width: '45%' }]} />
+          <View style={[styles.skeletonBar, { width: '75%' }]} />
+          <View style={[styles.skeletonBar, { width: '30%' }]} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export function EmptyView({
   label,
   hint,
@@ -164,8 +215,11 @@ export function EmptyView({
 }) {
   return (
     <View style={styles.centered}>
-      <Text style={[styles.body, styles.muted]}>{label}</Text>
-      {hint ? <Text style={[styles.small, styles.muted]}>{hint}</Text> : null}
+      <View style={styles.emptyMark}>
+        <IconCheck size={26} color={accent.base} />
+      </View>
+      <Text style={styles.emptyTitle}>{label}</Text>
+      {hint ? <Text style={styles.emptyHint}>{hint}</Text> : null}
       {actionLabel && onAction ? (
         <Button label={actionLabel} variant="secondary" onPress={onAction} />
       ) : null}
@@ -183,8 +237,11 @@ export function ErrorView({
   retryLabel?: string;
 }) {
   return (
-    <View style={styles.errorBox}>
-      <Text style={{ color: colors.danger, fontSize: 15 }}>{label}</Text>
+    <View style={styles.errorBox} accessibilityRole="alert">
+      <View style={styles.errorHead}>
+        <IconAlert size={18} color={colors.danger} />
+        <Text style={styles.errorText}>{label}</Text>
+      </View>
       {onRetry && retryLabel ? (
         <Button label={retryLabel} variant="secondary" onPress={onRetry} />
       ) : null}
@@ -194,7 +251,7 @@ export function ErrorView({
 
 /** A full-width notice, used for the offline banner and inline warnings. */
 export function Banner({
-  text,
+  text: message,
   tone = 'warning',
   actionLabel,
   onAction,
@@ -206,10 +263,16 @@ export function Banner({
 }) {
   const palette = TONE_COLORS[tone];
   return (
-    <View style={[styles.banner, { backgroundColor: palette.bg }]}>
-      <Text style={[styles.bannerText, { color: palette.fg }]}>{text}</Text>
+    <View style={[styles.banner, { backgroundColor: palette.bg, borderColor: palette.fg }]}>
+      <IconAlert size={17} color={palette.fg} />
+      <Text style={[styles.bannerText, { color: palette.fg }]}>{message}</Text>
       {actionLabel && onAction ? (
-        <Pressable accessibilityRole="button" onPress={onAction} style={styles.bannerAction}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onAction}
+          hitSlop={10}
+          style={styles.bannerAction}
+        >
           <Text style={[styles.bannerActionText, { color: palette.fg }]}>{actionLabel}</Text>
         </Pressable>
       ) : null}
@@ -259,13 +322,15 @@ export function Field({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={colors.textMuted}
+        placeholderTextColor={text.faint}
         keyboardType={keyboardType}
         multiline={multiline}
         autoCapitalize={autoCapitalize}
         accessibilityLabel={label}
       />
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      {/* The error replaces the hint rather than joining it: two lines of small
+          text under a field is where people stop reading either. */}
+      {error ? <Text style={styles.errorHint}>{error}</Text> : null}
       {!error && hint ? <Text style={styles.hintText}>{hint}</Text> : null}
     </View>
   );
@@ -304,7 +369,7 @@ export function DateField({
         value={value}
         onChangeText={(next) => onChange(maskDateInput(next))}
         placeholder="YYYY-MM-DD"
-        placeholderTextColor={colors.textMuted}
+        placeholderTextColor={text.faint}
         keyboardType="numeric"
         accessibilityLabel={label}
       />
@@ -320,7 +385,7 @@ export function DateField({
           ))}
         </View>
       ) : null}
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      {error ? <Text style={styles.errorHint}>{error}</Text> : null}
     </View>
   );
 }
@@ -339,7 +404,12 @@ export function Chip({
       accessibilityRole="button"
       accessibilityState={{ selected }}
       onPress={onPress}
-      style={[styles.chip, selected && styles.chipSelected]}
+      android_ripple={{ color: surface.sunken, borderless: false }}
+      style={({ pressed }) => [
+        styles.chip,
+        selected && styles.chipSelected,
+        pressed && !selected && styles.chipDown,
+      ]}
     >
       <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
     </Pressable>
@@ -389,12 +459,17 @@ export function Picker({
           ))}
         </View>
       )}
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      {error ? <Text style={styles.errorHint}>{error}</Text> : null}
     </View>
   );
 }
 
-/** Horizontal segmented control used for the cheque list tabs. */
+/**
+ * Horizontal segmented control used for the cheque list tabs.
+ *
+ * The selected tab is marked by an underline rather than a filled pill: filled
+ * pills in a scrolling row read as buttons, and people tap the wrong one.
+ */
 export function SegmentedTabs({
   options,
   value,
@@ -441,10 +516,17 @@ export function Sheet({
 }) {
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <Pressable style={styles.sheetBackdrop} onPress={onClose} accessibilityRole="button" />
+      {/* The scrim is what tells you the sheet is dismissible, so it is dark
+          enough to actually read as one. */}
+      <Pressable
+        style={styles.sheetBackdrop}
+        onPress={onClose}
+        accessibilityRole="button"
+        accessibilityLabel={title}
+      />
       <View style={styles.sheet}>
         <View style={styles.sheetHandle} />
-        <Text style={styles.sectionTitle}>{title}</Text>
+        <Text style={styles.sheetTitle}>{title}</Text>
         <ScrollView contentContainerStyle={styles.sheetBody}>{children}</ScrollView>
       </View>
     </Modal>
@@ -452,137 +534,183 @@ export function Sheet({
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.surfaceMuted, padding: spacing.md, gap: spacing.md },
+  screen: { flex: 1, backgroundColor: surface.page, padding: space['4'], gap: space['4'] },
+
+  section: { gap: space['2'] },
+  sectionTitle: { ...type.label, color: text.secondary, textAlign: 'right' },
+
   card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    backgroundColor: surface.card,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    gap: spacing.sm,
+    borderColor: surface.line,
+    padding: space['4'],
+    gap: space['3'],
   },
-  heading: { fontSize: 22, fontWeight: '700', color: colors.text, textAlign: 'right' },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text, textAlign: 'right' },
-  body: { fontSize: 16, color: colors.text, textAlign: 'right' },
-  small: { fontSize: 13, textAlign: 'right' },
-  muted: { color: colors.textMuted },
+
+  heading: { ...type.title, color: text.primary, textAlign: 'right' },
+  body: { ...type.body, color: text.primary, textAlign: 'right' },
+  muted: { color: text.secondary },
   ltr: { writingDirection: 'ltr', textAlign: 'left' },
 
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    paddingVertical: 4,
-  },
-  infoLabel: { fontSize: 14, color: colors.textMuted, flexShrink: 0 },
-  infoValue: { fontSize: 15, color: colors.text, flexShrink: 1, textAlign: 'left' },
+  infoRow: { gap: 2, paddingVertical: space['1'] },
+  infoLabel: { ...type.caption, color: text.secondary, textAlign: 'right' },
+  infoValue: { ...type.bodyStrong, color: text.primary, textAlign: 'right' },
 
   button: {
+    minHeight: TAP,
     borderRadius: radius.md,
-    borderColor: colors.border,
+    borderWidth: 1,
+    borderColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: space['5'],
+    overflow: 'hidden',
   },
-  buttonLabel: { fontWeight: '600' },
+  buttonLarge: { minHeight: 54 },
+  buttonPrimary: { backgroundColor: accent.base },
+  buttonDanger: { backgroundColor: colors.danger },
+  buttonSecondary: { backgroundColor: surface.card, borderColor: surface.lineStrong },
+  buttonDown: { backgroundColor: accent.dark },
+  buttonSecondaryDown: { backgroundColor: surface.sunken },
+  buttonDisabled: { opacity: 0.45 },
+  buttonText: { ...type.bodyStrong, color: text.onBrand },
+  buttonTextSecondary: { color: text.primary },
+
   pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     alignSelf: 'flex-start',
     borderRadius: radius.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: space['3'],
+    paddingVertical: 5,
   },
-  centered: {
+  pillDot: { width: 6, height: 6, borderRadius: 3 },
+  pillText: { ...type.caption },
+
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+    borderRadius: radius.sm,
+    paddingHorizontal: space['2'],
+    paddingVertical: 3,
+  },
+  badgeText: { ...type.caption },
+
+  skeletonWrap: { gap: space['3'] },
+  skeletonCard: {
+    backgroundColor: surface.card,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: surface.line,
+    padding: space['4'],
+    gap: space['2'],
+  },
+  skeletonBar: { height: 12, borderRadius: 6, backgroundColor: surface.sunken },
+
+  centered: { alignItems: 'center', gap: space['3'], paddingVertical: space['10'] },
+  emptyMark: {
+    width: 56,
+    height: 56,
+    borderRadius: radius.pill,
+    backgroundColor: accent.wash,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing.xl,
-    gap: spacing.sm,
   },
+  emptyTitle: { ...type.heading, color: text.primary, textAlign: 'center' },
+  emptyHint: { ...type.callout, color: text.secondary, textAlign: 'center' },
+
   errorBox: {
     backgroundColor: colors.dangerBg,
     borderRadius: radius.md,
-    padding: spacing.md,
-    gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.danger,
+    padding: space['4'],
+    gap: space['3'],
   },
+  errorHead: { flexDirection: 'row', alignItems: 'center', gap: space['2'] },
+  errorText: { ...type.callout, color: colors.danger, flex: 1, textAlign: 'right' },
+
   banner: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    gap: space['2'],
+    borderRadius: radius.md,
+    borderWidth: 1,
+    paddingHorizontal: space['3'],
+    paddingVertical: space['3'],
   },
-  bannerText: { fontSize: 14, flexShrink: 1, textAlign: 'right' },
-  bannerAction: { minHeight: 32, justifyContent: 'center', paddingHorizontal: spacing.sm },
-  bannerActionText: { fontSize: 14, fontWeight: '700' },
+  bannerText: { ...type.callout, flex: 1, textAlign: 'right' },
+  bannerAction: { minHeight: 32, justifyContent: 'center', paddingHorizontal: space['2'] },
+  bannerActionText: { ...type.label, textDecorationLine: 'underline' },
 
-  field: { gap: 6 },
-  fieldLabel: { fontSize: 14, color: colors.textMuted, textAlign: 'right' },
+  field: { gap: space['2'] },
+  fieldLabel: { ...type.label, color: text.secondary, textAlign: 'right' },
   requiredMark: { color: colors.danger },
   input: {
-    minHeight: MIN_TOUCH_TARGET,
+    minHeight: TAP,
+    borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.sm,
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    fontSize: 16,
-    color: colors.text,
+    borderColor: surface.lineStrong,
+    backgroundColor: surface.card,
+    paddingHorizontal: space['3'],
+    ...type.body,
+    color: text.primary,
     textAlign: 'right',
   },
-  inputMultiline: { minHeight: 96, textAlignVertical: 'top' },
-  inputError: { borderColor: colors.danger },
-  errorText: { fontSize: 13, color: colors.danger, textAlign: 'right' },
-  hintText: { fontSize: 13, color: colors.textMuted, textAlign: 'right' },
+  inputMultiline: { minHeight: 96, textAlignVertical: 'top', paddingVertical: space['3'] },
+  inputError: { borderColor: colors.danger, backgroundColor: colors.dangerBg },
+  errorHint: { ...type.caption, color: colors.danger, textAlign: 'right' },
+  hintText: { ...type.caption, color: text.secondary, textAlign: 'right' },
 
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space['2'] },
   chip: {
-    minHeight: 40,
+    minHeight: 38,
     justifyContent: 'center',
     borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md,
+    borderColor: surface.lineStrong,
+    backgroundColor: surface.card,
+    paddingHorizontal: space['4'],
   },
-  chipSelected: { backgroundColor: colors.brand, borderColor: colors.brand },
-  chipText: { fontSize: 14, color: colors.text },
-  chipTextSelected: { color: colors.surface, fontWeight: '700' },
+  chipSelected: { backgroundColor: accent.base, borderColor: accent.base },
+  chipDown: { backgroundColor: surface.sunken },
+  chipText: { ...type.callout, color: text.primary },
+  chipTextSelected: { color: text.onBrand, fontWeight: '600' },
 
-  tabsRow: { gap: spacing.sm, paddingVertical: 2 },
+  tabsRow: { gap: space['5'], paddingHorizontal: space['1'] },
   tab: {
-    minHeight: 40,
+    minHeight: TAP,
     justifyContent: 'center',
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
   },
-  tabSelected: { backgroundColor: colors.brand, borderColor: colors.brand },
-  tabText: { fontSize: 14, color: colors.text },
-  tabTextSelected: { color: colors.surface, fontWeight: '700' },
+  tabSelected: { borderBottomColor: accent.base },
+  tabText: { ...type.body, color: text.secondary },
+  tabTextSelected: { color: accent.base, fontWeight: '700' },
 
-  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.45)' },
+  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(11,31,26,0.5)' },
   sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
-    padding: spacing.md,
-    gap: spacing.sm,
+    backgroundColor: surface.card,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: space['4'],
+    paddingBottom: space['8'],
+    paddingTop: space['2'],
     maxHeight: '80%',
+    ...sheetElevation,
   },
   sheetHandle: {
     alignSelf: 'center',
-    width: 44,
+    width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: colors.border,
-    marginBottom: spacing.sm,
+    backgroundColor: surface.lineStrong,
+    marginBottom: space['3'],
   },
-  sheetBody: { gap: spacing.md, paddingBottom: spacing.lg },
+  sheetTitle: { ...type.heading, color: text.primary, textAlign: 'right' },
+  sheetBody: { gap: space['3'], paddingTop: space['3'] },
 });

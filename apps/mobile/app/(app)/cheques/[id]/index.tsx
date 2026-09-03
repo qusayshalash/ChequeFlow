@@ -4,22 +4,22 @@ import { useState } from 'react';
 import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ChequeAction, utcToday, type ChequeDetailView } from '@cheque-flow/shared-types';
-import { colors, radius, spacing } from '@cheque-flow/ui/tokens';
+import { colors } from '@cheque-flow/ui/tokens';
 
+import { IconAlert, IconCalendar } from '@/components/icons';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import {
-  Badge,
   Banner,
   Body,
   Button,
   Card,
   ErrorView,
-  Heading,
   InfoRow,
   LoadingView,
   Section,
   StatusPill,
 } from '@/components/ui';
+import { radius, space, surface, text, type } from '@/theme';
 
 /**
  * Actions that get their own button on the detail screen.
@@ -70,21 +70,37 @@ export default function ChequeDetailScreen() {
         <RefreshControl refreshing={query.isRefetching} onRefresh={() => void query.refetch()} />
       }
     >
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <Heading>{cheque.chequeNumber}</Heading>
+      {/* The amount is the headline; the number and status are its caption.
+          The old header led with the cheque number in the heading slot, which
+          made every cheque look the same until you read the third line. */}
+      <View style={styles.hero}>
+        <View style={styles.heroTop}>
+          <Text style={styles.heroNumber}>
+            {t(`direction.${cheque.direction}`)} · {cheque.chequeNumber}
+          </Text>
           <StatusPill status={cheque.status} label={t(`status.${cheque.status}`)} />
         </View>
-        <Text style={styles.amount}>{money(cheque.amount, cheque.currency)}</Text>
-        {cheque.amountInWords ? <Body muted>{cheque.amountInWords}</Body> : null}
-        <View style={styles.dueLine}>
-          <Text style={styles.dueText}>
-            {t('cheque.dueDate')}: {date(cheque.dueDate)}
+
+        <Text style={styles.heroAmount} numberOfLines={1} adjustsFontSizeToFit>
+          {money(cheque.amount, cheque.currency)}
+        </Text>
+        {cheque.amountInWords ? (
+          <Text style={styles.heroWords} numberOfLines={2}>
+            {cheque.amountInWords}
           </Text>
+        ) : null}
+
+        <View style={[styles.dueLine, cheque.isOverdue && styles.dueLineLate]}>
+          <IconCalendar size={15} color={cheque.isOverdue ? colors.danger : text.secondary} />
           <Text style={[styles.dueText, cheque.isOverdue && styles.overdueText]}>
-            {dueDistance(cheque.dueDate, today)}
+            {date(cheque.dueDate)} · {dueDistance(cheque.dueDate, today)}
           </Text>
-          {cheque.isOverdue ? <Badge label={t('cheque.overdue')} /> : null}
+          {cheque.isOverdue ? (
+            <>
+              <IconAlert size={15} color={colors.danger} />
+              <Text style={styles.overdueText}>{t('cheque.overdue')}</Text>
+            </>
+          ) : null}
         </View>
       </View>
 
@@ -287,31 +303,62 @@ function ChequeImages({
 
 const styles = StyleSheet.create({
   container: {
-    padding: spacing.md,
-    gap: spacing.md,
-    backgroundColor: colors.surfaceMuted,
-    paddingBottom: spacing.xxl,
+    padding: space['4'],
+    gap: space['4'],
+    backgroundColor: surface.page,
+    paddingBottom: space['16'],
   },
-  header: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
+
+  hero: {
+    backgroundColor: surface.card,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    gap: spacing.sm,
+    borderColor: surface.line,
+    padding: space['5'],
+    gap: space['2'],
   },
-  headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  amount: { fontSize: 28, fontWeight: '700', color: colors.text, textAlign: 'right' },
-  dueLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' },
-  dueText: { fontSize: 14, color: colors.textMuted },
-  overdueText: { color: colors.danger, fontWeight: '700' },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text, textAlign: 'right' },
-  imageRow: { gap: spacing.sm },
+  heroTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space['2'],
+  },
+  heroNumber: {
+    ...type.caption,
+    color: text.secondary,
+    flexShrink: 1,
+    fontVariant: ['tabular-nums'],
+  },
+  heroAmount: {
+    ...type.display,
+    fontSize: 36,
+    color: text.primary,
+    textAlign: 'right',
+    fontVariant: ['tabular-nums'],
+  },
+  heroWords: { ...type.callout, color: text.secondary, textAlign: 'right' },
+
+  dueLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space['2'],
+    flexWrap: 'wrap',
+    marginTop: space['1'],
+    backgroundColor: surface.sunken,
+    borderRadius: radius.sm,
+    paddingHorizontal: space['3'],
+    paddingVertical: space['2'],
+  },
+  dueLineLate: { backgroundColor: colors.dangerBg },
+  dueText: { ...type.callout, color: text.secondary },
+  overdueText: { ...type.label, color: colors.danger },
+  sectionTitle: { ...type.label, color: text.secondary, textAlign: 'right' },
+  imageRow: { gap: space['2'] },
   imageThumb: {
     width: 180,
     height: 100,
     borderRadius: radius.sm,
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: surface.sunken,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -319,7 +366,7 @@ const styles = StyleSheet.create({
     width: 320,
     height: 200,
     borderRadius: radius.sm,
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: surface.sunken,
   },
   imagePlaceholder: { fontSize: 12, color: colors.textMuted },
   imageCaption: { fontSize: 12, color: colors.textMuted, textAlign: 'center', paddingTop: 4 },

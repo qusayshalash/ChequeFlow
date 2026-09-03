@@ -1,13 +1,24 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 import { ApiClientError } from '@cheque-flow/api-client';
-import { colors, radius, spacing } from '@cheque-flow/ui/tokens';
+import { colors } from '@cheque-flow/ui/tokens';
 
+import { IconAlert, IconCheque, IconEye, IconEyeOff } from '@/components/icons';
 import { useApi, useTranslator } from '@/components/providers';
-import { Body, Button, Card, Heading, Screen } from '@/components/ui';
+import { Button, Screen } from '@/components/ui';
+import { accent, radius, space, surface, text, type } from '@/theme';
 
 export default function LoginScreen() {
   const api = useApi();
@@ -19,6 +30,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [revealed, setRevealed] = useState(false);
 
   async function submit(): Promise<void> {
     setError(null);
@@ -36,61 +48,155 @@ export default function LoginScreen() {
 
   return (
     <Screen>
-      <View style={styles.spacer} />
-      <Heading>{t('auth.loginTitle')}</Heading>
-      <Body muted>{t('auth.loginSubtitle')}</Body>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.fill}
+      >
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
+          {/* The mark carries the brand on the one screen with nothing else on
+              it. Everywhere else the app earns its identity by being useful. */}
+          <View style={styles.brand}>
+            <View style={styles.mark}>
+              <IconCheque size={30} color={text.onBrand} />
+            </View>
+            <Text style={styles.wordmark}>{t('common.appName')}</Text>
+          </View>
 
-      <Card>
-        <Text style={styles.label}>{t('auth.username')}</Text>
-        <TextInput
-          style={styles.input}
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          autoCorrect={false}
-          // A plain keyboard: the field accepts a user name as well as an email.
-          keyboardType="default"
-          textContentType="username"
-          accessibilityLabel={t('auth.usernameHint')}
-        />
+          <View style={styles.intro}>
+            <Text style={styles.title}>{t('auth.loginTitle')}</Text>
+            <Text style={styles.subtitle}>{t('auth.loginSubtitle')}</Text>
+          </View>
 
-        <Text style={styles.label}>{t('auth.password')}</Text>
-        <TextInput
-          style={styles.input}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          textContentType="password"
-          accessibilityLabel={t('auth.password')}
-        />
+          <View style={styles.form}>
+            <View style={styles.field}>
+              <Text style={styles.label}>{t('auth.username')}</Text>
+              <TextInput
+                style={[styles.input, error ? styles.inputError : null]}
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                autoCorrect={false}
+                // A plain keyboard: the field accepts a user name as well as an
+                // email.
+                keyboardType="default"
+                textContentType="username"
+                autoComplete="username"
+                returnKeyType="next"
+                accessibilityLabel={t('auth.usernameHint')}
+              />
+              <Text style={styles.hint}>{t('auth.usernameHint')}</Text>
+            </View>
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+            <View style={styles.field}>
+              <Text style={styles.label}>{t('auth.password')}</Text>
+              <View style={styles.passwordRow}>
+                <TextInput
+                  style={[styles.input, styles.passwordInput, error ? styles.inputError : null]}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!revealed}
+                  textContentType="password"
+                  autoComplete="current-password"
+                  returnKeyType="go"
+                  onSubmitEditing={() => void submit()}
+                  accessibilityLabel={t('auth.password')}
+                />
+                {/* A password nobody can check is a password typed wrong twice.
+                    The toggle is a control, so it says what it does. */}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t(revealed ? 'auth.hidePassword' : 'auth.showPassword')}
+                  onPress={() => setRevealed((current) => !current)}
+                  style={styles.reveal}
+                  hitSlop={8}
+                >
+                  {revealed ? (
+                    <IconEyeOff size={20} color={text.secondary} />
+                  ) : (
+                    <IconEye size={20} color={text.secondary} />
+                  )}
+                </Pressable>
+              </View>
+            </View>
 
-        <Button
-          label={pending ? t('auth.loggingIn') : t('auth.submit')}
-          onPress={() => void submit()}
-          loading={pending}
-          large
-        />
-      </Card>
+            {error ? (
+              <View style={styles.errorBox} accessibilityRole="alert">
+                <IconAlert size={17} color={colors.danger} />
+                <Text style={styles.error}>{error}</Text>
+              </View>
+            ) : null}
+
+            <Button
+              label={pending ? t('auth.loggingIn') : t('auth.submit')}
+              onPress={() => void submit()}
+              loading={pending}
+              large
+            />
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  spacer: { height: spacing.xxl },
-  label: { fontSize: 14, color: colors.textMuted, textAlign: 'right' },
+  fill: { flex: 1 },
+  content: { flexGrow: 1, justifyContent: 'center', gap: space['8'], paddingVertical: space['8'] },
+
+  brand: { alignItems: 'center', gap: space['3'] },
+  mark: {
+    width: 64,
+    height: 64,
+    borderRadius: radius.lg,
+    backgroundColor: accent.base,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  wordmark: { ...type.heading, color: accent.dark },
+
+  intro: { gap: space['1'] },
+  title: { ...type.display, color: text.primary, textAlign: 'center' },
+  subtitle: { ...type.callout, color: text.secondary, textAlign: 'center' },
+
+  form: { gap: space['5'] },
+  field: { gap: space['2'] },
+  label: { ...type.label, color: text.secondary, textAlign: 'right' },
+  hint: { ...type.caption, color: text.faint, textAlign: 'right' },
   input: {
-    minHeight: 52,
+    minHeight: 54,
     borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.md,
-    fontSize: 16,
+    borderColor: surface.lineStrong,
+    borderRadius: radius.md,
+    paddingHorizontal: space['4'],
+    ...type.body,
     textAlign: 'left',
     writingDirection: 'ltr',
-    color: colors.text,
-    backgroundColor: colors.surface,
+    color: text.primary,
+    backgroundColor: surface.card,
   },
-  error: { color: colors.danger, fontSize: 14, textAlign: 'right' },
+  inputError: { borderColor: colors.danger, backgroundColor: colors.dangerBg },
+  passwordRow: { justifyContent: 'center' },
+  passwordInput: { paddingEnd: 52 },
+  reveal: {
+    position: 'absolute',
+    end: space['2'],
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space['2'],
+    backgroundColor: colors.dangerBg,
+    borderRadius: radius.md,
+    padding: space['3'],
+  },
+  error: { ...type.callout, color: colors.danger, flex: 1, textAlign: 'right' },
 });

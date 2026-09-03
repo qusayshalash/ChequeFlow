@@ -3,10 +3,18 @@ import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Permission } from '@cheque-flow/shared-types';
-import { colors, radius, spacing } from '@cheque-flow/ui/tokens';
 
+import {
+  IconBell,
+  IconChevronEnd,
+  IconReports,
+  IconSettings,
+  IconUser,
+  IconUsers,
+} from '@/components/icons';
 import { useApi, useApp, useTranslator } from '@/components/providers';
-import { Banner, Card, Heading } from '@/components/ui';
+import { Banner } from '@/components/ui';
+import { TAP, accent, radius, space, surface, text, type } from '@/theme';
 
 /**
  * Everything that is not a daily destination.
@@ -27,24 +35,24 @@ export default function MoreScreen() {
 
   const entries = [
     {
-      glyph: '🔔',
+      Icon: IconBell,
       label: t('nav.notifications'),
       href: '/(app)/more/notifications',
       allowed: true,
     },
     {
-      glyph: '📊',
+      Icon: IconReports,
       label: t('reports.title'),
       href: '/(app)/more/reports',
       allowed: can(Permission.REPORT_VIEW),
     },
     {
-      glyph: '👤',
+      Icon: IconUsers,
       label: t('user.title'),
       href: '/(app)/more/users',
       allowed: can(Permission.USER_MANAGE),
     },
-    { glyph: '⚙️', label: t('nav.settings'), href: '/(app)/more/settings', allowed: true },
+    { Icon: IconSettings, label: t('nav.settings'), href: '/(app)/more/settings', allowed: true },
   ].filter((entry) => entry.allowed);
 
   return (
@@ -57,26 +65,40 @@ export default function MoreScreen() {
         />
       ) : null}
 
-      <Card>
-        <Heading>{session.data?.name ?? ''}</Heading>
-        <Text style={styles.meta}>{session.data?.email ?? ''}</Text>
-        <Text style={styles.meta}>
-          {t('user.roles')}:{' '}
-          {(session.data?.roles ?? []).map((role) => t(`role.${role}`)).join('، ') || '—'}
-        </Text>
-      </Card>
+      {/* Who is signed in, as an identity block rather than a card of three
+          equal lines: the name is the answer, the rest is reference. */}
+      <View style={styles.identity}>
+        <View style={styles.avatar}>
+          <IconUser size={22} color={accent.base} />
+        </View>
+        <View style={styles.identityText}>
+          <Text style={styles.name}>{session.data?.name ?? ''}</Text>
+          <Text style={styles.meta}>{session.data?.email ?? ''}</Text>
+          <Text style={styles.meta}>
+            {(session.data?.roles ?? []).map((role) => t(`role.${role}`)).join('، ') || '—'}
+          </Text>
+        </View>
+      </View>
 
-      <View style={styles.grid}>
-        {entries.map((entry) => (
+      {/* A list, not a grid of squares. Four destinations do not need to be
+          hunted for in two dimensions, and a row fits a full Arabic label
+          without wrapping it. */}
+      <View style={styles.list}>
+        {entries.map((entry, index) => (
           <Pressable
             key={entry.href}
             accessibilityRole="button"
             accessibilityLabel={entry.label}
             onPress={() => router.push(entry.href)}
-            style={({ pressed }) => [styles.entry, pressed && styles.pressed]}
+            style={({ pressed }) => [
+              styles.entry,
+              index > 0 && styles.divided,
+              pressed && styles.pressed,
+            ]}
           >
-            <Text style={styles.glyph}>{entry.glyph}</Text>
+            <entry.Icon size={20} color={text.secondary} />
             <Text style={styles.label}>{entry.label}</Text>
+            <IconChevronEnd size={18} color={text.faint} />
           </Pressable>
         ))}
       </View>
@@ -85,23 +107,46 @@ export default function MoreScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: spacing.md, gap: spacing.md, backgroundColor: colors.surfaceMuted },
-  meta: { fontSize: 13, color: colors.textMuted, textAlign: 'right' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  entry: {
-    flexGrow: 1,
-    flexBasis: '45%',
-    minHeight: 96,
+  container: { padding: space['4'], gap: space['4'], backgroundColor: surface.page },
+
+  identity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space['3'],
+    backgroundColor: surface.card,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: surface.line,
+    padding: space['4'],
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.pill,
+    backgroundColor: accent.wash,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
   },
-  pressed: { opacity: 0.75 },
-  glyph: { fontSize: 26 },
-  label: { fontSize: 15, color: colors.text, textAlign: 'center' },
+  identityText: { flex: 1, gap: 1 },
+  name: { ...type.heading, color: text.primary, textAlign: 'right' },
+  meta: { ...type.caption, color: text.secondary, textAlign: 'right' },
+
+  list: {
+    backgroundColor: surface.card,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: surface.line,
+    overflow: 'hidden',
+  },
+  divided: { borderTopWidth: 1, borderTopColor: surface.line },
+  entry: {
+    minHeight: TAP + 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space['3'],
+    paddingHorizontal: space['4'],
+    paddingVertical: space['3'],
+  },
+  pressed: { backgroundColor: surface.sunken },
+  label: { ...type.body, color: text.primary, flex: 1, textAlign: 'right' },
 });

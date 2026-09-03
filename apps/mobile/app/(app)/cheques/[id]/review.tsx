@@ -5,10 +5,11 @@ import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { ApiClientError, type OcrSuggestionResponse } from '@cheque-flow/api-client';
 import type { ChequeDetailView } from '@cheque-flow/shared-types';
-import { colors, radius, spacing } from '@cheque-flow/ui/tokens';
+import { colors } from '@cheque-flow/ui/tokens';
 
 import { useApi, useTranslator } from '@/components/providers';
 import { Body, Button, Card, Heading, LoadingView } from '@/components/ui';
+import { radius, space, surface, text } from '@/theme';
 
 const FIELDS = [
   { field: 'chequeNumber', target: 'chequeNumber', labelKey: 'cheque.number' },
@@ -139,22 +140,22 @@ export default function ReviewExtractedDataScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: spacing.md, gap: spacing.md, backgroundColor: colors.surfaceMuted },
-  notice: { backgroundColor: colors.warningBg, borderRadius: radius.sm, padding: spacing.sm },
+  container: { padding: space['4'], gap: space['4'], backgroundColor: surface.page },
+  notice: { backgroundColor: colors.warningBg, borderRadius: radius.sm, padding: space['2'] },
   noticeText: { color: colors.warning, fontSize: 14, textAlign: 'right' },
-  fieldBox: { gap: 4, marginBottom: spacing.sm },
+  fieldBox: { gap: 4, marginBottom: space['2'] },
   fieldHeader: { flexDirection: 'row', justifyContent: 'space-between' },
-  label: { fontSize: 14, color: colors.textMuted },
+  label: { fontSize: 14, color: text.secondary },
   warn: { fontSize: 12, color: colors.warning },
-  hint: { fontSize: 12, color: colors.textMuted, textAlign: 'right' },
+  hint: { fontSize: 12, color: text.secondary, textAlign: 'right' },
   input: {
     minHeight: 48,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: surface.line,
     borderRadius: radius.sm,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: space['2'],
     fontSize: 16,
-    backgroundColor: colors.surface,
+    backgroundColor: surface.card,
     textAlign: 'right',
   },
   error: { color: colors.danger, fontSize: 14, textAlign: 'right' },

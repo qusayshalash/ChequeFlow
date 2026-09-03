@@ -1,10 +1,11 @@
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import type { ReactElement } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, spacing } from '@cheque-flow/ui/tokens';
-
+import { IconCamera, IconCheque, IconContacts, IconEdit, type IconProps } from '@/components/icons';
 import { useTranslator } from '@/components/providers';
 import { Body, Heading } from '@/components/ui';
+import { accent, radius, space, surface, text } from '@/theme';
 
 /**
  * The two ways a cheque enters the system.
@@ -26,25 +27,25 @@ export default function AddScreen() {
       <Heading>{t('common.add')}</Heading>
 
       <Choice
-        glyph="📷"
+        Icon={IconCamera}
         label={t('cheque.captureNew')}
         hint={t('ocr.reviewSubtitle')}
         onPress={() => router.push('/(app)/capture')}
       />
       <Choice
-        glyph="✏️"
+        Icon={IconEdit}
         label={t('cheque.addManually')}
         hint={t('cheque.newTitle')}
         onPress={() => router.push('/(app)/cheques/new')}
       />
       <Choice
-        glyph="🧾"
+        Icon={IconCheque}
         label={t('cheque.batchMode')}
         hint={t('cheque.batchHint')}
         onPress={() => router.push('/(app)/cheques/batch')}
       />
       <Choice
-        glyph="👤"
+        Icon={IconContacts}
         label={t('contact.newTitle')}
         hint={t('contact.title')}
         onPress={() => router.push('/(app)/contacts/new')}
@@ -56,12 +57,12 @@ export default function AddScreen() {
 }
 
 function Choice({
-  glyph,
+  Icon,
   label,
   hint,
   onPress,
 }: {
-  glyph: string;
+  Icon: (props: IconProps) => ReactElement;
   label: string;
   hint: string;
   onPress: () => void;
@@ -73,7 +74,11 @@ function Choice({
       onPress={onPress}
       style={({ pressed }) => [styles.choice, pressed && styles.pressed]}
     >
-      <Text style={styles.glyph}>{glyph}</Text>
+      {/* The icon repeats what the label already says, so it is decorative and
+          stays out of the screen reader's way. */}
+      <View style={styles.glyphWrap}>
+        <Icon size={26} color={accent.base} />
+      </View>
       <Text style={styles.label}>{label}</Text>
       <Text style={styles.hint}>{hint}</Text>
     </Pressable>
@@ -81,19 +86,28 @@ function Choice({
 }
 
 const styles = StyleSheet.create({
-  container: { padding: spacing.md, gap: spacing.md, backgroundColor: colors.surfaceMuted },
+  container: { padding: space['4'], gap: space['4'], backgroundColor: surface.page },
   choice: {
-    backgroundColor: colors.surface,
+    backgroundColor: surface.card,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.lg,
+    borderColor: surface.line,
+    padding: space['6'],
     gap: 6,
     minHeight: 110,
     alignItems: 'center',
   },
-  pressed: { opacity: 0.75 },
-  glyph: { fontSize: 34 },
-  label: { fontSize: 18, fontWeight: '700', color: colors.text, textAlign: 'center' },
-  hint: { fontSize: 13, color: colors.textMuted, textAlign: 'center' },
+  // Opacity alone reads as "broken" on a card this large; the brand tint plus
+  // a slight lift says "pressed" without moving anything around it.
+  pressed: { opacity: 0.9, backgroundColor: accent.wash, borderColor: accent.base },
+  glyphWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: radius.md,
+    backgroundColor: accent.wash,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  label: { fontSize: 18, fontWeight: '700', color: text.primary, textAlign: 'center' },
+  hint: { fontSize: 13, color: text.secondary, textAlign: 'center' },
 });

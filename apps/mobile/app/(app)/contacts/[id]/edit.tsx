@@ -1,15 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
 
 import { ApiClientError } from '@cheque-flow/api-client';
 import { ContactType } from '@cheque-flow/shared-types';
 import { updateContactSchema } from '@cheque-flow/validation';
-import { colors, spacing } from '@cheque-flow/ui/tokens';
 
+import { FormScreen } from '@/components/form-screen';
 import { useApi, useTranslator } from '@/components/providers';
-import { Button, ErrorView, Field, LoadingView, Picker, Section } from '@/components/ui';
+import { ErrorView, Field, LoadingView, Picker, Section } from '@/components/ui';
 import { fieldErrorsFrom, validateForm, type FieldErrors } from '@/lib/form';
 
 export default function EditContactScreen() {
@@ -97,7 +96,14 @@ export default function EditContactScreen() {
     errors[field] ? t(errors[field]) : undefined;
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <FormScreen
+      submitLabel={t('common.save')}
+      onSubmit={() => {
+        setFormError(null);
+        mutation.mutate();
+      }}
+      submitting={mutation.isPending}
+    >
       <Section title={t('contact.editTitle')}>
         <Picker
           label={t('contact.type')}
@@ -171,25 +177,6 @@ export default function EditContactScreen() {
       </Section>
 
       {formError ? <ErrorView label={formError} /> : null}
-
-      <Button
-        label={t('common.save')}
-        onPress={() => {
-          setFormError(null);
-          mutation.mutate();
-        }}
-        loading={mutation.isPending}
-        large
-      />
-    </ScrollView>
+    </FormScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    padding: spacing.md,
-    gap: spacing.md,
-    backgroundColor: colors.surfaceMuted,
-    paddingBottom: spacing.xxl,
-  },
-});
