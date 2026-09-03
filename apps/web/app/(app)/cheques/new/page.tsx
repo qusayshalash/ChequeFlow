@@ -11,8 +11,10 @@ import { Button, ErrorState, Field, SuccessBanner, inputClassName } from '@chequ
 
 import { ChequeBatchForm } from '@/components/cheque-batch-form';
 import { PageHeader } from '@/components/page-header';
+import { Stepper } from '@/components/stepper';
 import { Panel } from '@/components/panel';
-import { useApi, useTranslator } from '@/components/providers';
+import { useApi, useApp, useTranslator } from '@/components/providers';
+import { formatDate, money } from '@/lib/format';
 
 interface FormState {
   direction: string;
@@ -49,6 +51,7 @@ const EMPTY: FormState = {
 export default function NewChequePage() {
   const api = useApi();
   const t = useTranslator();
+  const { locale } = useApp();
   const router = useRouter();
   // Arrived from a bounced cheque's page: the replacement link is carried in
   // the URL so the form opens already knowing what it is replacing.
@@ -58,6 +61,14 @@ export default function NewChequePage() {
   // page rather than living at two URLs, because staff decide which they are
   // doing only once the customer has handed the cheques over.
   const [mode, setMode] = useState<'single' | 'batch'>('single');
+  /**
+   * Which step of the single-cheque form is showing.
+   *
+   * Five panels at once is a form people abandon halfway. Split into three
+   * named steps it is three short ones, and the last is a review — the point
+   * where a wrong amount is still cheap to catch.
+   */
+  const [step, setStep] = useState(1);
   const [form, setForm] = useState<FormState>(EMPTY);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -117,6 +128,48 @@ export default function NewChequePage() {
 
     mutation.mutate({ payload: parsed.data, allowDuplicate });
   }
+
+  /**
+   * What the review step shows.
+   *
+   * Only what was actually filled in: a review listing twenty rows of "—" is
+   * one nobody reads, and the point of the step is that a wrong amount is
+   * still cheap to catch here.
+   */
+  const review: Array<{ label: string; value: string; ltr?: boolean }> = (() => {
+    const bank = (banks.data ?? []).find((entry) => entry.id === form.bankId);
+    const source = (contacts.data?.data ?? []).find((entry) => entry.id === form.originalSourceId);
+    const location = (locations.data ?? []).find((entry) => entry.id === form.currentLocationId);
+
+    const rows: Array<{ label: string; value: string | null; ltr?: boolean }> = [
+      { label: t('cheque.direction'), value: t(`direction.${form.direction}`) },
+      { label: t('cheque.number'), value: form.chequeNumber || null, ltr: true },
+      {
+        label: t('common.amount'),
+        value: form.amount ? money(locale, form.amount, form.currency) : null,
+        ltr: true,
+      },
+      { label: t('cheque.amountInWords'), value: form.amountInWords || null },
+      { label: t('cheque.exchangeRate'), value: form.exchangeRate || null, ltr: true },
+      {
+        label: t('cheque.issueDate'),
+        value: form.issueDate ? formatDate(locale, form.issueDate) : null,
+      },
+      {
+        label: t('cheque.dueDate'),
+        value: form.dueDate ? formatDate(locale, form.dueDate) : null,
+      },
+      { label: t('cheque.bank'), value: bank?.name ?? null },
+      { label: t('cheque.drawerName'), value: form.drawerName || null },
+      { label: t('cheque.originalSource'), value: source?.name ?? null },
+      { label: t('cheque.currentLocation'), value: location?.name ?? null },
+      { label: t('common.notes'), value: form.notes || null },
+    ];
+
+    return rows.flatMap((row) =>
+      row.value === null ? [] : [{ label: row.label, value: row.value, ltr: row.ltr === true }],
+    );
+  })();
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
@@ -178,210 +231,254 @@ export default function NewChequePage() {
       {mutation.isSuccess ? <SuccessBanner message={t('cheque.createSuccess')} /> : null}
 
       <form onSubmit={handleSubmit} hidden={mode === 'batch'} className="flex flex-col gap-5">
-        <Panel title={t('cheque.identityGroup')}>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={t('cheque.direction')} htmlFor="direction" required>
-              <select
-                id="direction"
-                className={inputClassName}
-                value={form.direction}
-                onChange={(event) => update('direction', event.target.value)}
-              >
-                {Object.values(ChequeDirection).map((value) => (
-                  <option key={value} value={value}>
-                    {t(`direction.${value}`)}
-                  </option>
-                ))}
-              </select>
-            </Field>
+        <Stepper
+          steps={[
+            { number: 1, title: t('cheque.stepData'), hint: t('cheque.stepDataHint') },
+            { number: 2, title: t('cheque.stepParties'), hint: t('cheque.stepPartiesHint') },
+            { number: 3, title: t('cheque.stepReview'), hint: t('cheque.stepReviewHint') },
+          ]}
+          current={step}
+          onSelect={setStep}
+        />
 
-            <Field
-              label={t('cheque.number')}
-              htmlFor="chequeNumber"
-              required
-              error={fieldErrors.chequeNumber}
-            >
-              <input
-                id="chequeNumber"
-                dir="ltr"
-                className={inputClassName}
-                value={form.chequeNumber}
-                onChange={(event) => update('chequeNumber', event.target.value)}
-                aria-invalid={Boolean(fieldErrors.chequeNumber)}
-              />
-            </Field>
+        {/* Steps stay mounted and are hidden, never unmounted: stepping back
+            must not empty the fields somebody already filled in. */}
+        <div hidden={step !== 1} className="flex flex-col gap-5">
+          <Panel title={t('cheque.identityGroup')}>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label={t('cheque.direction')} htmlFor="direction" required>
+                <select
+                  id="direction"
+                  className={inputClassName}
+                  value={form.direction}
+                  onChange={(event) => update('direction', event.target.value)}
+                >
+                  {Object.values(ChequeDirection).map((value) => (
+                    <option key={value} value={value}>
+                      {t(`direction.${value}`)}
+                    </option>
+                  ))}
+                </select>
+              </Field>
 
-            <Field
-              label={t('cheque.amountInWords')}
-              htmlFor="amountInWords"
-              hint={t('cheque.amountInWordsHint')}
-              error={fieldErrors.amountInWords}
-            >
-              <input
-                id="amountInWords"
-                className={inputClassName}
-                value={form.amountInWords}
-                onChange={(event) => update('amountInWords', event.target.value)}
-              />
-            </Field>
-
-            <Field label={t('common.amount')} htmlFor="amount" required error={fieldErrors.amount}>
-              <input
-                id="amount"
-                dir="ltr"
-                inputMode="decimal"
-                placeholder="0.00"
-                className={inputClassName}
-                value={form.amount}
-                onChange={(event) => update('amount', event.target.value)}
-                aria-invalid={Boolean(fieldErrors.amount)}
-              />
-            </Field>
-
-            <Field
-              label={t('common.currency')}
-              htmlFor="currency"
-              required
-              error={fieldErrors.currency}
-            >
-              <input
-                id="currency"
-                dir="ltr"
-                maxLength={3}
-                className={inputClassName}
-                value={form.currency}
-                onChange={(event) => update('currency', event.target.value)}
-              />
-            </Field>
-
-            {/* Left blank for a cheque already in the books' currency: the
-                server converts those at 1 without being asked. */}
-            <Field
-              label={t('cheque.exchangeRate')}
-              htmlFor="exchangeRate"
-              hint={t('cheque.exchangeRateHint')}
-              error={fieldErrors.exchangeRate}
-            >
-              <input
-                id="exchangeRate"
-                dir="ltr"
-                inputMode="decimal"
-                placeholder="1"
-                className={inputClassName}
-                value={form.exchangeRate}
-                onChange={(event) => update('exchangeRate', event.target.value)}
-              />
-            </Field>
-          </div>
-        </Panel>
-
-        <Panel title={t('cheque.dates')}>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={t('cheque.issueDate')} htmlFor="issueDate" error={fieldErrors.issueDate}>
-              <input
-                id="issueDate"
-                type="date"
-                className={inputClassName}
-                value={form.issueDate}
-                onChange={(event) => update('issueDate', event.target.value)}
-              />
-            </Field>
-
-            <Field
-              label={t('cheque.dueDate')}
-              htmlFor="dueDate"
-              required
-              error={fieldErrors.dueDate}
-            >
-              <input
-                id="dueDate"
-                type="date"
+              <Field
+                label={t('cheque.number')}
+                htmlFor="chequeNumber"
                 required
-                className={inputClassName}
-                value={form.dueDate}
-                onChange={(event) => update('dueDate', event.target.value)}
-                aria-invalid={Boolean(fieldErrors.dueDate)}
+                error={fieldErrors.chequeNumber}
+              >
+                <input
+                  id="chequeNumber"
+                  dir="ltr"
+                  className={inputClassName}
+                  value={form.chequeNumber}
+                  onChange={(event) => update('chequeNumber', event.target.value)}
+                  aria-invalid={Boolean(fieldErrors.chequeNumber)}
+                />
+              </Field>
+
+              <Field
+                label={t('cheque.amountInWords')}
+                htmlFor="amountInWords"
+                hint={t('cheque.amountInWordsHint')}
+                error={fieldErrors.amountInWords}
+              >
+                <input
+                  id="amountInWords"
+                  className={inputClassName}
+                  value={form.amountInWords}
+                  onChange={(event) => update('amountInWords', event.target.value)}
+                />
+              </Field>
+
+              <Field
+                label={t('common.amount')}
+                htmlFor="amount"
+                required
+                error={fieldErrors.amount}
+              >
+                <input
+                  id="amount"
+                  dir="ltr"
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  className={inputClassName}
+                  value={form.amount}
+                  onChange={(event) => update('amount', event.target.value)}
+                  aria-invalid={Boolean(fieldErrors.amount)}
+                />
+              </Field>
+
+              <Field
+                label={t('common.currency')}
+                htmlFor="currency"
+                required
+                error={fieldErrors.currency}
+              >
+                <input
+                  id="currency"
+                  dir="ltr"
+                  maxLength={3}
+                  className={inputClassName}
+                  value={form.currency}
+                  onChange={(event) => update('currency', event.target.value)}
+                />
+              </Field>
+
+              {/* Left blank for a cheque already in the books' currency: the
+                server converts those at 1 without being asked. */}
+              <Field
+                label={t('cheque.exchangeRate')}
+                htmlFor="exchangeRate"
+                hint={t('cheque.exchangeRateHint')}
+                error={fieldErrors.exchangeRate}
+              >
+                <input
+                  id="exchangeRate"
+                  dir="ltr"
+                  inputMode="decimal"
+                  placeholder="1"
+                  className={inputClassName}
+                  value={form.exchangeRate}
+                  onChange={(event) => update('exchangeRate', event.target.value)}
+                />
+              </Field>
+            </div>
+          </Panel>
+
+          <Panel title={t('cheque.dates')}>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field
+                label={t('cheque.issueDate')}
+                htmlFor="issueDate"
+                error={fieldErrors.issueDate}
+              >
+                <input
+                  id="issueDate"
+                  type="date"
+                  className={inputClassName}
+                  value={form.issueDate}
+                  onChange={(event) => update('issueDate', event.target.value)}
+                />
+              </Field>
+
+              <Field
+                label={t('cheque.dueDate')}
+                htmlFor="dueDate"
+                required
+                error={fieldErrors.dueDate}
+              >
+                <input
+                  id="dueDate"
+                  type="date"
+                  required
+                  className={inputClassName}
+                  value={form.dueDate}
+                  onChange={(event) => update('dueDate', event.target.value)}
+                  aria-invalid={Boolean(fieldErrors.dueDate)}
+                />
+              </Field>
+            </div>
+          </Panel>
+        </div>
+
+        <div hidden={step !== 2} className="flex flex-col gap-5">
+          <Panel title={t('cheque.bank')}>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label={t('cheque.bank')} htmlFor="bankId">
+                <select
+                  id="bankId"
+                  className={inputClassName}
+                  value={form.bankId}
+                  onChange={(event) => update('bankId', event.target.value)}
+                >
+                  <option value="">{t('common.unknown')}</option>
+                  {(banks.data ?? []).map((bank) => (
+                    <option key={bank.id} value={bank.id}>
+                      {bank.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+          </Panel>
+
+          <Panel title={t('cheque.parties')}>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label={t('cheque.originalSource')} htmlFor="originalSourceId">
+                <select
+                  id="originalSourceId"
+                  className={inputClassName}
+                  value={form.originalSourceId}
+                  onChange={(event) => update('originalSourceId', event.target.value)}
+                >
+                  <option value="">{t('common.unknown')}</option>
+                  {(contacts.data?.data ?? []).map((contact) => (
+                    <option key={contact.id} value={contact.id}>
+                      {contact.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+
+              <Field label={t('cheque.drawerName')} htmlFor="drawerName">
+                <input
+                  id="drawerName"
+                  className={inputClassName}
+                  value={form.drawerName}
+                  onChange={(event) => update('drawerName', event.target.value)}
+                />
+              </Field>
+
+              <Field label={t('cheque.currentLocation')} htmlFor="currentLocationId">
+                <select
+                  id="currentLocationId"
+                  className={inputClassName}
+                  value={form.currentLocationId}
+                  onChange={(event) => update('currentLocationId', event.target.value)}
+                >
+                  <option value="">{t('common.unknown')}</option>
+                  {(locations.data ?? []).map((location) => (
+                    <option key={location.id} value={location.id}>
+                      {location.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+          </Panel>
+
+          <Panel title={t('cheque.notesGroup')}>
+            <Field label={t('common.notes')} htmlFor="notes">
+              <textarea
+                id="notes"
+                rows={3}
+                className={`${inputClassName} py-2`}
+                value={form.notes}
+                onChange={(event) => update('notes', event.target.value)}
               />
             </Field>
-          </div>
-        </Panel>
+          </Panel>
+        </div>
 
-        <Panel title={t('cheque.bank')}>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={t('cheque.bank')} htmlFor="bankId">
-              <select
-                id="bankId"
-                className={inputClassName}
-                value={form.bankId}
-                onChange={(event) => update('bankId', event.target.value)}
-              >
-                <option value="">{t('common.unknown')}</option>
-                {(banks.data ?? []).map((bank) => (
-                  <option key={bank.id} value={bank.id}>
-                    {bank.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
-          </div>
-        </Panel>
-
-        <Panel title={t('cheque.parties')}>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={t('cheque.originalSource')} htmlFor="originalSourceId">
-              <select
-                id="originalSourceId"
-                className={inputClassName}
-                value={form.originalSourceId}
-                onChange={(event) => update('originalSourceId', event.target.value)}
-              >
-                <option value="">{t('common.unknown')}</option>
-                {(contacts.data?.data ?? []).map((contact) => (
-                  <option key={contact.id} value={contact.id}>
-                    {contact.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
-
-            <Field label={t('cheque.drawerName')} htmlFor="drawerName">
-              <input
-                id="drawerName"
-                className={inputClassName}
-                value={form.drawerName}
-                onChange={(event) => update('drawerName', event.target.value)}
-              />
-            </Field>
-
-            <Field label={t('cheque.currentLocation')} htmlFor="currentLocationId">
-              <select
-                id="currentLocationId"
-                className={inputClassName}
-                value={form.currentLocationId}
-                onChange={(event) => update('currentLocationId', event.target.value)}
-              >
-                <option value="">{t('common.unknown')}</option>
-                {(locations.data ?? []).map((location) => (
-                  <option key={location.id} value={location.id}>
-                    {location.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
-          </div>
-        </Panel>
-
-        <Panel title={t('cheque.notesGroup')}>
-          <Field label={t('common.notes')} htmlFor="notes">
-            <textarea
-              id="notes"
-              rows={3}
-              className={`${inputClassName} py-2`}
-              value={form.notes}
-              onChange={(event) => update('notes', event.target.value)}
-            />
-          </Field>
-        </Panel>
+        <div hidden={step !== 3} className="flex flex-col gap-5">
+          <Panel title={t('cheque.stepReview')}>
+            <p className="mb-4 text-sm text-slate-500">{t('cheque.reviewIntro')}</p>
+            <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+              {review.map((entry) => (
+                <div key={entry.label} className="flex items-baseline justify-between gap-3">
+                  <dt className="text-sm text-slate-500">{entry.label}</dt>
+                  <dd
+                    className={`text-sm font-semibold text-slate-900 ${entry.ltr ? 'tabular-nums' : ''}`}
+                    dir={entry.ltr ? 'ltr' : undefined}
+                  >
+                    {entry.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </Panel>
+        </div>
 
         {formError ? (
           <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
@@ -393,9 +490,21 @@ export default function NewChequePage() {
             and a submit button you have to go looking for is a form people
             abandon halfway. */}
         <div className="sticky bottom-4 z-10 -mx-1 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-[0_18px_48px_-30px_rgb(16_24_40/0.6)] backdrop-blur-xl">
-          <Button type="submit" size="lg" loading={mutation.isPending}>
-            {t('common.save')}
-          </Button>
+          {step > 1 ? (
+            <Button type="button" variant="secondary" onClick={() => setStep(step - 1)}>
+              {t('common.previous')}
+            </Button>
+          ) : null}
+
+          {step < 3 ? (
+            <Button type="button" size="lg" onClick={() => setStep(step + 1)}>
+              {t('common.next')}
+            </Button>
+          ) : (
+            <Button type="submit" size="lg" loading={mutation.isPending}>
+              {t('common.save')}
+            </Button>
+          )}
           {duplicateWarning ? (
             <Button
               type="button"

@@ -305,3 +305,12 @@ export function IconLayers(props: IconProps) {
     </Icon>
   );
 }
+
+/** A bare tick, for a step that is behind you. */
+export function IconCheck(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="m4 12.5 5.5 5.5L20 7" />
+    </Icon>
+  );
+}
