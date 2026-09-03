@@ -116,11 +116,21 @@ export const createChequeBatchSchema = chequeCoreObject
     cheques: z.array(serialChequeRowSchema).min(1).max(MAX_SERIAL_CHEQUES),
   })
   .superRefine((data, ctx) => {
+    // These checks compare rows against each other, and they run even when a
+    // row's own fields failed — so each one first skips rows whose value is
+    // not there to compare. A blank row is not a duplicate of another blank
+    // row, and it is not dated before the issue date: it is simply not filled
+    // in yet, which its own field-level error already says. Two messages on
+    // one empty cell, the second of them wrong, is how a grid of twenty rows
+    // becomes a wall of red that tells nobody what to fix.
+
     // Two rows carrying the same number are always a typo, and the database
     // would happily store both.
     const seen = new Map<string, number>();
     data.cheques.forEach((row, index) => {
-      const key = row.chequeNumber.toUpperCase();
+      const key = row.chequeNumber.trim().toUpperCase();
+      if (key === '') return;
+
       const first = seen.get(key);
       if (first === undefined) {
         seen.set(key, index);
@@ -135,6 +145,7 @@ export const createChequeBatchSchema = chequeCoreObject
 
     if (data.issueDate === null) return;
     data.cheques.forEach((row, index) => {
+      if (!row.dueDate) return;
       if (row.dueDate < data.issueDate!) {
         ctx.addIssue({
           code: 'custom',

@@ -175,6 +175,41 @@ describe('createChequeBatchSchema', () => {
     expect(result.error?.issues[0]?.message).toBe('validation.cheque.duplicateNumberInBatch');
   });
 
+  it('does not call two unfilled rows duplicates of each other', () => {
+    // The grid starts with several blank rows on purpose, and every one of
+    // them used to collide with the first: a fresh batch opened covered in
+    // "duplicate cheque number" against cells nobody had touched.
+    const result = createChequeBatchSchema.safeParse({
+      ...base,
+      cheques: [row('', ''), row('', ''), row('', '')],
+    });
+
+    expect(result.success).toBe(false);
+
+    const messages = (result.error?.issues ?? []).map((issue) => issue.message);
+    expect(messages).not.toContain('validation.cheque.duplicateNumberInBatch');
+    // Nor the other cross-row check, which compared an empty date against the
+    // issue date and found it earlier.
+    expect(messages).not.toContain('validation.cheque.dueBeforeIssue');
+  });
+
+  it('still flags a real duplicate among rows that are only partly filled', () => {
+    const result = createChequeBatchSchema.safeParse({
+      ...base,
+      cheques: [row('000101', '2026-01-10'), row('', ''), row('000101', '2026-03-10')],
+    });
+
+    expect(result.success).toBe(false);
+
+    const duplicates = (result.error?.issues ?? []).filter(
+      (issue) => issue.message === 'validation.cheque.duplicateNumberInBatch',
+    );
+    // Exactly one, and on the third row — the blank in between is skipped
+    // without shifting which row gets blamed.
+    expect(duplicates).toHaveLength(1);
+    expect(duplicates[0]?.path).toEqual(['cheques', 2, 'chequeNumber']);
+  });
+
   it('treats numbers differing only in case as the same number', () => {
     const result = createChequeBatchSchema.safeParse({
       ...base,
