@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import { use } from 'react';
+import { use, useState } from 'react';
 
 import {
   ChequeStatus,
@@ -17,6 +17,7 @@ import { ChequeActionsPanel } from '@/components/cheque-actions';
 import { WhatsAppReminder } from '@/components/whatsapp-reminder';
 import { ChequeHero } from '@/components/cheque-hero';
 import { ChequeImagesPanel } from '@/components/cheque-images';
+import { Tabs } from '@/components/tabs';
 import { ChequeTimeline } from '@/components/cheque-timeline';
 import { CustodyStrip } from '@/components/custody-strip';
 import { FactGrid, type Fact } from '@/components/fact-grid';
@@ -32,6 +33,13 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
   const api = useApi();
   const t = useTranslator();
   const { locale } = useApp();
+  /**
+   * Which face of the record is showing.
+   *
+   * The page used to stack all four, which put the ledger — the reason most
+   * people open a cheque — at the bottom of a long scroll.
+   */
+  const [tab, setTab] = useState('overview');
   const canViewImages = usePermission(Permission.CHEQUE_VIEW_IMAGE);
 
   const today = utcToday();
@@ -141,73 +149,94 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
         </p>
       ) : null}
 
+      <ChequeHero cheque={data} today={today} />
+
+      <Tabs
+        tabs={[
+          { key: 'overview', label: t('cheque.tabOverview') },
+          { key: 'timeline', label: t('cheque.tabTimeline') },
+          { key: 'attachments', label: t('cheque.tabAttachments'), count: data.images.length },
+        ]}
+        active={tab}
+        onChange={setTab}
+      />
+
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(330px,0.85fr)] xl:items-start">
         {/* Main column: what this cheque is and where it has been. */}
         <div className="flex min-w-0 flex-col gap-5">
-          <ChequeHero cheque={data} today={today} />
-          <CustodyStrip cheque={data} />
+          {/* Panels are hidden rather than unmounted: switching tabs must not
+              refetch the timeline or drop a half-written action. */}
+          <div hidden={tab !== 'overview'} className="flex flex-col gap-5">
+            <CustodyStrip cheque={data} />
 
-          {/* Only when it happened, and then near the top: a bank's refusal is
+            {/* Only when it happened, and then near the top: a bank's refusal is
               the most consequential thing on the page. */}
-          {data.bounceReason ? (
-            <section className="rounded-2xl border border-red-100 bg-red-50 p-5">
-              <h2 className="text-base font-bold text-red-700">{t('cheque.bounceGroup')}</h2>
-              <p className="mt-2 text-sm text-red-700">{data.bounceReason}</p>
-              {data.bounceFee ? (
-                <p className="mt-1 text-sm font-semibold text-red-700 tabular-nums">
-                  {t('cheque.bounceFee')}: {money(locale, data.bounceFee, data.currency)}
-                </p>
-              ) : null}
-
-              {/* Offered right here, because this is the moment the question
-                  comes up: the cheque came back, so what was written instead? */}
-              {data.replacedBy.length === 0 ? (
-                <Link
-                  href={`/cheques/new?replaces=${data.id}`}
-                  className="mt-3 inline-flex h-10 items-center rounded-xl border border-red-300 bg-white px-4 text-sm font-semibold text-red-700 hover:bg-red-100"
-                >
-                  {t('cheque.recordReplacement')}
-                </Link>
-              ) : null}
-            </section>
-          ) : null}
-
-          {/* The chain in both directions. Without it, three replacements for
-              one debt read as three unrelated cheques. */}
-          {data.replaces || data.replacedBy.length > 0 ? (
-            <Panel title={t('cheque.replacementChain')}>
-              <div className="flex flex-col gap-3">
-                {data.replaces ? (
-                  <ChainRow label={t('cheque.replaces')} link={data.replaces} />
+            {data.bounceReason ? (
+              <section className="rounded-2xl border border-red-100 bg-red-50 p-5">
+                <h2 className="text-base font-bold text-red-700">{t('cheque.bounceGroup')}</h2>
+                <p className="mt-2 text-sm text-red-700">{data.bounceReason}</p>
+                {data.bounceFee ? (
+                  <p className="mt-1 text-sm font-semibold text-red-700 tabular-nums">
+                    {t('cheque.bounceFee')}: {money(locale, data.bounceFee, data.currency)}
+                  </p>
                 ) : null}
-                {data.replacedBy.map((entry) => (
-                  <ChainRow key={entry.id} label={t('cheque.replacedBy')} link={entry} />
-                ))}
-              </div>
+
+                {/* Offered right here, because this is the moment the question
+                  comes up: the cheque came back, so what was written instead? */}
+                {data.replacedBy.length === 0 ? (
+                  <Link
+                    href={`/cheques/new?replaces=${data.id}`}
+                    className="mt-3 inline-flex h-10 items-center rounded-xl border border-red-300 bg-white px-4 text-sm font-semibold text-red-700 hover:bg-red-100"
+                  >
+                    {t('cheque.recordReplacement')}
+                  </Link>
+                ) : null}
+              </section>
+            ) : null}
+
+            {/* The chain in both directions. Without it, three replacements for
+              one debt read as three unrelated cheques. */}
+            {data.replaces || data.replacedBy.length > 0 ? (
+              <Panel title={t('cheque.replacementChain')}>
+                <div className="flex flex-col gap-3">
+                  {data.replaces ? (
+                    <ChainRow label={t('cheque.replaces')} link={data.replaces} />
+                  ) : null}
+                  {data.replacedBy.map((entry) => (
+                    <ChainRow key={entry.id} label={t('cheque.replacedBy')} link={entry} />
+                  ))}
+                </div>
+              </Panel>
+            ) : null}
+
+            <Panel title={t('cheque.dates')}>
+              <FactGrid facts={dates} />
             </Panel>
-          ) : null}
 
-          <Panel title={t('cheque.dates')}>
-            <FactGrid facts={dates} />
-          </Panel>
-
-          <Panel title={t('cheque.parties')}>
-            <FactGrid facts={parties} />
-          </Panel>
-
-          <Panel title={t('cheque.bank')}>
-            <FactGrid facts={bank} />
-          </Panel>
-
-          {data.notes ? (
-            <Panel title={t('cheque.notesGroup')}>
-              <p className="text-sm leading-relaxed whitespace-pre-line text-slate-700">
-                {data.notes}
-              </p>
+            <Panel title={t('cheque.parties')}>
+              <FactGrid facts={parties} />
             </Panel>
-          ) : null}
 
-          <ChequeTimeline chequeId={data.id} />
+            <Panel title={t('cheque.bank')}>
+              <FactGrid facts={bank} />
+            </Panel>
+
+            {data.notes ? (
+              <Panel title={t('cheque.notesGroup')}>
+                <p className="text-sm leading-relaxed whitespace-pre-line text-slate-700">
+                  {data.notes}
+                </p>
+              </Panel>
+            ) : null}
+          </div>
+
+          <div hidden={tab !== 'timeline'}>
+            <ChequeTimeline chequeId={data.id} />
+          </div>
+
+          <div hidden={tab !== 'attachments'}>
+            <ChequeImagesPanel chequeId={data.id} canViewImages={canViewImages} />
+          </div>
         </div>
 
         {/* Aside: the things you do, kept beside the facts rather than below
@@ -238,8 +267,6 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
               />
             </Panel>
           ) : null}
-
-          <ChequeImagesPanel chequeId={data.id} canViewImages={canViewImages} />
         </div>
       </div>
     </div>
