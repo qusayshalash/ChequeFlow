@@ -138,11 +138,15 @@ export function BulkActionBar({
   }
 
   return (
+    // A pill that floats above the page rather than a slab pinned across it.
+    // The full-width bar covered a third of the screen once its controls
+    // wrapped, and it hid whatever row sat behind it; this only ever covers
+    // its own footprint.
     <div
       ref={barRef}
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-12px_30px_-22px_rgb(16_24_40/0.45)] backdrop-blur-xl"
+      className="pointer-events-none fixed inset-x-0 bottom-5 z-40 flex justify-center px-4"
     >
-      <div className="mx-auto flex max-w-[1440px] flex-wrap items-center gap-3">
+      <div className="pointer-events-auto flex max-w-full flex-wrap items-center gap-2.5 rounded-2xl border border-slate-200 bg-white/95 p-2.5 shadow-[0_18px_40px_-16px_rgb(16_24_40/0.35)] backdrop-blur-xl">
         <span className="text-sm font-semibold text-slate-900">
           {t('bulk.selected')}: <span className="tabular-nums">{selected.size}</span>
         </span>

@@ -24,12 +24,23 @@ import { useApi, useTranslator } from '@/components/providers';
 
 /** The tabs across the top, each a saved filter rather than a separate page. */
 const TABS = [
-  { key: 'ALL', labelKey: 'cheque.tabAll' },
-  { key: 'INCOMING', labelKey: 'cheque.tabIncoming' },
-  { key: 'OUTGOING', labelKey: 'cheque.tabOutgoing' },
-  { key: 'OVERDUE', labelKey: 'cheque.tabOverdue' },
-  { key: 'BOUNCED', labelKey: 'cheque.tabBounced' },
+  { key: 'ALL', labelKey: 'cheque.tabAll', tone: 'slate' },
+  { key: 'REVIEW', labelKey: 'nav.review', tone: 'violet' },
+  { key: 'DUE', labelKey: 'cheque.tabDue', tone: 'amber' },
+  { key: 'BOUNCED', labelKey: 'cheque.tabBounced', tone: 'red' },
+  { key: 'CLEARED', labelKey: 'status.CLEARED', tone: 'emerald' },
+  { key: 'INCOMING', labelKey: 'cheque.tabIncoming', tone: 'slate' },
+  { key: 'OUTGOING', labelKey: 'cheque.tabOutgoing', tone: 'slate' },
 ] as const;
+
+/** The count badge's colour per tab, so a filter reads as its own status. */
+const TAB_BADGE: Record<string, string> = {
+  slate: 'bg-slate-100 text-slate-600',
+  violet: 'bg-violet-100 text-violet-700',
+  amber: 'bg-amber-100 text-amber-700',
+  red: 'bg-red-100 text-red-700',
+  emerald: 'bg-emerald-100 text-emerald-700',
+};
 
 type Tab = (typeof TABS)[number]['key'];
 type ChequeSortKey = 'dueDate' | 'amount' | 'createdAt' | 'chequeNumber' | 'status';
@@ -68,11 +79,15 @@ export default function ChequesPage() {
       ? { direction: 'INCOMING' as const }
       : tab === 'OUTGOING'
         ? { direction: 'OUTGOING' as const }
-        : tab === 'OVERDUE'
-          ? { overdue: true }
-          : tab === 'BOUNCED'
-            ? { status: [ChequeStatus.BOUNCED] }
-            : {};
+        : tab === 'REVIEW'
+          ? { status: [ChequeStatus.DRAFT, ChequeStatus.PENDING_REVIEW] }
+          : tab === 'DUE'
+            ? { overdue: true }
+            : tab === 'BOUNCED'
+              ? { status: [ChequeStatus.BOUNCED] }
+              : tab === 'CLEARED'
+                ? { status: [ChequeStatus.CLEARED] }
+                : {};
 
   const query = useQuery<Paginated<ChequeSummaryView>>({
     queryKey: [
@@ -97,6 +112,33 @@ export default function ChequesPage() {
     // collapsing the table to a spinner on every keystroke.
     placeholderData: keepPreviousData,
   });
+
+  /**
+   * The number beside each filter.
+   *
+   * Read from the dashboard summary, which already computes every bucket in
+   * one query — counting them again per tab would be five more round trips for
+   * numbers the server has already added up. Summed across currencies because
+   * a count of cheques is not money and can be added safely.
+   */
+  const summary = useQuery({ queryKey: ['dashboard'], queryFn: () => api.getDashboard() });
+
+  const tabCounts: Record<string, number | undefined> = (() => {
+    const data = summary.data;
+    if (!data) return { ALL: query.data?.meta.total };
+
+    const currencies = data.currencies;
+    const sum = (pick: (block: (typeof currencies)[number]) => { count: number }): number =>
+      currencies.reduce((total, block) => total + pick(block).count, 0);
+
+    return {
+      ALL: query.data?.meta.total,
+      REVIEW: sum((block) => block.draft),
+      DUE: sum((block) => block.overdue) + sum((block) => block.dueWithin30Days),
+      BOUNCED: sum((block) => block.bounced),
+      CLEARED: sum((block) => block.cleared),
+    };
+  })();
 
   function changeTab(next: Tab): void {
     setTab(next);
@@ -195,21 +237,33 @@ export default function ChequesPage() {
             role="group"
             aria-label={t('cheque.filterTitle')}
           >
-            {TABS.map((entry) => (
-              <button
-                key={entry.key}
-                type="button"
-                onClick={() => changeTab(entry.key)}
-                aria-pressed={tab === entry.key}
-                className={`h-9 shrink-0 rounded-lg px-4 text-sm font-semibold ${
-                  tab === entry.key
-                    ? 'bg-white text-slate-950 shadow-sm ring-1 ring-slate-200'
-                    : 'text-slate-500 hover:text-slate-900'
-                }`}
-              >
-                {t(entry.labelKey)}
-              </button>
-            ))}
+            {TABS.map((entry) => {
+              const count = tabCounts[entry.key];
+              return (
+                <button
+                  key={entry.key}
+                  type="button"
+                  onClick={() => changeTab(entry.key)}
+                  aria-pressed={tab === entry.key}
+                  className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-lg px-3.5 text-sm font-semibold ${
+                    tab === entry.key
+                      ? 'bg-white text-slate-950 shadow-sm ring-1 ring-slate-200'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  {t(entry.labelKey)}
+                  {/* The count turns a filter from a guess into a decision:
+                      nobody opens "bounced" to find out whether there are any. */}
+                  {count === undefined ? null : (
+                    <span
+                      className={`rounded-md px-1.5 py-0.5 text-xs tabular-nums ${TAB_BADGE[entry.tone] ?? TAB_BADGE.slate}`}
+                    >
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">

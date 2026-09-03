@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
-import type { ChequeSummaryView } from '@cheque-flow/shared-types';
+import { utcToday, type ChequeSummaryView } from '@cheque-flow/shared-types';
 import { EmptyState, StatusBadge } from '@cheque-flow/ui';
 
 import {
@@ -14,7 +14,7 @@ import {
 } from '@/components/data-table';
 import { IconClock } from '@/components/icons';
 import { useApp, useTranslator } from '@/components/providers';
-import { formatDate, money } from '@/lib/format';
+import { formatDate, formatDueDistance, money } from '@/lib/format';
 
 /** The canonical columns used by every cheque data grid. */
 export const CHEQUE_COLUMN_KEYS = [
@@ -46,6 +46,8 @@ export function ChequeTable({
 }) {
   const t = useTranslator();
   const { locale } = useApp();
+  // One reference day for the whole table, so no row straddles midnight.
+  const today = utcToday();
 
   const columns: Array<Column<ChequeSummaryView>> = [
     {
@@ -77,16 +79,35 @@ export function ChequeTable({
       header: t('cheque.dueDate'),
       sortKey: 'dueDate',
       numeric: true,
-      cell: (cheque) =>
-        cheque.isOverdue ? (
-          <span className="inline-flex items-center gap-1.5 font-semibold text-red-600">
-            <IconClock className="size-4 shrink-0" aria-hidden="true" />
-            <span className="sr-only">{t('cheque.overdueLabel')}</span>
+      // The date, and under it how far away it is. A calendar date alone makes
+      // the reader do the arithmetic on every row; "tomorrow" is the part they
+      // are actually scanning for.
+      cell: (cheque) => (
+        <span className="block leading-tight">
+          <span
+            className={
+              cheque.isOverdue
+                ? 'inline-flex items-center gap-1.5 font-semibold text-red-600'
+                : 'font-medium text-slate-700'
+            }
+          >
+            {cheque.isOverdue ? (
+              <>
+                <IconClock className="size-4 shrink-0" aria-hidden="true" />
+                <span className="sr-only">{t('cheque.overdueLabel')}</span>
+              </>
+            ) : null}
             {formatDate(locale, cheque.dueDate)}
           </span>
-        ) : (
-          <span>{formatDate(locale, cheque.dueDate)}</span>
-        ),
+          <span
+            className={`mt-0.5 block text-xs ${
+              cheque.isOverdue ? 'font-semibold text-red-500' : 'text-slate-400'
+            }`}
+          >
+            {formatDueDistance(locale, cheque.dueDate, today)}
+          </span>
+        </span>
+      ),
     },
     {
       key: 'amount',

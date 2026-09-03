@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState, type ComponentType, type FormEvent, type SVGProps } from 'react';
+import { usePathname } from 'next/navigation';
+import { useEffect, useState, type ComponentType, type SVGProps } from 'react';
 
 import { Permission } from '@cheque-flow/shared-types';
 
@@ -11,15 +11,11 @@ import {
   IconBranch,
   IconCalendar,
   IconCheque,
-  IconChevronDown,
   IconChevronEnd,
   IconClose,
   IconContacts,
   IconDashboard,
   IconLogo,
-  IconLogout,
-  IconMenu,
-  IconPlus,
   IconReports,
   IconReturn,
   IconSafe,
@@ -28,8 +24,9 @@ import {
   IconShield,
   IconUsers,
 } from '@/components/icons';
-import { NotificationBell } from '@/components/notification-bell';
-import { useApi, useTranslator } from '@/components/providers';
+
+import { useTranslator } from '@/components/providers';
+import { TopBar } from '@/components/top-bar';
 import { useSession } from '@/components/session';
 
 interface NavItem {
@@ -86,13 +83,9 @@ const COLLAPSED_KEY = 'chequeflow.sidebarCollapsed';
 export function AppShell({ children }: { children: React.ReactNode }) {
   const t = useTranslator();
   const pathname = usePathname();
-  const router = useRouter();
-  const api = useApi();
   const { data: user } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [accountOpen, setAccountOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [globalSearch, setGlobalSearch] = useState('');
 
   useEffect(() => {
     try {
@@ -115,15 +108,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return pathname === href || pathname.startsWith(`${href}/`);
   }
 
-  const visibleItems = [...permitted(WORKSPACE_NAV), ...permitted(MANAGEMENT_NAV)];
-  const pageTitle = visibleItems.find((item) => isActive(item.href));
-  const initials = (user?.name ?? '')
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('');
-
   function toggleCollapsed(): void {
     setCollapsed((current) => {
       const next = !current;
@@ -134,21 +118,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       }
       return next;
     });
-  }
-
-  async function handleLogout(): Promise<void> {
-    try {
-      await api.logout();
-    } finally {
-      router.replace('/login');
-    }
-  }
-
-  function handleSearch(event: FormEvent<HTMLFormElement>): void {
-    event.preventDefault();
-    const value = globalSearch.trim();
-    router.push(value ? `/cheques?search=${encodeURIComponent(value)}` : '/cheques');
-    setMenuOpen(false);
   }
 
   function renderNav(items: NavItem[], labelKey: string) {
@@ -259,51 +228,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className="border-t border-[var(--app-sidebar-line)] p-3">
-          <div className="relative">
-            {accountOpen ? (
-              <div className="absolute inset-x-0 bottom-full mb-2 rounded-xl border border-white/10 bg-[#1a2826] p-1.5 shadow-xl">
-                <button
-                  type="button"
-                  onClick={() => void handleLogout()}
-                  className="flex min-h-10 w-full items-center gap-2 rounded-lg px-3 text-start text-sm text-red-200 hover:bg-red-500/10"
-                >
-                  <IconLogout width="18" height="18" />
-                  <span>{t('common.logout')}</span>
-                </button>
-              </div>
-            ) : null}
-
-            <button
-              type="button"
-              onClick={() => setAccountOpen((open) => !open)}
-              aria-expanded={accountOpen}
-              aria-label={collapsed ? (user?.name ?? t('nav.users')) : undefined}
-              title={collapsed ? (user?.name ?? undefined) : undefined}
-              className={`flex min-h-12 w-full items-center gap-3 rounded-xl p-2 text-start hover:bg-white/[0.06] ${
-                collapsed ? 'lg:justify-center' : ''
-              }`}
-            >
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-xs font-bold text-emerald-200 ring-1 ring-white/10">
-                {initials || '—'}
-              </span>
-              <span className={`min-w-0 flex-1 ${collapsed ? 'lg:hidden' : ''}`}>
-                <span className="block truncate text-sm font-semibold text-white">
-                  {user?.name ?? '—'}
-                </span>
-                <span className="block truncate text-[11px] text-white/40">
-                  {user?.roles[0] ? t(`role.${user.roles[0]}`) : ''}
-                </span>
-              </span>
-              <IconChevronDown
-                width="16"
-                height="16"
-                className={`shrink-0 text-white/35 ${accountOpen ? 'rotate-180' : ''} ${
-                  collapsed ? 'lg:hidden' : ''
-                }`}
-              />
-            </button>
-          </div>
-
           <button
             type="button"
             onClick={toggleCollapsed}
@@ -321,51 +245,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="min-w-0 flex-1">
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-slate-200/80 bg-white/90 px-4 backdrop-blur-xl lg:px-7">
-          <button
-            type="button"
-            className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm lg:hidden"
-            aria-expanded={menuOpen}
-            aria-controls="main-nav"
-            aria-label={t('common.more')}
-            onClick={() => setMenuOpen(true)}
-          >
-            <IconMenu />
-          </button>
-
-          <div className="hidden min-w-0 items-center gap-2 text-sm lg:flex">
-            <span className="text-slate-400">{t('nav.workspace')}</span>
-            <IconChevronEnd width="14" height="14" className="text-slate-300" />
-            <span className="truncate font-semibold text-slate-700">
-              {pageTitle ? t(pageTitle.labelKey) : t('common.appName')}
-            </span>
-          </div>
-
-          <form onSubmit={handleSearch} className="mx-auto min-w-0 flex-1 lg:max-w-md">
-            <label className="relative flex items-center">
-              <span className="pointer-events-none absolute start-3 text-slate-400">
-                <IconSearch width="18" height="18" />
-              </span>
-              <input
-                type="search"
-                value={globalSearch}
-                onChange={(event) => setGlobalSearch(event.target.value)}
-                placeholder={t('dashboard.searchPlaceholder')}
-                aria-label={t('common.search')}
-                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/80 ps-10 pe-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 hover:border-slate-300 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/10"
-              />
-            </label>
-          </form>
-
-          <Link
-            href="/cheques/new"
-            className="hidden h-10 items-center gap-2 rounded-xl bg-teal-700 px-3.5 text-sm font-semibold text-white shadow-sm hover:bg-teal-800 sm:inline-flex"
-          >
-            <IconPlus width="18" height="18" />
-            <span>{t('cheque.newTitle')}</span>
-          </Link>
-          <NotificationBell />
-        </header>
+        <TopBar onOpenMenu={() => setMenuOpen(true)} />
 
         <main id="main-content" className="min-w-0 px-4 py-6 lg:px-7 lg:py-7 xl:px-9">
           {children}

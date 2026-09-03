@@ -294,3 +294,14 @@ export function IconLogo(props: IconProps) {
     </Icon>
   );
 }
+
+/** Stacked sheets — a batch of cheques rather than one. */
+export function IconLayers(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="m12 3 9 5-9 5-9-5 9-5Z" />
+      <path d="m3 13 9 5 9-5" />
+      <path d="m3 17.5 9 5 9-5" />
+    </Icon>
+  );
+}
