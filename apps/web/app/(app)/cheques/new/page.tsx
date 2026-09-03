@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQuery } from '@tanstack/react-query';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 
@@ -10,6 +11,7 @@ import { createChequeSchema, type CreateChequeInput } from '@cheque-flow/validat
 import { Button, ErrorState, Field, SuccessBanner, inputClassName } from '@cheque-flow/ui';
 
 import { ChequeBatchForm } from '@/components/cheque-batch-form';
+import { IconPlus } from '@/components/icons';
 import { PageHeader } from '@/components/page-header';
 import { Stepper } from '@/components/stepper';
 import { Panel } from '@/components/panel';
@@ -55,7 +57,17 @@ export default function NewChequePage() {
   const router = useRouter();
   // Arrived from a bounced cheque's page: the replacement link is carried in
   // the URL so the form opens already knowing what it is replacing.
-  const replacesChequeId = useSearchParams().get('replaces');
+  const params = useSearchParams();
+  const replacesChequeId = params.get('replaces');
+
+  /**
+   * A contact just created from this form, handed back in the query string.
+   *
+   * Applied once: after that the field belongs to the user, so a later change
+   * of their own is not undone on the next render.
+   */
+  const returnedContact = params.get('contact');
+  const [appliedContact, setAppliedContact] = useState<string | null>(null);
 
   // Two ways in: one cheque, or a whole book of serial cheques. They share the
   // page rather than living at two URLs, because staff decide which they are
@@ -170,6 +182,11 @@ export default function NewChequePage() {
       row.value === null ? [] : [{ label: row.label, value: row.value, ltr: row.ltr === true }],
     );
   })();
+
+  if (returnedContact && returnedContact !== appliedContact) {
+    setAppliedContact(returnedContact);
+    setForm((current) => ({ ...current, originalSourceId: returnedContact }));
+  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
@@ -406,19 +423,32 @@ export default function NewChequePage() {
           <Panel title={t('cheque.parties')}>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label={t('cheque.originalSource')} htmlFor="originalSourceId">
-                <select
-                  id="originalSourceId"
-                  className={inputClassName}
-                  value={form.originalSourceId}
-                  onChange={(event) => update('originalSourceId', event.target.value)}
-                >
-                  <option value="">{t('common.unknown')}</option>
-                  {(contacts.data?.data ?? []).map((contact) => (
-                    <option key={contact.id} value={contact.id}>
-                      {contact.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex gap-2">
+                  <select
+                    id="originalSourceId"
+                    className={inputClassName}
+                    value={form.originalSourceId}
+                    onChange={(event) => update('originalSourceId', event.target.value)}
+                  >
+                    <option value="">{t('common.unknown')}</option>
+                    {(contacts.data?.data ?? []).map((contact) => (
+                      <option key={contact.id} value={contact.id}>
+                        {contact.name}
+                      </option>
+                    ))}
+                  </select>
+                  {/* The moment somebody finds the party is not on file is
+                      while entering the cheque. This goes and comes back with
+                      the new contact already selected. */}
+                  <Link
+                    href={`/contacts/new?next=${encodeURIComponent('/cheques/new')}`}
+                    aria-label={t('contact.newTitle')}
+                    title={t('contact.newTitle')}
+                    className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                  >
+                    <IconPlus width="18" height="18" />
+                  </Link>
+                </div>
               </Field>
 
               <Field label={t('cheque.drawerName')} htmlFor="drawerName">
