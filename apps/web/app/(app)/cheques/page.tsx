@@ -245,7 +245,7 @@ export default function ChequesPage() {
         className="mb-5 rounded-2xl border border-slate-200/90 bg-white p-3 shadow-[0_1px_2px_rgb(16_24_40/0.035)]"
         aria-label={t('cheque.filterTitle')}
       >
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex flex-col gap-3">
           <div
             className="flex max-w-full gap-1 overflow-x-auto rounded-xl bg-slate-100/80 p-1"
             role="group"
@@ -280,20 +280,22 @@ export default function ChequesPage() {
             })}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <FilterSearch
-              value={search}
-              onChange={(value) => {
-                setSearch(value);
-                setPage(1);
-              }}
-              placeholder={t('cheque.filterPlaceholder')}
-            />
+          <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+            <div className="basis-full 2xl:min-w-56 2xl:flex-1 2xl:basis-auto">
+              <FilterSearch
+                value={search}
+                onChange={(value) => {
+                  setSearch(value);
+                  setPage(1);
+                }}
+                placeholder={t('cheque.filterPlaceholder')}
+              />
+            </div>
 
-            <label className="inline-flex h-11 min-w-40 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 hover:border-slate-300">
+            <label className="inline-flex h-11 w-36 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 hover:border-slate-300 xl:w-44">
               <span className="text-xs font-medium text-slate-400">{t('cheque.status')}</span>
               <select
-                className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-slate-700 outline-none"
+                className="min-w-0 flex-1 truncate bg-transparent text-sm font-semibold text-slate-700 outline-none"
                 value={status}
                 onChange={(event) => {
                   setStatus(event.target.value);
@@ -312,10 +314,10 @@ export default function ChequesPage() {
             {/* Which bank the cheque is drawn on. Missing until now, and the
                 filter people reach for most after status: a deposit run is
                 organised one bank at a time. */}
-            <label className="inline-flex h-11 min-w-40 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 hover:border-slate-300">
+            <label className="inline-flex h-11 w-36 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 hover:border-slate-300 xl:w-44">
               <span className="text-xs font-medium text-slate-400">{t('cheque.bank')}</span>
               <select
-                className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-slate-700 outline-none"
+                className="min-w-0 flex-1 truncate bg-transparent text-sm font-semibold text-slate-700 outline-none"
                 value={bankId}
                 onChange={(event) => {
                   setBankId(event.target.value);
