@@ -241,13 +241,16 @@ export default function ChequesPage() {
         }
       />
 
-      <section
-        className="mb-5 rounded-2xl border border-slate-200/90 bg-white p-3 shadow-[0_1px_2px_rgb(16_24_40/0.035)]"
-        aria-label={t('cheque.filterTitle')}
-      >
+      {/* A toolbar, not a panel. This was a bordered card holding thirteen
+          controls — seven tabs and six inputs — which is what made it read as
+          clutter however the rows were arranged. The box is gone, the tabs are
+          plain text with an underline, and the three refiners moved inside the
+          filter popover, so the resting state is a row of tabs and two
+          buttons. */}
+      <section className="mb-4" aria-label={t('cheque.filterTitle')}>
         <div className="flex flex-col gap-3">
           <div
-            className="flex max-w-full gap-1 overflow-x-auto rounded-xl bg-slate-100/80 p-1"
+            className="-mb-px flex max-w-full gap-6 overflow-x-auto border-b border-slate-200"
             role="group"
             aria-label={t('cheque.filterTitle')}
           >
@@ -259,10 +262,10 @@ export default function ChequesPage() {
                   type="button"
                   onClick={() => changeTab(entry.key)}
                   aria-pressed={tab === entry.key}
-                  className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-lg px-3.5 text-sm font-semibold sm:h-9 ${
+                  className={`inline-flex h-11 shrink-0 items-center gap-2 border-b-2 text-sm font-semibold transition-colors ${
                     tab === entry.key
-                      ? 'bg-white text-slate-950 shadow-sm ring-1 ring-slate-200'
-                      : 'text-slate-500 hover:text-slate-900'
+                      ? 'border-teal-700 text-slate-950'
+                      : 'border-transparent text-slate-500 hover:text-slate-900'
                   }`}
                 >
                   {t(entry.labelKey)}
@@ -280,8 +283,8 @@ export default function ChequesPage() {
             })}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
-            <div className="basis-full 2xl:min-w-56 2xl:flex-1 2xl:basis-auto">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="min-w-56 flex-1">
               <FilterSearch
                 value={search}
                 onChange={(value) => {
@@ -292,54 +295,9 @@ export default function ChequesPage() {
               />
             </div>
 
-            <label className="inline-flex h-11 w-36 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 hover:border-slate-300 xl:w-44">
-              <span className="text-xs font-medium text-slate-400">{t('cheque.status')}</span>
-              <select
-                className="min-w-0 flex-1 truncate bg-transparent text-sm font-semibold text-slate-700 outline-none"
-                value={status}
-                onChange={(event) => {
-                  setStatus(event.target.value);
-                  setPage(1);
-                }}
-              >
-                <option value="">{t('common.all')}</option>
-                {Object.values(ChequeStatus).map((value) => (
-                  <option key={value} value={value}>
-                    {t(`status.${value}`)}
-                  </option>
-                ))}
-              </select>
-            </label>
-
             {/* Which bank the cheque is drawn on. Missing until now, and the
                 filter people reach for most after status: a deposit run is
                 organised one bank at a time. */}
-            <label className="inline-flex h-11 w-36 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 hover:border-slate-300 xl:w-44">
-              <span className="text-xs font-medium text-slate-400">{t('cheque.bank')}</span>
-              <select
-                className="min-w-0 flex-1 truncate bg-transparent text-sm font-semibold text-slate-700 outline-none"
-                value={bankId}
-                onChange={(event) => {
-                  setBankId(event.target.value);
-                  setPage(1);
-                }}
-              >
-                <option value="">{t('common.all')}</option>
-                {(banks.data ?? []).map((bank) => (
-                  <option key={bank.id} value={bank.id}>
-                    {bank.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <DateRangePicker
-              value={range}
-              onChange={(next) => {
-                setRange(next);
-                setPage(1);
-              }}
-            />
 
             {/* Only once something is actually filtered: a permanently visible
                 "clear" is a button that does nothing most of the time. */}
@@ -404,8 +362,57 @@ export default function ChequesPage() {
           </div>
         </div>
 
+        {/* Everything that narrows the list, in one place, opened on demand.
+            Status, bank and date used to sit permanently in the toolbar; they
+            are used far less often than search and were most of its bulk. */}
         {filtersOpen ? (
-          <div className="mt-3 flex flex-wrap items-end gap-3 border-t border-slate-100 pt-3">
+          <div className="mt-3 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200/90 bg-white p-3">
+            <label className="inline-flex h-11 w-36 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 hover:border-slate-300 xl:w-44">
+              <span className="text-xs font-medium text-slate-400">{t('cheque.status')}</span>
+              <select
+                className="min-w-0 flex-1 truncate bg-transparent text-sm font-semibold text-slate-700 outline-none"
+                value={status}
+                onChange={(event) => {
+                  setStatus(event.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="">{t('common.all')}</option>
+                {Object.values(ChequeStatus).map((value) => (
+                  <option key={value} value={value}>
+                    {t(`status.${value}`)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="inline-flex h-11 w-36 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 hover:border-slate-300 xl:w-44">
+              <span className="text-xs font-medium text-slate-400">{t('cheque.bank')}</span>
+              <select
+                className="min-w-0 flex-1 truncate bg-transparent text-sm font-semibold text-slate-700 outline-none"
+                value={bankId}
+                onChange={(event) => {
+                  setBankId(event.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="">{t('common.all')}</option>
+                {(banks.data ?? []).map((bank) => (
+                  <option key={bank.id} value={bank.id}>
+                    {bank.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <DateRangePicker
+              value={range}
+              onChange={(next) => {
+                setRange(next);
+                setPage(1);
+              }}
+            />
+
             <label className="flex min-w-44 flex-col gap-1.5">
               <span className="text-xs font-semibold text-slate-500">
                 {t('common.amount')} — {t('cheque.from')}

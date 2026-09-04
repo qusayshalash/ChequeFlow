@@ -6,10 +6,7 @@
     "orientation": "portrait",
     "scheme": "chequeflow",
     "userInterfaceStyle": "light",
-    "platforms": [
-      "ios",
-      "android"
-    ],
+    "platforms": ["ios", "android"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.chequeflow.app",
@@ -23,11 +20,7 @@
       "adaptiveIcon": {
         "backgroundColor": "#0F5C4E"
       },
-      "permissions": [
-        "CAMERA",
-        "USE_BIOMETRIC",
-        "USE_FINGERPRINT"
-      ]
+      "permissions": ["CAMERA", "USE_BIOMETRIC", "USE_FINGERPRINT"]
     },
     "plugins": [
       "expo-router",
