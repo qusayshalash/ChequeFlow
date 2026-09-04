@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
 import { utcToday, type DepositSlipView } from '@cheque-flow/shared-types';
-import { Button, EmptyState, ErrorState, LoadingState, inputClassName } from '@cheque-flow/ui';
+import { Button, EmptyState, ErrorState, LoadingState } from '@cheque-flow/ui';
 
 import { PageHeader } from '@/components/page-header';
 import { Panel } from '@/components/panel';
@@ -56,20 +56,23 @@ export default function DepositSlipPage() {
           }
         />
 
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/90 bg-white p-3 shadow-[0_1px_2px_rgb(16_24_40/0.035)]">
-          <span className="text-sm font-semibold text-slate-700">
-            {t('reports.depositSlipDate')}
-          </span>
-          <label className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 focus-within:border-teal-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-teal-500/10">
-            <input
-              type="date"
-              aria-label={t('reports.depositSlipDate')}
-              className={`${inputClassName} h-8 min-h-0 border-0 bg-transparent px-0 shadow-none focus:ring-0`}
-              value={on}
-              onChange={(event) => setOn(event.target.value || utcToday())}
-            />
-          </label>
-        </div>
+        {/* The label sits with its field. This row used `justify-between`
+            across an 1100px card, which threw "deposit date" to one edge and
+            the date box to the other with a metre of nothing between them —
+            a caption for a control you had to go looking for.
+
+            No card either: it is one control, and the bordered panel it lived
+            in was the chrome the rest of the app has just shed. */}
+        <label className="mb-4 inline-flex h-11 items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 focus-within:border-teal-500 focus-within:ring-4 focus-within:ring-teal-500/10">
+          <span className="text-xs font-medium text-slate-400">{t('reports.depositSlipDate')}</span>
+          <input
+            type="date"
+            aria-label={t('reports.depositSlipDate')}
+            className="bg-transparent text-sm font-semibold text-slate-800 outline-none"
+            value={on}
+            onChange={(event) => setOn(event.target.value || utcToday())}
+          />
+        </label>
       </div>
 
       {slip.isError ? (
