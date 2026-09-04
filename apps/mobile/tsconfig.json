@@ -1,7 +1,10 @@
 {
   "extends": "@cheque-flow/config/tsconfig/react.json",
   "compilerOptions": {
-    "baseUrl": ".",
+    // No `baseUrl`. SDK 57 pins TypeScript 6, which deprecates it, and the
+    // only thing it was doing here was anchoring `paths` — which resolve
+    // relative to this file on their own. Silencing the deprecation with
+    // `ignoreDeprecations` would have deferred the same removal to TS 7.
     "jsx": "react-jsx",
     "moduleResolution": "Bundler",
     "types": ["react"],

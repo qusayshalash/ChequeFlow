@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Redirect, Tabs } from 'expo-router';
-import { Platform } from 'react-native';
+import { Platform, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, MIN_TOUCH_TARGET } from '@cheque-flow/ui/tokens';
@@ -25,8 +25,13 @@ import { LoadingView } from '@/components/ui';
  * picture rather than the destination.
  */
 function tabIcon(Icon: (props: IconProps) => React.ReactElement) {
-  return function TabBarIcon({ color, size }: { color: string; size: number }) {
-    return <Icon size={size} color={color} />;
+  // `ColorValue`, not `string`: SDK 57's tab bar widened this to the type that
+  // also covers a platform colour object. Narrowing it back would be a lie
+  // about what the navigator can hand us, so it is converted at the boundary
+  // instead — the icons take a plain colour, and every value this app puts in
+  // the tab bar is one.
+  return function TabBarIcon({ color, size }: { color: ColorValue; size: number }) {
+    return <Icon size={size} color={String(color)} />;
   };
 }
 
