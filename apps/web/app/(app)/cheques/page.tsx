@@ -21,6 +21,7 @@ import { IconColumns, IconFilter, IconPlus } from '@/components/icons';
 import { FilterSearch } from '@/components/filter-search';
 import { PageHeader } from '@/components/page-header';
 import { Pagination } from '@/components/pagination';
+import { Tabs } from '@/components/tabs';
 import { Panel } from '@/components/panel';
 import { useApi, useTranslator } from '@/components/providers';
 
@@ -34,15 +35,6 @@ const TABS = [
   { key: 'INCOMING', labelKey: 'cheque.tabIncoming', tone: 'slate' },
   { key: 'OUTGOING', labelKey: 'cheque.tabOutgoing', tone: 'slate' },
 ] as const;
-
-/** The count badge's colour per tab, so a filter reads as its own status. */
-const TAB_BADGE: Record<string, string> = {
-  slate: 'bg-slate-100 text-slate-600',
-  violet: 'bg-violet-100 text-violet-700',
-  amber: 'bg-amber-100 text-amber-700',
-  red: 'bg-red-100 text-red-700',
-  emerald: 'bg-emerald-100 text-emerald-700',
-};
 
 type Tab = (typeof TABS)[number]['key'];
 type ChequeSortKey = 'dueDate' | 'amount' | 'createdAt' | 'chequeNumber' | 'status';
@@ -249,39 +241,20 @@ export default function ChequesPage() {
           buttons. */}
       <section className="mb-4" aria-label={t('cheque.filterTitle')}>
         <div className="flex flex-col gap-3">
-          <div
-            className="-mb-px flex max-w-full gap-6 overflow-x-auto border-b border-slate-200"
-            role="group"
-            aria-label={t('cheque.filterTitle')}
-          >
-            {TABS.map((entry) => {
-              const count = tabCounts[entry.key];
-              return (
-                <button
-                  key={entry.key}
-                  type="button"
-                  onClick={() => changeTab(entry.key)}
-                  aria-pressed={tab === entry.key}
-                  className={`inline-flex h-11 shrink-0 items-center gap-2 border-b-2 text-sm font-semibold transition-colors ${
-                    tab === entry.key
-                      ? 'border-teal-700 text-slate-950'
-                      : 'border-transparent text-slate-500 hover:text-slate-900'
-                  }`}
-                >
-                  {t(entry.labelKey)}
-                  {/* The count turns a filter from a guess into a decision:
-                      nobody opens "bounced" to find out whether there are any. */}
-                  {count === undefined ? null : (
-                    <span
-                      className={`rounded-md px-1.5 py-0.5 text-xs tabular-nums ${TAB_BADGE[entry.tone] ?? TAB_BADGE.slate}`}
-                    >
-                      {count}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+          {/* The shared strip, so this list and the contacts list cannot
+              drift apart again. */}
+          <Tabs
+            tabs={TABS.map((entry) => ({
+              key: entry.key,
+              label: t(entry.labelKey),
+              // The count turns a filter from a guess into a decision: nobody
+              // opens "bounced" to find out whether there are any.
+              ...(tabCounts[entry.key] === undefined ? {} : { count: tabCounts[entry.key] }),
+              tone: entry.tone,
+            }))}
+            active={tab}
+            onChange={(key) => changeTab(key as Tab)}
+          />
 
           <div className="flex flex-wrap items-center gap-2">
             <div className="min-w-56 flex-1">

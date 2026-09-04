@@ -215,7 +215,7 @@ export default function DashboardPage() {
         actions={
           currencies.length > 1 ? (
             <div
-              className="inline-flex rounded-xl bg-slate-100/80 p-1"
+              className="inline-flex rounded-xl border border-slate-200 bg-white p-1"
               role="group"
               aria-label={t('cheque.currency')}
             >
@@ -550,9 +550,7 @@ function CurrencyChip({
       onClick={onClick}
       aria-pressed={active}
       className={`h-9 rounded-lg px-4 text-sm font-semibold transition-colors ${
-        active
-          ? 'bg-white text-slate-950 shadow-sm ring-1 ring-slate-200'
-          : 'text-slate-500 hover:text-slate-900'
+        active ? 'bg-teal-50 text-teal-900' : 'text-slate-500 hover:text-slate-900'
       }`}
     >
       {label}

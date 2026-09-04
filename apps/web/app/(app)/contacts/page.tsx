@@ -85,7 +85,7 @@ export default function ContactsPage() {
       {/* Customers and suppliers are read for different reasons — one is money
           coming in, the other money going out — and the counts say how much of
           each there is before the list is even scrolled. */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3">
         <Tabs
           tabs={[
             { key: 'ALL', label: t('common.all'), count: counts.data?.ALL },
@@ -107,14 +107,18 @@ export default function ContactsPage() {
           }}
         />
 
-        <FilterSearch
-          value={search}
-          onChange={(value) => {
-            setSearch(value);
-            setPage(1);
-          }}
-          placeholder={t('contact.searchPlaceholder')}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="min-w-56 flex-1">
+            <FilterSearch
+              value={search}
+              onChange={(value) => {
+                setSearch(value);
+                setPage(1);
+              }}
+              placeholder={t('contact.searchPlaceholder')}
+            />
+          </div>
+        </div>
       </div>
 
       {contacts.isPending ? <LoadingState label={t('common.loading')} /> : null}

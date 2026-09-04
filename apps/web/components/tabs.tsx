@@ -8,7 +8,21 @@ export interface TabDefinition {
   icon?: ReactNode;
   /** Shown as a small count beside the label, when there is one worth showing. */
   count?: number;
+  /**
+   * Colours the count, so a filter reads as its own status — bounced in red,
+   * cleared in green. Left off, the count is neutral.
+   */
+  tone?: keyof typeof TONES;
 }
+
+/** Count colours. Neutral unless the tab stands for a status. */
+const TONES = {
+  slate: 'bg-slate-100 text-slate-600',
+  violet: 'bg-violet-100 text-violet-700',
+  amber: 'bg-amber-100 text-amber-700',
+  red: 'bg-red-100 text-red-700',
+  emerald: 'bg-emerald-100 text-emerald-700',
+} as const;
 
 /**
  * The tab strip on a record's page.
@@ -48,7 +62,10 @@ export function Tabs({
     <div
       role="tablist"
       onKeyDown={onKeyDown}
-      className="flex gap-1 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1.5"
+      // Underlined text on a rule, not pills in a box. A boxed strip of pills
+      // is a second card competing with the content below it; the underline
+      // says "you are here" with one line and no chrome.
+      className="-mb-px flex gap-6 overflow-x-auto border-b border-slate-200"
     >
       {tabs.map((tab) => {
         const selected = tab.key === active;
@@ -60,10 +77,10 @@ export function Tabs({
             aria-selected={selected}
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(tab.key)}
-            className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition-colors ${
+            className={`inline-flex h-11 shrink-0 items-center gap-2 border-b-2 text-sm font-semibold transition-colors ${
               selected
-                ? 'bg-teal-50 text-teal-900 ring-1 ring-teal-200'
-                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                ? 'border-teal-700 text-slate-950'
+                : 'border-transparent text-slate-500 hover:text-slate-900'
             }`}
           >
             {tab.icon ? (
@@ -72,15 +89,17 @@ export function Tabs({
               </span>
             ) : null}
             {tab.label}
-            {tab.count !== undefined && tab.count > 0 ? (
+            {/* Zero still prints. "Bounced 0" is an answer; a count that
+                disappears makes the reader open the tab to find out. */}
+            {tab.count === undefined ? null : (
               <span
                 className={`rounded-md px-1.5 py-0.5 text-xs tabular-nums ${
-                  selected ? 'bg-teal-100 text-teal-800' : 'bg-slate-100 text-slate-500'
+                  TONES[tab.tone ?? 'slate']
                 }`}
               >
                 {tab.count}
               </span>
-            ) : null}
+            )}
           </button>
         );
       })}

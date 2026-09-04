@@ -275,12 +275,14 @@ function UsersManager() {
 
       {/* Directly above the rows it narrows, rather than in the page heading
           where it read as a second global search. */}
-      <div className="flex justify-end">
-        <FilterSearch
-          value={search}
-          onChange={setSearch}
-          placeholder={t('user.searchPlaceholder')}
-        />
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="min-w-56 flex-1">
+          <FilterSearch
+            value={search}
+            onChange={setSearch}
+            placeholder={t('user.searchPlaceholder')}
+          />
+        </div>
       </div>
 
       <Panel title={t('user.title')} bodyClassName="">
