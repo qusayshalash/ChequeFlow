@@ -75,6 +75,8 @@ export const IconClose = make('x');
 export const IconLogout = make('log-out');
 export const IconCheck = make('check-circle');
 export const IconChevronEnd = make('chevron-left');
+/** Points at a menu that opens downwards, so it must not be direction-aware. */
+export const IconChevronDown = make('chevron-down');
 export const IconEdit = make('edit-2');
 export const IconTrash = make('trash-2');
 export const IconSend = make('send');
