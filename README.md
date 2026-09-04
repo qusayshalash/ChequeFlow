@@ -134,6 +134,28 @@ bash scripts/db.sh stop
 
 ---
 
+## تشغيل التطبيق على هاتف حقيقي
+
+```bash
+pnpm --filter @cheque-flow/mobile dev
+```
+
+ثم امسح الرمز من **Expo Go**. لا بدّ أن يكون الهاتف على شبكة الواي-فاي نفسها،
+وأن يحمل `EXPO_PUBLIC_API_URL` في `apps/mobile/.env` عنوان الجهاز على الشبكة
+لا `localhost` — فـ`localhost` من الهاتف يعني الهاتف نفسه.
+
+> **`--offline` مقصود في أمر `dev`.** بدونه يطلب Expo Go تسجيل الدخول بحساب
+> Expo قبل فتح المشروع (`You need to be signed in to Expo Go and Expo CLI`).
+> مع هذا الخيار يُقدَّم المشروع باسم `@anonymous/cheque-flow` فيفتح بلا حساب،
+> وهو الصحيح للتطوير على الشبكة المحلية. أمر `dev:online` متاح لمن يحتاج
+> ميزات الحساب فعلًا.
+
+> **Expo Go على iOS يثبّت أحدث نسخة فقط** ولا تسمح Apple بتثبيت نسخة أقدم، فلا
+> بدّ أن يبقى إصدار SDK في المشروع مطابقًا لما على الهاتف. الترقية تتم بـ
+> `npx expo install --fix` بعد رفع `expo` في `package.json`.
+
+---
+
 ## تخزين صور الشيكات بلا Docker
 
 صور الشيكات تُحفظ في تخزين كائنات متوافق مع S3. إن لم يكن Docker ولا MinIO
