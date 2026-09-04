@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, RefObject } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -293,6 +293,9 @@ export function Field({
   ltr = false,
   autoCapitalize = 'sentences',
   required = false,
+  inputRef,
+  returnKeyType,
+  onSubmitEditing,
 }: {
   label: string;
   value: string;
@@ -305,6 +308,13 @@ export function Field({
   ltr?: boolean;
   autoCapitalize?: 'none' | 'sentences' | 'words';
   required?: boolean;
+  /**
+   * Given by a screen that chains its fields, so the keyboard's "next" key can
+   * hand focus to the one after this. Left out everywhere else.
+   */
+  inputRef?: RefObject<TextInput | null>;
+  returnKeyType?: 'next' | 'done';
+  onSubmitEditing?: () => void;
 }) {
   return (
     <View style={styles.field}>
@@ -327,6 +337,12 @@ export function Field({
         multiline={multiline}
         autoCapitalize={autoCapitalize}
         accessibilityLabel={label}
+        ref={inputRef}
+        returnKeyType={returnKeyType}
+        onSubmitEditing={onSubmitEditing}
+        // Focus has somewhere to go, so the keyboard must stay up; letting it
+        // close between every field is what makes a twenty-row grid unusable.
+        submitBehavior={returnKeyType === 'next' ? 'submit' : undefined}
       />
       {/* The error replaces the hint rather than joining it: two lines of small
           text under a field is where people stop reading either. */}

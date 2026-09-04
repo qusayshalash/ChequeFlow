@@ -1,42 +1,53 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import type { ReactElement } from 'react';
+import { useMemo, type ReactElement } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import type { Bucket, DashboardCurrencyTotals, DashboardSummary } from '@cheque-flow/shared-types';
+import { utcToday, type DashboardSummary } from '@cheque-flow/shared-types';
 import { colors } from '@cheque-flow/ui/tokens';
 
+import { AttentionList, StatCard } from '@/components/dashboard-parts';
 import {
   IconAlert,
+  IconCalendar,
   IconCamera,
-  IconCheck,
+  IconCheque,
   IconChevronEnd,
   IconClock,
   IconEdit,
+  IconReturn,
   IconWallet,
   type IconProps,
 } from '@/components/icons';
+import { BankMark } from '@/components/marks';
 import { useApi, useApp, useTranslator } from '@/components/providers';
-import { Banner, ErrorView, LoadingView } from '@/components/ui';
+import { Banner, ErrorView, LoadingView, StatusPill } from '@/components/ui';
 import { TAP, accent, radius, space, surface, text, type } from '@/theme';
+
+/** How far ahead the upcoming list looks. */
+const UPCOMING_HORIZON_DAYS = 90;
+const UPCOMING_SHOWN = 5;
+
+function addDays(iso: string, days: number): string {
+  return new Date(Date.parse(`${iso}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
+}
 
 /**
  * The home screen.
  *
- * It used to be a grid of twelve identical tiles — one per bucket, per
- * currency. Nine of them normally read zero, the two figures that matter had no
- * more weight than the nine that did not, and the whole thing needed two
- * scrolls before a single decision could be made.
+ * Rebuilt to the same shape as the web dashboard, so the two halves of the
+ * product answer the question in the same order and a person moving between
+ * them is not relearning the screen:
  *
- * This is built the other way round, from the question the person opening it
- * actually has: *is there anything I have to do today?*
+ *   1. Four headline figures, largest scope first — everything, then what is
+ *      coming, then what is late, then what is not yet confirmed.
+ *   2. The worklist: what has to be looked at, with the count that decides
+ *      whether it is worth opening.
+ *   3. What is coming, as actual cheques rather than a number.
  *
- *   1. One number — what is owed and still uncollected.
- *   2. What needs action, and only when it does. A bucket at zero is not a
- *      status worth a card; it is the absence of work, and it is left out.
- *   3. The three things staff do all day.
- *   4. What just happened.
+ * The web's chart is deliberately not here. Thirty daily points on a phone is
+ * a smudge, and the figures it summarises are already the four cards above it.
  *
  * Every row is a link into the filtered list, so the dashboard is a way in
  * rather than a wall of read-only numbers.
@@ -44,26 +55,76 @@ import { TAP, accent, radius, space, surface, text, type } from '@/theme';
 export default function DashboardScreen() {
   const api = useApi();
   const t = useTranslator();
-  const { money, dateTime, online, checkConnection } = useApp();
+  const { money, date, dueDistance, online, checkConnection } = useApp();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+
+  const today = utcToday();
 
   const query = useQuery<DashboardSummary>({
     queryKey: ['dashboard'],
     queryFn: () => api.getDashboard(),
   });
 
+  // Not tied to any chart window: "what is coming" is its own question, and on
+  // a book whose next cheque is three weeks out a short horizon shows nothing.
+  const due = useQuery({
+    queryKey: ['dashboard-due'],
+    queryFn: () =>
+      api.getDueReport({
+        from: today,
+        to: addDays(today, UPCOMING_HORIZON_DAYS),
+        includeOverdue: false,
+      }),
+  });
+
   const open = (params: string) => router.push(`/(app)/cheques?${params}`);
+
+  /**
+   * The figures behind the cards and the worklist.
+   *
+   * Counts are added across currencies — a cheque is a cheque — while the
+   * money is listed per currency rather than summed into a figure that means
+   * nothing. Adding shekels to dollars has no honest answer.
+   */
+  const totals = useMemo(() => {
+    const blocks = query.data?.currencies ?? [];
+
+    const bucket = (key: 'draft' | 'dueWithin7Days' | 'overdue' | 'bounced') => ({
+      count: blocks.reduce((sum, entry) => sum + entry[key].count, 0),
+      money: blocks
+        .filter((entry) => entry[key].count > 0)
+        .map((entry) => money(entry[key].total, entry.currency))
+        .join(' · '),
+    });
+
+    return {
+      draft: bucket('draft'),
+      dueSoon: bucket('dueWithin7Days'),
+      overdue: bucket('overdue'),
+      bounced: bucket('bounced'),
+    };
+  }, [query.data, money]);
+
+  const upcomingAll = due.data?.cheques ?? [];
+  const upcoming = upcomingAll.slice(0, UPCOMING_SHOWN);
 
   return (
     <ScrollView
       style={styles.page}
       contentContainerStyle={[styles.container, { paddingTop: insets.top + space['4'] }]}
       refreshControl={
-        <RefreshControl refreshing={query.isRefetching} onRefresh={() => void query.refetch()} />
+        <RefreshControl
+          refreshing={query.isRefetching}
+          onRefresh={() => {
+            void query.refetch();
+            void due.refetch();
+          }}
+        />
       }
     >
       <Text style={styles.pageTitle}>{t('dashboard.title')}</Text>
+      <Text style={styles.pageSubtitle}>{t('dashboard.subtitle')}</Text>
 
       {!online ? (
         <Banner
@@ -88,33 +149,101 @@ export default function DashboardScreen() {
 
       {query.data ? (
         <>
-          {/* One figure, given the room a headline deserves. Everything else on
-              the screen is a route to acting on it. */}
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => open('tab=ALL')}
-            style={({ pressed }) => [styles.hero, pressed && styles.heroDown]}
-          >
-            <Text style={styles.heroLabel}>{t('dashboard.baseTotal')}</Text>
-            <Text style={styles.heroValue} numberOfLines={1} adjustsFontSizeToFit>
-              {money(query.data.baseTotal.total, query.data.baseTotal.currency)}
-            </Text>
-            <Text style={styles.heroHint}>
-              {query.data.baseTotal.count} · {t('dashboard.baseTotalHint')}
-            </Text>
-            {query.data.baseTotal.unconvertedCount > 0 ? (
-              <View style={styles.heroWarn}>
-                <IconAlert size={14} color={colors.warning} />
-                <Text style={styles.heroWarnText}>
-                  {t('dashboard.unconverted', {
-                    count: String(query.data.baseTotal.unconvertedCount),
-                  })}
-                </Text>
-              </View>
-            ) : null}
-          </Pressable>
+          <View style={styles.statGrid}>
+            <StatCard
+              label={t('dashboard.totalCheques')}
+              value={String(query.data.baseTotal.count)}
+              amountLabel={t('dashboard.totalAmount')}
+              amount={money(query.data.baseTotal.total, query.data.baseTotal.currency)}
+              tone="teal"
+              Icon={IconCheque}
+              onPress={() => open('tab=ALL')}
+            />
+            <StatCard
+              label={t('dashboard.dueWithin7Days')}
+              value={String(totals.dueSoon.count)}
+              amountLabel={t('dashboard.totalAmount')}
+              amount={totals.dueSoon.money}
+              tone="green"
+              Icon={IconCalendar}
+              onPress={() => open('tab=DUE')}
+            />
+            <StatCard
+              label={t('dashboard.overdue')}
+              value={String(totals.overdue.count)}
+              amountLabel={t('dashboard.totalAmount')}
+              amount={totals.overdue.money}
+              tone="red"
+              Icon={IconAlert}
+              onPress={() => open('tab=OVERDUE')}
+            />
+            <StatCard
+              label={t('dashboard.pendingConfirm')}
+              value={String(totals.draft.count)}
+              amountLabel={t('dashboard.totalAmount')}
+              amount={totals.draft.money}
+              tone="amber"
+              Icon={IconClock}
+              onPress={() => open('tab=ALL')}
+            />
+          </View>
 
-          <NeedsAction data={query.data} t={t} money={money} onOpen={open} />
+          {/* Beside the base figure rather than in a banner of its own: it is a
+              caveat on that one number, not on the screen. */}
+          {query.data.baseTotal.unconvertedCount > 0 ? (
+            <View style={styles.warn}>
+              <IconAlert size={14} color={colors.warning} />
+              <Text style={styles.warnText}>
+                {t('dashboard.unconverted', {
+                  count: String(query.data.baseTotal.unconvertedCount),
+                })}
+              </Text>
+            </View>
+          ) : null}
+
+          <AttentionList
+            title={t('dashboard.needsYourAttention')}
+            footerLabel={t('dashboard.viewAllAlerts')}
+            onFooterPress={() => router.push('/(app)/more/notifications')}
+            items={[
+              {
+                key: 'overdue',
+                label: t('dashboard.overdueCheques'),
+                count: totals.overdue.count,
+                amount: totals.overdue.money,
+                tone: 'red',
+                Icon: IconAlert,
+                onPress: () => open('tab=OVERDUE'),
+              },
+              {
+                key: 'due-soon',
+                label: t('dashboard.chequesWithin7'),
+                count: totals.dueSoon.count,
+                amount: totals.dueSoon.money,
+                tone: 'amber',
+                Icon: IconCalendar,
+                onPress: () => open('tab=DUE'),
+              },
+              {
+                key: 'bounced',
+                label: t('dashboard.bouncedCheques'),
+                count: totals.bounced.count,
+                amount: totals.bounced.money,
+                tone: 'teal',
+                Icon: IconReturn,
+                onPress: () => open('tab=BOUNCED'),
+              },
+              {
+                key: 'pending',
+                label: t('dashboard.pendingConfirm'),
+                count: totals.draft.count,
+                amount: totals.draft.money,
+                tone: 'neutral',
+                Icon: IconClock,
+                onPress: () => open('tab=ALL'),
+              },
+            ]}
+          />
 
           <View style={styles.quickRow}>
             <QuickAction
@@ -134,33 +263,69 @@ export default function DashboardScreen() {
             />
           </View>
 
-          <Text style={styles.sectionTitle}>{t('dashboard.recentActivity')}</Text>
-          <View style={styles.card}>
-            {query.data.recentEvents.length === 0 ? (
-              <Text style={styles.emptyLine}>{t('dashboard.emptyActivity')}</Text>
-            ) : (
-              query.data.recentEvents.slice(0, 6).map((event, index) => (
-                <Pressable
-                  key={event.id}
-                  accessibilityRole="button"
-                  onPress={() => router.push(`/(app)/cheques/${event.chequeId}/timeline`)}
-                  style={({ pressed }) => [
-                    styles.activityRow,
-                    index > 0 && styles.divided,
-                    pressed && styles.rowDown,
-                  ]}
-                >
-                  <View style={styles.activityMain}>
-                    <Text style={styles.activityBody} numberOfLines={1}>
-                      {t(`event.${event.eventType}`)}
-                      {event.toStatus ? ` — ${t(`status.${event.toStatus}`)}` : ''}
+          <View style={styles.panel}>
+            <View style={styles.panelHead}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => open('tab=DUE')}
+                style={({ pressed }) => [styles.viewAll, pressed && styles.pressed]}
+              >
+                <IconChevronEnd size={15} color={text.secondary} />
+                <Text style={styles.viewAllText}>{t('dashboard.viewAllCheques')}</Text>
+              </Pressable>
+              <Text style={styles.panelTitle}>{t('dashboard.upcomingTitle')}</Text>
+            </View>
+
+            {due.isPending ? <LoadingView label={t('common.loading')} /> : null}
+
+            {!due.isPending && upcoming.length === 0 ? (
+              <Text style={styles.emptyLine}>{t('cheque.emptyList')}</Text>
+            ) : null}
+
+            {upcoming.map((cheque, index) => (
+              <Pressable
+                key={cheque.id}
+                accessibilityRole="button"
+                accessibilityLabel={`${cheque.chequeNumber} ${money(cheque.amount, cheque.currency)}`}
+                onPress={() => router.push(`/(app)/cheques/${cheque.id}`)}
+                style={({ pressed }) => [
+                  styles.upcomingRow,
+                  index > 0 && styles.divided,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <BankMark name={cheque.bankName} size={34} />
+
+                <View style={styles.upcomingBody}>
+                  <View style={styles.upcomingTop}>
+                    <Text style={styles.upcomingAmount} numberOfLines={1}>
+                      {money(cheque.amount, cheque.currency)}
                     </Text>
-                    <Text style={styles.activityMeta}>{dateTime(event.eventDate)}</Text>
+                    <Text style={styles.upcomingNumber}>{cheque.chequeNumber}</Text>
                   </View>
-                  <Text style={styles.activityNumber}>{event.chequeNumber}</Text>
-                </Pressable>
-              ))
-            )}
+                  <View style={styles.upcomingBottom}>
+                    <StatusPill status={cheque.status} label={t(`status.${cheque.status}`)} />
+                    <View style={styles.upcomingDue}>
+                      <Text style={styles.upcomingDate}>{date(cheque.dueDate)}</Text>
+                      <Text style={styles.upcomingDistance}>
+                        {dueDistance(cheque.dueDate, today)}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              </Pressable>
+            ))}
+
+            {/* Says what is not shown. Without it a person cannot tell five
+                upcoming cheques from fifty. */}
+            {upcomingAll.length > 0 ? (
+              <Text style={styles.showingLine}>
+                {t('dashboard.showingOfUpcoming', {
+                  shown: String(upcoming.length),
+                  total: String(upcomingAll.length),
+                })}
+              </Text>
+            ) : null}
           </View>
         </>
       ) : null}
@@ -168,128 +333,7 @@ export default function DashboardScreen() {
   );
 }
 
-/** One thing that needs doing, as a row rather than a tile. */
-interface ActionItem {
-  key: string;
-  label: string;
-  bucket: Bucket;
-  currency: string;
-  filter: string;
-  tone: 'danger' | 'warning' | 'neutral';
-}
-
-/**
- * The work waiting, and nothing else.
- *
- * Buckets at zero are dropped before rendering: a card reading "0 مرتجعة" is
- * not reassurance, it is a line to read past on the way to the one that is not
- * zero. When every bucket is empty the screen says so in one sentence.
- */
-function NeedsAction({
-  data,
-  t,
-  money,
-  onOpen,
-}: {
-  data: DashboardSummary;
-  t: (key: string, vars?: Record<string, string>) => string;
-  money: (amount: string, currency: string) => string;
-  onOpen: (params: string) => void;
-}) {
-  const items: ActionItem[] = [];
-
-  const add = (
-    currency: DashboardCurrencyTotals,
-    key: string,
-    label: string,
-    bucket: Bucket,
-    filter: string,
-    tone: ActionItem['tone'],
-  ) => {
-    if (bucket.count > 0) {
-      items.push({
-        key: `${currency.currency}-${key}`,
-        label,
-        bucket,
-        currency: currency.currency,
-        filter,
-        tone,
-      });
-    }
-  };
-
-  for (const currency of data.currencies) {
-    add(currency, 'overdue', t('dashboard.overdue'), currency.overdue, 'tab=OVERDUE', 'danger');
-    add(currency, 'bounced', t('cheque.tabBounced'), currency.bounced, 'tab=BOUNCED', 'danger');
-    add(currency, 'today', t('dashboard.dueToday'), currency.dueToday, 'tab=DUE', 'warning');
-    add(
-      currency,
-      'week',
-      t('dashboard.dueWithin7Days'),
-      currency.dueWithin7Days,
-      'tab=DUE',
-      'warning',
-    );
-    add(currency, 'draft', t('dashboard.draft'), currency.draft, 'tab=ALL', 'neutral');
-  }
-
-  if (items.length === 0) {
-    return (
-      <View style={styles.allClear}>
-        <IconCheck size={20} color={accent.base} />
-        <Text style={styles.allClearText}>{t('dashboard.allClear')}</Text>
-      </View>
-    );
-  }
-
-  return (
-    <>
-      <Text style={styles.sectionTitle}>{t('dashboard.needsAction')}</Text>
-      <View style={styles.card}>
-        {items.map((item, index) => (
-          <Pressable
-            key={item.key}
-            accessibilityRole="button"
-            accessibilityLabel={`${item.label}: ${String(item.bucket.count)}`}
-            onPress={() => onOpen(item.filter)}
-            style={({ pressed }) => [
-              styles.actionRow,
-              index > 0 && styles.divided,
-              pressed && styles.rowDown,
-            ]}
-          >
-            {/* A count is not a status. The icon and the word carry the meaning
-                so the colour is never doing it alone. */}
-            {item.tone === 'danger' ? (
-              <IconAlert size={18} color={colors.danger} />
-            ) : item.tone === 'warning' ? (
-              <IconClock size={18} color={colors.warning} />
-            ) : (
-              <IconEdit size={18} color={text.secondary} />
-            )}
-
-            <View style={styles.actionMain}>
-              <Text style={styles.actionLabel}>{item.label}</Text>
-              <Text style={styles.actionMoney}>{money(item.bucket.total, item.currency)}</Text>
-            </View>
-
-            <Text
-              style={[
-                styles.actionCount,
-                item.tone === 'danger' && styles.countDanger,
-                item.tone === 'warning' && styles.countWarning,
-              ]}
-            >
-              {item.bucket.count}
-            </Text>
-            <IconChevronEnd size={18} color={text.faint} />
-          </Pressable>
-        ))}
-      </View>
-    </>
-  );
-}
-
+/** One of the three things staff do all day. */
 function QuickAction({
   label,
   Icon,
@@ -304,7 +348,7 @@ function QuickAction({
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
-      style={({ pressed }) => [styles.quick, pressed && styles.quickDown]}
+      style={({ pressed }) => [styles.quick, pressed && styles.pressed]}
     >
       <Icon size={20} color={accent.base} />
       <Text style={styles.quickLabel} numberOfLines={2}>
@@ -316,100 +360,99 @@ function QuickAction({
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: surface.page },
-  container: { padding: space['4'], paddingBottom: space['12'], gap: space['4'] },
-  pageTitle: { ...type.display, color: text.primary, textAlign: 'right' },
+  container: { padding: space['4'], paddingBottom: space['10'], gap: space['3'] },
+  pressed: { backgroundColor: surface.sunken },
 
-  hero: {
-    backgroundColor: accent.dark,
-    borderRadius: radius.lg,
-    padding: space['5'],
-    gap: space['1'],
+  pageTitle: { ...type.title, color: text.primary, textAlign: 'right' },
+  pageSubtitle: {
+    ...type.callout,
+    color: text.secondary,
+    textAlign: 'right',
+    marginTop: -space['2'],
+    marginBottom: space['1'],
   },
-  heroDown: { backgroundColor: accent.base },
-  heroLabel: { ...type.label, color: 'rgba(255,255,255,0.75)', textAlign: 'right' },
-  heroValue: { ...type.display, fontSize: 34, color: text.onBrand, textAlign: 'right' },
-  heroHint: { ...type.caption, color: 'rgba(255,255,255,0.65)', textAlign: 'right' },
-  heroWarn: {
+
+  statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space['2'] },
+
+  warn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space['2'],
-    marginTop: space['2'],
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: radius.sm,
-    paddingHorizontal: space['3'],
-    paddingVertical: space['2'],
+    backgroundColor: '#FBEEDA',
+    borderRadius: radius.md,
+    padding: space['3'],
   },
-  heroWarnText: { ...type.caption, color: '#FFE7C2', flex: 1, textAlign: 'right' },
+  warnText: { ...type.caption, color: '#7A4A06', flex: 1, textAlign: 'right' },
 
-  sectionTitle: { ...type.label, color: text.secondary, textAlign: 'right' },
-  card: {
-    backgroundColor: surface.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: surface.line,
-    overflow: 'hidden',
-  },
-  divided: { borderTopWidth: 1, borderTopColor: surface.line },
-  rowDown: { backgroundColor: surface.sunken },
-
-  actionRow: {
-    minHeight: 64,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['3'],
-    paddingHorizontal: space['4'],
-    paddingVertical: space['3'],
-  },
-  actionMain: { flex: 1, gap: 1 },
-  actionLabel: { ...type.bodyStrong, color: text.primary, textAlign: 'right' },
-  actionMoney: { ...type.caption, color: text.secondary, textAlign: 'right' },
-  actionCount: { ...type.title, color: text.primary, minWidth: 28, textAlign: 'center' },
-  countDanger: { color: colors.danger },
-  countWarning: { color: colors.warning },
-
-  allClear: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['3'],
-    backgroundColor: accent.wash,
-    borderRadius: radius.lg,
-    padding: space['4'],
-  },
-  allClearText: { ...type.bodyStrong, color: accent.dark, flex: 1, textAlign: 'right' },
-
-  quickRow: { flexDirection: 'row', gap: space['3'] },
+  quickRow: { flexDirection: 'row', gap: space['2'] },
   quick: {
     flex: 1,
-    minHeight: TAP + 28,
+    minHeight: 76,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: space['2'],
+    gap: space['1'],
     backgroundColor: surface.card,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: surface.line,
-    paddingVertical: space['3'],
-    paddingHorizontal: space['2'],
+    padding: space['2'],
   },
-  quickDown: { backgroundColor: accent.wash, borderColor: accent.base },
   quickLabel: { ...type.caption, color: text.primary, textAlign: 'center' },
 
-  activityRow: {
-    minHeight: 60,
+  panel: {
+    backgroundColor: surface.card,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: surface.line,
+    padding: space['3'],
+  },
+  panelHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: space['2'],
+  },
+  panelTitle: { ...type.heading, color: text.primary },
+  viewAll: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space['1'],
+    minHeight: 34,
+    paddingHorizontal: space['2'],
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: surface.line,
+  },
+  viewAllText: { ...type.caption, color: text.secondary },
+
+  upcomingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space['3'],
-    paddingHorizontal: space['4'],
-    paddingVertical: space['3'],
+    minHeight: TAP + 16,
+    paddingVertical: space['2'],
   },
-  activityMain: { flex: 1, gap: 1 },
-  activityBody: { ...type.callout, color: text.primary, textAlign: 'right' },
-  activityMeta: { ...type.caption, color: text.faint, textAlign: 'right' },
-  activityNumber: {
-    ...type.label,
-    color: accent.base,
-    writingDirection: 'ltr',
-    fontVariant: ['tabular-nums'],
+  divided: { borderTopWidth: 1, borderTopColor: surface.line },
+  upcomingBody: { flex: 1, gap: 3 },
+  upcomingTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  upcomingAmount: { ...type.bodyStrong, color: text.primary },
+  upcomingNumber: { ...type.caption, color: text.faint, writingDirection: 'ltr' },
+  upcomingBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  upcomingDue: { alignItems: 'flex-start' },
+  upcomingDate: { ...type.caption, color: text.secondary },
+  upcomingDistance: { ...type.caption, fontSize: 11, color: text.faint },
+
+  emptyLine: {
+    ...type.callout,
+    color: text.faint,
+    textAlign: 'center',
+    paddingVertical: space['4'],
   },
-  emptyLine: { ...type.callout, color: text.secondary, padding: space['4'], textAlign: 'center' },
+  showingLine: {
+    ...type.caption,
+    fontSize: 11,
+    color: text.faint,
+    textAlign: 'center',
+    marginTop: space['2'],
+  },
 });

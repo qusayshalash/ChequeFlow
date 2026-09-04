@@ -7,6 +7,7 @@ import { ChequeAction, utcToday, type ChequeDetailView } from '@cheque-flow/shar
 import { colors } from '@cheque-flow/ui/tokens';
 
 import { IconAlert, IconCalendar } from '@/components/icons';
+import { ChequeJourney } from '@/components/journey';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import {
   Banner,
@@ -124,35 +125,24 @@ export default function ChequeDetailScreen() {
 
       <ChequeImages chequeId={cheque.id} images={cheque.images} />
 
-      <Section title={t('cheque.identity')}>
-        <InfoRow label={t('cheque.direction')} value={t(`direction.${cheque.direction}`)} />
+      {/* The journey first, because it is the question the record is opened
+          for: where did this cheque come from, where is it, where did it go.
+          It used to be three rows buried among fifteen. */}
+      <ChequeJourney cheque={cheque} />
+
+      {/* Six groups in the web's order, each short enough to read at a glance
+          rather than the long stacked lists this screen used to carry —
+          "which bank" and "where is it kept" are different questions and were
+          eleven rows apart. */}
+      <Section title={t('cheque.infoGroup')}>
         <InfoRow label={t('cheque.number')} value={cheque.chequeNumber} ltr />
         <InfoRow label={t('common.amount')} value={money(cheque.amount, cheque.currency)} />
         <InfoRow label={t('cheque.currency')} value={cheque.currency} ltr />
+        <InfoRow label={t('cheque.direction')} value={t(`direction.${cheque.direction}`)} />
+        <InfoRow label={t('cheque.referenceNumber')} value={cheque.referenceNumber ?? '—'} />
         {cheque.amountInWords ? (
           <InfoRow label={t('cheque.amountInWords')} value={cheque.amountInWords} />
         ) : null}
-        <InfoRow label={t('cheque.referenceNumber')} value={cheque.referenceNumber ?? '—'} />
-      </Section>
-
-      <Section title={t('cheque.dates')}>
-        <InfoRow
-          label={t('cheque.issueDate')}
-          value={cheque.issueDate ? date(cheque.issueDate) : '—'}
-        />
-        <InfoRow label={t('cheque.dueDate')} value={date(cheque.dueDate)} />
-        <InfoRow
-          label={t('cheque.receivedDate')}
-          value={cheque.receivedDate ? date(cheque.receivedDate) : '—'}
-        />
-      </Section>
-
-      <Section title={t('cheque.bank')}>
-        <InfoRow label={t('cheque.bank')} value={cheque.bankName ?? '—'} />
-        <InfoRow label={t('cheque.bankBranch')} value={cheque.bankBranchRaw ?? '—'} />
-        {/* Only ever the masked form: the full account number never leaves the
-            server, so it cannot leak from a phone that is lost or shared. */}
-        <InfoRow label={t('cheque.accountNumber')} value={cheque.accountNumberMasked ?? '—'} ltr />
       </Section>
 
       <Section title={t('cheque.parties')}>
@@ -162,14 +152,36 @@ export default function ChequeDetailScreen() {
         <InfoRow label={t('cheque.currentRecipient')} value={cheque.currentRecipientName ?? '—'} />
       </Section>
 
-      <Section title={t('cheque.custody')}>
-        <InfoRow label={t('cheque.currentLocation')} value={cheque.currentLocationName ?? '—'} />
-        <InfoRow label={t('cheque.branch')} value={cheque.branchName ?? '—'} />
+      <Section title={t('cheque.bankGroup')}>
+        <InfoRow label={t('cheque.bank')} value={cheque.bankName ?? '—'} />
+        <InfoRow label={t('cheque.bankBranch')} value={cheque.bankBranchRaw ?? '—'} />
+        {/* Only ever the masked form: the full account number never leaves the
+            server, so it cannot leak from a phone that is lost or shared. */}
+        <InfoRow label={t('cheque.accountNumber')} value={cheque.accountNumberMasked ?? '—'} ltr />
+      </Section>
+
+      <Section title={t('cheque.dates')}>
+        <InfoRow label={t('cheque.dueDate')} value={date(cheque.dueDate)} />
+        <InfoRow
+          label={t('cheque.issueDate')}
+          value={cheque.issueDate ? date(cheque.issueDate) : '—'}
+        />
+        <InfoRow
+          label={t('cheque.receivedDate')}
+          value={cheque.receivedDate ? date(cheque.receivedDate) : '—'}
+        />
         <InfoRow label={t('common.createdAt')} value={dateTime(cheque.createdAt)} />
         <InfoRow label={t('common.updatedAt')} value={dateTime(cheque.updatedAt)} />
-        {cheque.reviewedAt ? (
-          <InfoRow label={t('cheque.reviewedBy')} value={dateTime(cheque.reviewedAt)} />
-        ) : null}
+        <InfoRow
+          label={t('cheque.reviewedBy')}
+          value={cheque.reviewedAt ? dateTime(cheque.reviewedAt) : t('cheque.notYet')}
+        />
+      </Section>
+
+      <Section title={t('cheque.locationGroup')}>
+        <InfoRow label={t('cheque.currentLocation')} value={cheque.currentLocationName ?? '—'} />
+        <InfoRow label={t('cheque.branch')} value={cheque.branchName ?? '—'} />
+        <InfoRow label={t('cheque.status')} value={t(`status.${cheque.status}`)} />
       </Section>
 
       {cheque.notes || cheque.purpose ? (

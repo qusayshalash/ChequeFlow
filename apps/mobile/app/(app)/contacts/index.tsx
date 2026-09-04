@@ -3,23 +3,51 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { ContactType, type ContactView } from '@cheque-flow/shared-types';
+import { ContactType, type ContactListItemView } from '@cheque-flow/shared-types';
 import { colors } from '@cheque-flow/ui/tokens';
 
 import { IconChevronEnd, IconPhone } from '@/components/icons';
-import { useApi, useTranslator } from '@/components/providers';
+import { ContactAvatar } from '@/components/marks';
+import { useApi, useApp, useTranslator } from '@/components/providers';
 import { Button, EmptyView, ErrorView, LoadingView, SegmentedTabs } from '@/components/ui';
-import { TAP, accent, radius, space, surface, text, type } from '@/theme';
+import { TAP, radius, space, surface, text, type } from '@/theme';
 
 const TYPE_TABS = ['ALL', ContactType.CUSTOMER, ContactType.SUPPLIER, ContactType.PERSON] as const;
 
 export default function ContactsScreen() {
   const api = useApi();
   const t = useTranslator();
+  const { money } = useApp();
   const router = useRouter();
 
   const [search, setSearch] = useState('');
   const [type, setType] = useState<string>('ALL');
+
+  /**
+   * One count per tab, fetched as the smallest page the API will return: the
+   * number wanted is `meta.total`, and pulling a page of contacts to read a
+   * total off it would move real rows over the wire for nothing. The search
+   * box is part of the key, so the counts describe what the tabs would
+   * actually show rather than the whole address book.
+   */
+  const counts = useQuery({
+    queryKey: ['contacts', 'counts', { search }],
+    queryFn: async () => {
+      const q = search ? { search } : {};
+      const [all, customers, suppliers, people] = await Promise.all([
+        api.listContacts({ ...q, pageSize: 1 }),
+        api.listContacts({ ...q, pageSize: 1, type: ContactType.CUSTOMER }),
+        api.listContacts({ ...q, pageSize: 1, type: ContactType.SUPPLIER }),
+        api.listContacts({ ...q, pageSize: 1, type: ContactType.PERSON }),
+      ]);
+      return {
+        ALL: all.meta.total,
+        [ContactType.CUSTOMER]: customers.meta.total,
+        [ContactType.SUPPLIER]: suppliers.meta.total,
+        [ContactType.PERSON]: people.meta.total,
+      };
+    },
+  });
 
   const query = useQuery({
     queryKey: ['contacts', { search, type }],
@@ -34,10 +62,13 @@ export default function ContactsScreen() {
   return (
     <View style={styles.container}>
       <SegmentedTabs
-        options={TYPE_TABS.map((value) => ({
-          value,
-          label: value === 'ALL' ? t('cheque.tabAll') : t(`contactType.${value}`),
-        }))}
+        options={TYPE_TABS.map((value) => {
+          const label = value === 'ALL' ? t('cheque.tabAll') : t(`contactType.${value}`);
+          const count = counts.data?.[value];
+          // The count only prints once it is known. A tab that reads "عملاء 0"
+          // while the request is still out is a wrong answer, not a pending one.
+          return { value, label: count === undefined ? label : `${label} ${count}` };
+        })}
         value={type}
         onChange={setType}
       />
@@ -61,7 +92,7 @@ export default function ContactsScreen() {
       ) : null}
 
       {query.data ? (
-        <FlatList<ContactView>
+        <FlatList<ContactListItemView>
           data={query.data.data}
           keyExtractor={(item) => item.id}
           refreshing={query.isRefetching}
@@ -82,10 +113,10 @@ export default function ContactsScreen() {
               onPress={() => router.push(`/(app)/contacts/${item.id}`)}
             >
               {/* An initial rather than a generic person icon: in a list of
-                  twenty customers the letter is what tells them apart. */}
-              <View style={[styles.avatar, !item.isActive && styles.avatarOff]}>
-                <Text style={styles.initial}>{item.name.trim().charAt(0) || '؟'}</Text>
-              </View>
+                  twenty customers the letter is what tells them apart. The
+                  colour is hashed from the name, so a contact keeps the same
+                  one here and everywhere else. */}
+              <ContactAvatar name={item.name} muted={!item.isActive} />
 
               <View style={styles.rowBody}>
                 <Text style={styles.name} numberOfLines={1}>
@@ -102,6 +133,33 @@ export default function ContactsScreen() {
                     {item.phone ?? t('contact.noPhone')}
                   </Text>
                 </View>
+              </View>
+
+              {/* What the list is actually scanned for. One line per currency:
+                  a single figure would mean adding dollars to shekels, and
+                  there is no honest rate at which to do that. */}
+              <View style={styles.money}>
+                {item.balances.length === 0 ? (
+                  <Text style={styles.settled}>{t('contact.settled')}</Text>
+                ) : (
+                  item.balances.map((balance) => {
+                    const owed = !balance.net.startsWith('-');
+                    return (
+                      <Text
+                        key={balance.currency}
+                        style={[styles.balance, owed ? styles.balanceOwed : styles.balanceWeOwe]}
+                        numberOfLines={1}
+                      >
+                        {money(balance.net, balance.currency)}
+                      </Text>
+                    );
+                  })
+                )}
+                {item.chequeCount > 0 ? (
+                  <Text style={styles.chequeCount}>
+                    {item.chequeCount} · {t('contact.chequeCount')}
+                  </Text>
+                ) : null}
               </View>
 
               {!item.isActive ? (
@@ -155,22 +213,18 @@ const styles = StyleSheet.create({
     minHeight: 76,
   },
   rowDown: { backgroundColor: surface.sunken },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.pill,
-    backgroundColor: accent.wash,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarOff: { backgroundColor: surface.sunken },
-  initial: { ...type.heading, color: accent.dark },
-
   rowBody: { flex: 1, gap: 1 },
   name: { ...type.bodyStrong, color: text.primary, textAlign: 'right' },
   meta: { ...type.caption, color: text.secondary, textAlign: 'right' },
   phoneRow: { flexDirection: 'row', alignItems: 'center', gap: space['1'], marginTop: 1 },
   phone: { ...type.caption, color: text.faint, writingDirection: 'ltr' },
   phoneMissing: { color: colors.warning },
+  money: { alignItems: 'flex-start', gap: 1, maxWidth: 130 },
+  balance: { ...type.label, writingDirection: 'ltr' },
+  balanceOwed: { color: '#12805C' },
+  balanceWeOwe: { color: colors.danger },
+  settled: { ...type.caption, color: text.faint },
+  chequeCount: { ...type.caption, fontSize: 11, color: text.faint },
+
   inactiveTag: { ...type.caption, color: colors.danger },
 });

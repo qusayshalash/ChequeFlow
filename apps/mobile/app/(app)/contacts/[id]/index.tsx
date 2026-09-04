@@ -8,6 +8,7 @@ import type { ContactStatementView } from '@cheque-flow/shared-types';
 import { colors } from '@cheque-flow/ui/tokens';
 
 import { IconMessage, IconPhone } from '@/components/icons';
+import { ContactAvatar } from '@/components/marks';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import {
   Badge,
@@ -109,11 +110,17 @@ export default function ContactStatementScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      {/* The same mark the list draws, so arriving here confirms you opened
+          the contact you meant to. A colour that changed between the two
+          screens would make it useless in both. */}
       <View style={styles.header}>
-        <Heading>{contact.name}</Heading>
-        <Text style={styles.meta}>{t(`contactType.${contact.type}`)}</Text>
-        {contact.companyName ? <Text style={styles.meta}>{contact.companyName}</Text> : null}
-        {!contact.isActive ? <Badge label={t('userStatus.DISABLED')} /> : null}
+        <ContactAvatar name={contact.name} size={56} muted={!contact.isActive} />
+        <View style={styles.headerText}>
+          <Heading>{contact.name}</Heading>
+          <Text style={styles.meta}>{t(`contactType.${contact.type}`)}</Text>
+          {contact.companyName ? <Text style={styles.meta}>{contact.companyName}</Text> : null}
+          {!contact.isActive ? <Badge label={t('userStatus.DISABLED')} /> : null}
+        </View>
       </View>
 
       {notice ? <Banner tone="info" text={notice} /> : null}
@@ -261,13 +268,16 @@ const styles = StyleSheet.create({
     paddingBottom: space['16'],
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: surface.card,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: surface.line,
     padding: space['4'],
-    gap: 4,
+    gap: space['3'],
   },
+  headerText: { flex: 1, gap: 4, alignItems: 'flex-end' },
   meta: { fontSize: 13, color: text.secondary, textAlign: 'right' },
   overdue: { color: colors.danger, fontWeight: '700' },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: text.primary, textAlign: 'right' },

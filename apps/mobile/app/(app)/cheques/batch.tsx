@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { Pressable, StyleSheet, Text, View, type TextInput } from 'react-native';
 
 import { ApiClientError } from '@cheque-flow/api-client';
 import {
@@ -100,6 +100,32 @@ export default function ChequeBatchScreen() {
     setRows((current) =>
       current.map((row, position) => (position === index ? { ...row, [key]: value } : row)),
     );
+  }
+
+  /**
+   * Every text input in the grid, so one can hand focus to the next.
+   *
+   * The web app got Enter-to-next-field for the same reason: recording a
+   * cheque book meant reaching for the mouse — here, the keyboard — between
+   * every box. On a phone the equivalent is the keyboard's own "next" key,
+   * which is what `returnKeyType` and `onSubmitEditing` below turn on.
+   *
+   * Keyed by row and column rather than held in an array of arrays: rows are
+   * added and removed while the form is open, and a positional array would
+   * point at the wrong box the moment somebody deletes row three.
+   */
+  const cellRefs = useRef(new Map<string, TextInput | null>());
+  const cellKey = (index: number, field: 'chequeNumber' | 'amount') => `${index}:${field}`;
+
+  /**
+   * Hands focus to a box, if it is there.
+   *
+   * The date column is deliberately not in the chain. It is a masked text
+   * field with its own shortcut buttons, and jumping into it would bury those
+   * under the keyboard the moment the amount is entered.
+   */
+  function focusCell(index: number, field: 'chequeNumber' | 'amount'): void {
+    cellRefs.current.get(cellKey(index, field))?.focus();
   }
 
   /** Adds one cheque, continuing the run. `carryAmount` repeats the last amount. */
@@ -307,6 +333,16 @@ export default function ChequeBatchScreen() {
               error={rowErrors[index]?.chequeNumber}
               keyboardType="numeric"
               ltr
+              inputRef={{
+                get current() {
+                  return cellRefs.current.get(cellKey(index, 'chequeNumber')) ?? null;
+                },
+                set current(node: TextInput | null) {
+                  cellRefs.current.set(cellKey(index, 'chequeNumber'), node);
+                },
+              }}
+              returnKeyType="next"
+              onSubmitEditing={() => focusCell(index, 'amount')}
             />
             <Field
               label={t('common.amount')}
@@ -317,6 +353,20 @@ export default function ChequeBatchScreen() {
               keyboardType="numeric"
               ltr
               hint={row.amount ? money(row.amount, currency) : undefined}
+              inputRef={{
+                get current() {
+                  return cellRefs.current.get(cellKey(index, 'amount')) ?? null;
+                },
+                set current(node: TextInput | null) {
+                  cellRefs.current.set(cellKey(index, 'amount'), node);
+                },
+              }}
+              // The last amount ends the chain rather than pretending there is
+              // another row; "+ add cheque" is the honest next step there.
+              returnKeyType={index + 1 < rows.length ? 'next' : 'done'}
+              onSubmitEditing={() => {
+                if (index + 1 < rows.length) focusCell(index + 1, 'chequeNumber');
+              }}
             />
             <DateField
               label={t('cheque.dueDate')}

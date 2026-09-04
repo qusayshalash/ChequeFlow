@@ -7,6 +7,7 @@ import { utcToday, type ChequeSummaryView, type ChequeStatus } from '@cheque-flo
 import { colors } from '@cheque-flow/ui/tokens';
 
 import { IconAlert, IconArrowIn, IconArrowOut, IconFilter } from '@/components/icons';
+import { BankMark } from '@/components/marks';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import {
   Button,
@@ -79,6 +80,7 @@ export default function ChequeListScreen() {
   // leaves the list exactly as it was.
   const [status, setStatus] = useState<string | null>(params.status ?? null);
   const [currency, setCurrency] = useState<string | null>(params.currency ?? null);
+  const [bankId, setBankId] = useState<string | null>(null);
   const [dueFrom, setDueFrom] = useState('');
   const [dueTo, setDueTo] = useState('');
   const [amountMin, setAmountMin] = useState('');
@@ -92,6 +94,7 @@ export default function ChequeListScreen() {
       ...(search ? { search } : {}),
       ...(status ? { status: [status as ChequeStatus] } : {}),
       ...(currency ? { currency } : {}),
+      ...(bankId ? { bankId } : {}),
       ...(dueFrom ? { dueFrom } : {}),
       ...(dueTo ? { dueTo } : {}),
       ...(amountMin ? { amountMin } : {}),
@@ -100,7 +103,20 @@ export default function ChequeListScreen() {
       sortOrder,
       pageSize: 50,
     }),
-    [tab, today, search, status, currency, dueFrom, dueTo, amountMin, amountMax, sortBy, sortOrder],
+    [
+      tab,
+      today,
+      search,
+      status,
+      currency,
+      bankId,
+      dueFrom,
+      dueTo,
+      amountMin,
+      amountMax,
+      sortBy,
+      sortOrder,
+    ],
   );
 
   const query = useQuery({
@@ -108,13 +124,16 @@ export default function ChequeListScreen() {
     queryFn: () => api.listCheques(filters),
   });
 
-  const activeFilterCount = [status, currency, dueFrom, dueTo, amountMin, amountMax].filter(
+  const banks = useQuery({ queryKey: ['banks'], queryFn: () => api.listBanks() });
+
+  const activeFilterCount = [status, currency, bankId, dueFrom, dueTo, amountMin, amountMax].filter(
     Boolean,
   ).length;
 
   function clearFilters(): void {
     setStatus(null);
     setCurrency(null);
+    setBankId(null);
     setDueFrom('');
     setDueTo('');
     setAmountMin('');
@@ -168,6 +187,22 @@ export default function ChequeListScreen() {
         </Pressable>
       </View>
 
+      {/* Only once something is actually filtered, and it says how many — a
+          permanently visible "clear" is a control that does nothing most of
+          the time, and a count tells you there is something to clear without
+          opening the sheet to look. */}
+      {activeFilterCount > 0 ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={clearFilters}
+          style={({ pressed }) => [styles.clearRow, pressed && styles.rowDown]}
+        >
+          <Text style={styles.clearText}>
+            {t('common.clearFilters')} ({activeFilterCount})
+          </Text>
+        </Pressable>
+      ) : null}
+
       {query.isPending ? <LoadingView label={t('common.loading')} /> : null}
       {query.isError ? (
         <ErrorView
@@ -204,6 +239,13 @@ export default function ChequeListScreen() {
                   black-and-white printout or to someone who cannot see red. */}
               {item.isOverdue ? <View style={styles.overdueEdge} /> : null}
 
+              {/* The bank's mark, as on the web list: a letter on a colour
+                  hashed from the name is what the eye locks onto while
+                  scrolling, where a bank name has to be read. */}
+              <View style={styles.rowMark}>
+                <BankMark name={item.bankName} size={38} />
+              </View>
+
               <View style={styles.rowBody}>
                 <View style={styles.rowTop}>
                   <Text style={styles.amount} numberOfLines={1}>
@@ -212,8 +254,14 @@ export default function ChequeListScreen() {
                   <StatusPill status={item.status} label={t(`status.${item.status}`)} />
                 </View>
 
+                {/* Direction-aware, as on the web: on an outgoing cheque the
+                    party who matters is who it went to, not who wrote it. */}
                 <Text style={styles.party} numberOfLines={1}>
-                  {item.drawerName ?? item.originalSourceName ?? t('common.unknown')}
+                  {(item.direction === 'OUTGOING'
+                    ? item.currentRecipientName
+                    : item.originalSourceName) ??
+                    item.drawerName ??
+                    t('common.unknown')}
                 </Text>
 
                 <View style={styles.rowBottom}>
@@ -225,11 +273,18 @@ export default function ChequeListScreen() {
                     )}
                     <Text style={styles.number}>{item.chequeNumber}</Text>
                   </View>
+                  {/* Two lines, as on the web: the date is the fact, the
+                      distance is what decides whether to act this morning. */}
                   <View style={styles.dueGroup}>
                     {item.isOverdue ? <IconAlert size={14} color={colors.danger} /> : null}
-                    <Text style={[styles.due, item.isOverdue && styles.dueLate]}>
-                      {date(item.dueDate)} · {dueDistance(item.dueDate, today)}
-                    </Text>
+                    <View style={styles.dueText}>
+                      <Text style={[styles.due, item.isOverdue && styles.dueLate]}>
+                        {date(item.dueDate)}
+                      </Text>
+                      <Text style={[styles.dueDistance, item.isOverdue && styles.dueLate]}>
+                        {dueDistance(item.dueDate, today)}
+                      </Text>
+                    </View>
                   </View>
                 </View>
               </View>
@@ -267,6 +322,16 @@ export default function ChequeListScreen() {
           options={['ILS', 'USD', 'JOD', 'EUR'].map((value) => ({ value, label: value }))}
           value={currency}
           onChange={(next) => setCurrency(next === currency ? null : next)}
+        />
+
+        {/* Which bank the cheque is drawn on — the filter people reach for
+            after status, because a deposit run is organised one bank at a
+            time. The web list was missing it too until this pass. */}
+        <Picker
+          label={t('cheque.bank')}
+          options={(banks.data ?? []).map((bank) => ({ value: bank.id, label: bank.name }))}
+          value={bankId}
+          onChange={(next) => setBankId(next === bankId ? null : next)}
         />
 
         <DateField
@@ -375,6 +440,7 @@ const styles = StyleSheet.create({
    */
   row: {
     flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: surface.card,
     borderRadius: radius.lg,
     borderWidth: 1,
@@ -384,7 +450,8 @@ const styles = StyleSheet.create({
   },
   rowDown: { backgroundColor: surface.sunken },
   overdueEdge: { width: 4, backgroundColor: colors.danger },
-  rowBody: { flex: 1, padding: space['4'], gap: space['1'] },
+  rowBody: { flex: 1, paddingVertical: space['3'], paddingEnd: space['4'], gap: space['1'] },
+  rowMark: { marginStart: space['4'], marginEnd: space['3'] },
 
   rowTop: {
     flexDirection: 'row',
@@ -410,8 +477,21 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   dueGroup: { flexDirection: 'row', alignItems: 'center', gap: space['1'] },
+  dueText: { alignItems: 'flex-start' },
+  dueDistance: { ...type.caption, fontSize: 11, color: text.faint },
   due: { ...type.caption, color: text.secondary },
   dueLate: { color: colors.danger, fontWeight: '700' },
+
+  clearRow: {
+    minHeight: TAP,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: surface.line,
+    backgroundColor: surface.card,
+  },
+  clearText: { ...type.label, color: text.secondary },
 
   chipRow: { flexDirection: 'row', gap: space['2'] },
 });
