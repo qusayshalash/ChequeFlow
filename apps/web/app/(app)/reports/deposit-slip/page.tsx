@@ -56,23 +56,29 @@ export default function DepositSlipPage() {
           }
         />
 
-        {/* The label sits with its field. This row used `justify-between`
-            across an 1100px card, which threw "deposit date" to one edge and
-            the date box to the other with a metre of nothing between them —
-            a caption for a control you had to go looking for.
+        {/* Kept on the inline-end — the left, in this right-to-left page —
+            where it has always been, under the print button it belongs with.
+            What changed is that the label now travels with its own field:
+            the row used to be `justify-between` across an 1100px card, which
+            threw "deposit date" to one edge and the date box to the other
+            with a metre of nothing between them.
 
             No card either: it is one control, and the bordered panel it lived
             in was the chrome the rest of the app has just shed. */}
-        <label className="mb-4 inline-flex h-11 items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 focus-within:border-teal-500 focus-within:ring-4 focus-within:ring-teal-500/10">
-          <span className="text-xs font-medium text-slate-400">{t('reports.depositSlipDate')}</span>
-          <input
-            type="date"
-            aria-label={t('reports.depositSlipDate')}
-            className="bg-transparent text-sm font-semibold text-slate-800 outline-none"
-            value={on}
-            onChange={(event) => setOn(event.target.value || utcToday())}
-          />
-        </label>
+        <div className="mb-4 flex justify-end">
+          <label className="inline-flex h-11 items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 focus-within:border-teal-500 focus-within:ring-4 focus-within:ring-teal-500/10">
+            <span className="text-xs font-medium text-slate-400">
+              {t('reports.depositSlipDate')}
+            </span>
+            <input
+              type="date"
+              aria-label={t('reports.depositSlipDate')}
+              className="bg-transparent text-sm font-semibold text-slate-800 outline-none"
+              value={on}
+              onChange={(event) => setOn(event.target.value || utcToday())}
+            />
+          </label>
+        </div>
       </div>
 
       {slip.isError ? (
