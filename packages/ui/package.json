@@ -32,9 +32,9 @@
   },
   "devDependencies": {
     "@cheque-flow/config": "workspace:*",
-    "@types/react": "19.1.10",
+    "@types/react": "19.2.18",
     "eslint": "9.39.5",
-    "react": "19.1.0",
+    "react": "19.2.3",
     "typescript": "5.9.3",
     "vitest": "4.1.11"
   }

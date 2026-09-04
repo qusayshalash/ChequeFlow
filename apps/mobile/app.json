@@ -6,8 +6,10 @@
     "orientation": "portrait",
     "scheme": "chequeflow",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.chequeflow.app",
@@ -18,9 +20,14 @@
     },
     "android": {
       "package": "com.chequeflow.app",
-      "adaptiveIcon": { "backgroundColor": "#0F5C4E" },
-      "permissions": ["CAMERA", "USE_BIOMETRIC", "USE_FINGERPRINT"],
-      "edgeToEdgeEnabled": true
+      "adaptiveIcon": {
+        "backgroundColor": "#0F5C4E"
+      },
+      "permissions": [
+        "CAMERA",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT"
+      ]
     },
     "plugins": [
       "expo-router",

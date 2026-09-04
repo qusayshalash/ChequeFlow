@@ -14,7 +14,12 @@ config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
   path.resolve(workspaceRoot, 'node_modules'),
 ];
-config.resolver.unstable_enableSymlinks = true;
-config.resolver.disableHierarchicalLookup = true;
+// No `unstable_enableSymlinks` or `disableHierarchicalLookup` here. Both were
+// written for pnpm's isolated symlink layout; this workspace sets
+// `node-linker=hoisted` (see .npmrc), so node_modules is a flat tree of real
+// directories and Metro resolves it the ordinary way. Keeping them made
+// `expo-doctor` flag the config as diverging from `expo/metro-config`, and
+// `disableHierarchicalLookup` actively stops Metro walking up to the hoisted
+// root — the one place most packages actually live here.
 
 module.exports = config;
