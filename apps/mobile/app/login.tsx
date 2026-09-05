@@ -464,7 +464,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     paddingHorizontal: space['2'],
   },
-  reveal: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
+  reveal: { width: TAP, height: TAP, alignItems: 'center', justifyContent: 'center' },
 
   errorBox: {
     flexDirection: 'row',

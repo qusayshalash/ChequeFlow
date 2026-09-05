@@ -63,11 +63,15 @@ export default function ContactsScreen() {
     <View style={styles.container}>
       <SegmentedTabs
         options={TYPE_TABS.map((value) => {
-          const label = value === 'ALL' ? t('cheque.tabAll') : t(`contactType.${value}`);
           const count = counts.data?.[value];
-          // The count only prints once it is known. A tab that reads "عملاء 0"
-          // while the request is still out is a wrong answer, not a pending one.
-          return { value, label: count === undefined ? label : `${label} ${count}` };
+          return {
+            value,
+            label: value === 'ALL' ? t('cheque.tabAll') : t(`contactType.${value}`),
+            // Passed as a number, not glued into the label, so the control can
+            // draw it as a badge. Still omitted while the request is out: a tab
+            // reading "عملاء 0" before the answer arrives is wrong, not pending.
+            ...(count === undefined ? {} : { count }),
+          };
         })}
         value={type}
         onChange={setType}

@@ -7,7 +7,7 @@ import { colors } from '@cheque-flow/ui/tokens';
 
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { Badge, Button, EmptyView, ErrorView, LoadingView } from '@/components/ui';
-import { elevation, radius, space, surface, text } from '@/theme';
+import { TAP, elevation, radius, space, surface, text } from '@/theme';
 
 /** Snooze options, in minutes. */
 const SNOOZE = [
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
   note: { fontSize: 14, color: text.primary, textAlign: 'right' },
   actions: { flexDirection: 'row', gap: space['2'], flexWrap: 'wrap' },
   snoozeChip: {
-    minHeight: 40,
+    minHeight: TAP,
     justifyContent: 'center',
     paddingHorizontal: space['4'],
     borderRadius: radius.pill,

@@ -445,6 +445,16 @@ export function Chip({
 export interface Option {
   value: string;
   label: string;
+  /**
+   * Shown as a badge beside the label.
+   *
+   * A separate field rather than glued into `label`, so it can be drawn as a
+   * badge instead of trailing text. The skill's rule: a badge communicates
+   * state, and status must never be carried by colour alone — so the number
+   * prints, including zero. "Bounced 0" is an answer; a missing badge is a
+   * question.
+   */
+  count?: number;
 }
 
 /** A labelled single-choice picker rendered as chips. */
@@ -506,25 +516,49 @@ export function SegmentedTabs({
   onChange: (value: string) => void;
 }) {
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.tabsRow}
-    >
-      {options.map((option) => (
-        <Pressable
-          key={option.value}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: value === option.value }}
-          onPress={() => onChange(option.value)}
-          style={[styles.tab, value === option.value && styles.tabSelected]}
-        >
-          <Text style={[styles.tabText, value === option.value && styles.tabTextSelected]}>
-            {option.label}
-          </Text>
-        </Pressable>
-      ))}
-    </ScrollView>
+    <View style={styles.tabsTrack}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.tabsRow}
+      >
+        {options.map((option) => {
+          const selected = value === option.value;
+          return (
+            <Pressable
+              key={option.value}
+              accessibilityRole="tab"
+              accessibilityState={{ selected }}
+              // The badge is decorative beside the label, so the whole control
+              // says the number once rather than twice.
+              accessibilityLabel={
+                option.count === undefined ? option.label : `${option.label}: ${option.count}`
+              }
+              onPress={() => onChange(option.value)}
+              style={({ pressed }) => [
+                styles.tab,
+                selected && styles.tabSelected,
+                pressed && !selected && styles.tabPressed,
+              ]}
+            >
+              <Text style={[styles.tabText, selected && styles.tabTextSelected]} numberOfLines={1}>
+                {option.label}
+              </Text>
+              {option.count === undefined ? null : (
+                <View style={[styles.tabBadge, selected && styles.tabBadgeSelected]}>
+                  <Text
+                    style={[styles.tabBadgeText, selected && styles.tabBadgeTextSelected]}
+                    importantForAccessibility="no"
+                  >
+                    {option.count}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </View>
   );
 }
 
@@ -675,7 +709,7 @@ const styles = StyleSheet.create({
     paddingVertical: space['3'],
   },
   bannerText: { ...type.callout, flex: 1, textAlign: 'right' },
-  bannerAction: { minHeight: 32, justifyContent: 'center', paddingHorizontal: space['2'] },
+  bannerAction: { minHeight: TAP, justifyContent: 'center', paddingHorizontal: space['2'] },
   bannerActionText: { ...type.label, textDecorationLine: 'underline' },
 
   field: { gap: space['2'] },
@@ -699,7 +733,9 @@ const styles = StyleSheet.create({
 
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space['2'] },
   chip: {
-    minHeight: 38,
+    // TAP, not 38. The skill's floor is 44pt on iOS and 48dp on
+    // Android, and `TAP` already holds whichever applies.
+    minHeight: TAP,
     justifyContent: 'center',
     borderRadius: radius.pill,
     borderWidth: 1,
@@ -712,16 +748,50 @@ const styles = StyleSheet.create({
   chipText: { ...type.callout, color: text.primary },
   chipTextSelected: { color: text.onBrand, fontWeight: '600' },
 
-  tabsRow: { gap: space['5'], paddingHorizontal: space['1'] },
-  tab: {
-    minHeight: TAP,
-    justifyContent: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+  /**
+   * A segmented control, not loose text.
+   *
+   * These used to be bare words with a 2px underline and nothing behind them,
+   * so the strip read as unfinished — the underline had no rule to sit on and
+   * the counts were glued to the labels as plain text.
+   *
+   * Now: a sunken track, and the current option is a raised white pill. That
+   * is the same figure-and-ground the rest of the app now uses, and it gives
+   * the selection two cues — shape and colour — where colour alone was
+   * carrying it.
+   */
+  tabsTrack: {
+    backgroundColor: surface.sunken,
+    borderRadius: radius.lg,
+    padding: space['1'],
   },
-  tabSelected: { borderBottomColor: accent.base },
-  tabText: { ...type.body, color: text.secondary },
-  tabTextSelected: { color: accent.base, fontWeight: '700' },
+  tabsRow: { gap: space['1'] },
+  tab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space['2'],
+    minHeight: TAP - 6,
+    paddingHorizontal: space['4'],
+    borderRadius: radius.md,
+  },
+  tabPressed: { backgroundColor: 'rgba(11,31,26,0.05)' },
+  tabSelected: {
+    backgroundColor: surface.card,
+    ...elevation[1],
+  },
+  tabText: { ...type.callout, fontWeight: '600', color: text.secondary },
+  tabTextSelected: { color: text.primary, fontWeight: '700' },
+  tabBadge: {
+    minWidth: 22,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(11,31,26,0.07)',
+    alignItems: 'center',
+  },
+  tabBadgeSelected: { backgroundColor: accent.wash },
+  tabBadgeText: { ...type.caption, fontSize: 11, color: text.secondary },
+  tabBadgeTextSelected: { color: accent.dark, fontWeight: '700' },
 
   sheetBackdrop: { flex: 1, backgroundColor: 'rgba(11,31,26,0.5)' },
   sheet: {
