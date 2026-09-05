@@ -1,9 +1,14 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { utcToday, type ChequeSummaryView, type ChequeStatus } from '@cheque-flow/shared-types';
+import {
+  utcToday,
+  type ChequeStatus,
+  type ChequeSummaryView,
+  type Paginated,
+} from '@cheque-flow/shared-types';
 import { colors } from '@cheque-flow/ui/tokens';
 
 import { IconAlert, IconArrowIn, IconArrowOut, IconFilter } from '@/components/icons';
@@ -126,6 +131,32 @@ export default function ChequeListScreen() {
 
   const banks = useQuery({ queryKey: ['banks'], queryFn: () => api.listBanks() });
 
+  /**
+   * How many cheques each tab holds.
+   *
+   * Every count runs that tab's *own* filter through `tabQuery`, rather than
+   * being read off the dashboard summary the way the web list does it. The
+   * dashboard's buckets do not line up with these tabs — its incoming and
+   * outgoing figures count only what is still outstanding, while the tabs show
+   * every cheque in that direction — and a badge that disagrees with the list
+   * it opens is worse than no badge at all.
+   *
+   * `pageSize: 1` because only `meta.total` is wanted; the row that comes back
+   * is thrown away. The search box is deliberately not in the key: these say
+   * how much is in each tab, not how much of it matches what you are typing,
+   * and re-counting six tabs on every keystroke would be a request storm.
+   */
+  const tabCounts = useQueries({
+    queries: TABS.map((entry) => {
+      const filters = { ...tabQuery(entry, today), pageSize: 1 };
+      return {
+        queryKey: ['cheques', 'tab-count', entry, today],
+        queryFn: () => api.listCheques(filters),
+        select: (page: Paginated<ChequeSummaryView>) => page.meta.total,
+      };
+    }),
+  });
+
   const activeFilterCount = [status, currency, bankId, dueFrom, dueTo, amountMin, amountMax].filter(
     Boolean,
   ).length;
@@ -143,8 +174,11 @@ export default function ChequeListScreen() {
   return (
     <View style={styles.container}>
       <SegmentedTabs
-        options={TABS.map((value) => ({
+        options={TABS.map((value, index) => ({
           value,
+          // Omitted until it is known: a tab reading 0 while the request is
+          // still out is a wrong answer, not a pending one.
+          ...(tabCounts[index]?.data === undefined ? {} : { count: tabCounts[index].data }),
           label: t(
             value === 'ALL'
               ? 'cheque.tabAll'
