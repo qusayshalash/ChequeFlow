@@ -22,16 +22,6 @@ const PAGE_SIZES = [10, 20, 50, 100] as const;
  * places to look in order to do one thing. The pager is one unit now, and the
  * count sits at the other end because it describes the list rather than moves
  * through it.
- *
- * And it sticks to the bottom of the window. Twenty rows is taller than a
- * screen, so at the end of the document the pager was only reachable by
- * scrolling past the whole table — you could not see which page you were on
- * while reading it, and moving to the next page meant scrolling down, clicking,
- * then scrolling back up. Pinned, it is always both visible and reachable.
- *
- * `bottom` is offset by the bulk bar's own height. That bar is `fixed` and
- * appears when rows are selected, and without the offset it would cover this
- * one exactly.
  */
 export function Pagination({
   meta,
@@ -55,10 +45,7 @@ export function Pagination({
 
   return (
     <nav
-      className="sticky z-30 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/90 bg-white/95 p-3 shadow-[0_-6px_20px_-14px_rgb(16_24_40/0.35)] backdrop-blur-sm"
-      // Below the bulk bar's z-40 on purpose: when both are on screen the bar
-      // is the one being acted on, and it sits above.
-      style={{ bottom: 'calc(var(--bulk-bar-height, 0px) + 0.5rem)' }}
+      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/90 bg-white p-3"
       aria-label={t('common.page')}
     >
       {/* What the list contains, and how much of it is shown at a time. */}
