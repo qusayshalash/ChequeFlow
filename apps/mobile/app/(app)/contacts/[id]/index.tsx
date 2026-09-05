@@ -25,7 +25,7 @@ import {
   Sheet,
   StatusPill,
 } from '@/components/ui';
-import { accent, radius, space, surface, text } from '@/theme';
+import { accent, elevation, radius, space, surface, text } from '@/theme';
 
 /**
  * One contact's account statement.
@@ -264,16 +264,15 @@ const styles = StyleSheet.create({
   container: {
     padding: space['4'],
     gap: space['4'],
-    backgroundColor: surface.page,
+    backgroundColor: 'transparent',
     paddingBottom: space['16'],
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: surface.card,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: surface.line,
+    borderRadius: radius.xl,
+    ...elevation[2],
     padding: space['4'],
     gap: space['3'],
   },
@@ -289,9 +288,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 2,
     backgroundColor: surface.card,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: surface.line,
+    borderRadius: radius.xl,
+    ...elevation[2],
   },
   reachLabel: { fontSize: 13, color: text.primary },
   chequeRow: {

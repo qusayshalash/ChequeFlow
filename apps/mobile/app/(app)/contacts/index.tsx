@@ -10,7 +10,7 @@ import { IconChevronEnd, IconPhone } from '@/components/icons';
 import { ContactAvatar } from '@/components/marks';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { Button, EmptyView, ErrorView, LoadingView, SegmentedTabs } from '@/components/ui';
-import { TAP, radius, space, surface, text, type } from '@/theme';
+import { TAP, elevation, radius, space, surface, text, type } from '@/theme';
 
 const TYPE_TABS = ['ALL', ContactType.CUSTOMER, ContactType.SUPPLIER, ContactType.PERSON] as const;
 
@@ -184,7 +184,7 @@ export default function ContactsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: surface.page,
+    backgroundColor: 'transparent',
     padding: space['4'],
     gap: space['2'],
   },
@@ -206,9 +206,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: space['3'],
     backgroundColor: surface.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: surface.line,
+    borderRadius: radius.xl,
+    ...elevation[2],
     padding: space['3'],
     minHeight: 76,
   },

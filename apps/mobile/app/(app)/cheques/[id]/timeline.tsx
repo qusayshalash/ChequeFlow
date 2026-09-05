@@ -7,7 +7,7 @@ import type { ChequeEventView } from '@cheque-flow/shared-types';
 import { IconChevronEnd } from '@/components/icons';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { EmptyView, ErrorView, LoadingView, StatusPill } from '@/components/ui';
-import { accent, radius, space, surface, text, type } from '@/theme';
+import { accent, elevation, radius, space, surface, text, type } from '@/theme';
 
 /**
  * The cheque's full movement history.
@@ -106,7 +106,7 @@ export default function ChequeTimelineScreen() {
 }
 
 const styles = StyleSheet.create({
-  list: { flex: 1, backgroundColor: surface.page },
+  list: { flex: 1, backgroundColor: 'transparent' },
   content: { padding: space['4'], paddingBottom: space['16'] },
 
   entry: { flexDirection: 'row', gap: space['3'] },
@@ -126,9 +126,8 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: space['1'],
     backgroundColor: surface.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: surface.line,
+    borderRadius: radius.xl,
+    ...elevation[2],
     padding: space['4'],
     marginBottom: space['3'],
   },

@@ -15,7 +15,17 @@ import { STATUS_TONES, TONE_COLORS, colors } from '@cheque-flow/ui/tokens';
 
 import { IconAlert, IconCheck, IconClock } from '@/components/icons';
 import { maskDateInput } from '@/lib/dates';
-import { TAP, accent, radius, sheetElevation, space, surface, text, type } from '@/theme';
+import {
+  TAP,
+  accent,
+  elevation,
+  radius,
+  sheetElevation,
+  space,
+  surface,
+  text,
+  type,
+} from '@/theme';
 
 /**
  * The app's interface primitives.
@@ -550,18 +560,21 @@ export function Sheet({
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: surface.page, padding: space['4'], gap: space['4'] },
+  fill: { flex: 1 },
+  screen: { flex: 1, padding: space['4'], gap: space['4'] },
 
   section: { gap: space['2'] },
   sectionTitle: { ...type.label, color: text.secondary, textAlign: 'right' },
 
   card: {
     backgroundColor: surface.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: surface.line,
+    borderRadius: radius.xl,
     padding: space['4'],
     gap: space['3'],
+    // Elevation instead of an outline. The hairline is still used inside a
+    // card to separate its rows; it is the card-against-page job that the
+    // shadow has taken over.
+    ...elevation[2],
   },
 
   heading: { ...type.title, color: text.primary, textAlign: 'right' },
@@ -619,9 +632,11 @@ const styles = StyleSheet.create({
   skeletonWrap: { gap: space['3'] },
   skeletonCard: {
     backgroundColor: surface.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: surface.line,
+    // Matches the real card exactly. A placeholder with a different corner or
+    // no shadow makes the screen jump the moment the data lands, which is the
+    // one thing a skeleton exists to prevent.
+    borderRadius: radius.xl,
+    ...elevation[2],
     padding: space['4'],
     gap: space['2'],
   },

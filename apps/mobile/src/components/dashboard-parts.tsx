@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { IconBell, IconChevronEnd, type IconProps } from '@/components/icons';
-import { TAP, radius, space, surface, text, type } from '@/theme';
+import { TAP, elevation, radius, space, surface, text, type } from '@/theme';
 
 /**
  * The dashboard's headline figures and its worklist.
@@ -16,7 +16,7 @@ export type StatTone = 'teal' | 'green' | 'amber' | 'red' | 'neutral';
 const TONES: Record<StatTone, { wash: string; icon: string; amount: string }> = {
   teal: { wash: '#DFF1ED', icon: '#0B7C6B', amount: '#0B7C6B' },
   green: { wash: '#DEF3E4', icon: '#12805C', amount: '#12805C' },
-  amber: { wash: '#FBEEDA', icon: '#B56A0B', amount: '#B56A0B' },
+  amber: { wash: '#FBEEDA', icon: '#B56A0B', amount: '#A55F07' },
   red: { wash: '#FBE2E6', icon: '#C43D42', amount: '#C43D42' },
   neutral: { wash: '#EFF2F1', icon: '#5B6B68', amount: '#5B6B68' },
 };
@@ -178,9 +178,8 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 150,
     backgroundColor: surface.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: surface.line,
+    borderRadius: radius.xl,
+    ...elevation[2],
     padding: space['3'],
     gap: space['3'],
   },
@@ -201,9 +200,8 @@ const styles = StyleSheet.create({
 
   panel: {
     backgroundColor: surface.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: surface.line,
+    borderRadius: radius.xl,
+    ...elevation[2],
     padding: space['3'],
   },
   panelHead: {

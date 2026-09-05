@@ -5,7 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { IconCamera, IconCheque, IconContacts, IconEdit, type IconProps } from '@/components/icons';
 import { useTranslator } from '@/components/providers';
 import { Body, Heading } from '@/components/ui';
-import { accent, radius, space, surface, text } from '@/theme';
+import { accent, elevation, radius, space, surface, text } from '@/theme';
 
 /**
  * The two ways a cheque enters the system.
@@ -86,12 +86,11 @@ function Choice({
 }
 
 const styles = StyleSheet.create({
-  container: { padding: space['4'], gap: space['4'], backgroundColor: surface.page },
+  container: { padding: space['4'], gap: space['4'], backgroundColor: 'transparent' },
   choice: {
     backgroundColor: surface.card,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: surface.line,
+    borderRadius: radius.xl,
+    ...elevation[2],
     padding: space['6'],
     gap: 6,
     minHeight: 110,

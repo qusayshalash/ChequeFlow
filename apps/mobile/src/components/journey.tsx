@@ -4,7 +4,7 @@ import type { ChequeDetailView } from '@cheque-flow/shared-types';
 
 import { IconCheck } from '@/components/icons';
 import { useTranslator } from '@/components/providers';
-import { accent, radius, space, surface, text, type } from '@/theme';
+import { accent, elevation, radius, space, surface, text, type } from '@/theme';
 
 /**
  * Where the cheque came from, where it is, and where it went.
@@ -85,9 +85,8 @@ export function ChequeJourney({ cheque }: { cheque: ChequeDetailView }) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: surface.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: surface.line,
+    borderRadius: radius.xl,
+    ...elevation[2],
     padding: space['4'],
   },
   title: { ...type.heading, color: text.primary, marginBottom: space['3'], textAlign: 'right' },

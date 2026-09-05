@@ -14,7 +14,7 @@ import {
 } from '@/components/icons';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { Banner } from '@/components/ui';
-import { TAP, accent, radius, space, surface, text, type } from '@/theme';
+import { TAP, accent, elevation, radius, space, surface, text, type } from '@/theme';
 
 /**
  * Everything that is not a daily destination.
@@ -107,16 +107,15 @@ export default function MoreScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: space['4'], gap: space['4'], backgroundColor: surface.page },
+  container: { padding: space['4'], gap: space['4'], backgroundColor: 'transparent' },
 
   identity: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space['3'],
     backgroundColor: surface.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: surface.line,
+    borderRadius: radius.xl,
+    ...elevation[2],
     padding: space['4'],
   },
   avatar: {
@@ -133,9 +132,8 @@ const styles = StyleSheet.create({
 
   list: {
     backgroundColor: surface.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: surface.line,
+    borderRadius: radius.xl,
+    ...elevation[2],
     overflow: 'hidden',
   },
   divided: { borderTopWidth: 1, borderTopColor: surface.line },

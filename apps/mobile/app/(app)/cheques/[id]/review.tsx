@@ -140,7 +140,7 @@ export default function ReviewExtractedDataScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: space['4'], gap: space['4'], backgroundColor: surface.page },
+  container: { padding: space['4'], gap: space['4'], backgroundColor: 'transparent' },
   notice: { backgroundColor: colors.warningBg, borderRadius: radius.sm, padding: space['2'] },
   noticeText: { color: colors.warning, fontSize: 14, textAlign: 'right' },
   fieldBox: { gap: 4, marginBottom: space['2'] },

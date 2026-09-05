@@ -20,7 +20,7 @@ import {
   Section,
   StatusPill,
 } from '@/components/ui';
-import { radius, space, surface, text, type } from '@/theme';
+import { elevation, radius, space, surface, text, type } from '@/theme';
 
 /**
  * Actions that get their own button on the detail screen.
@@ -317,15 +317,14 @@ const styles = StyleSheet.create({
   container: {
     padding: space['4'],
     gap: space['4'],
-    backgroundColor: surface.page,
+    backgroundColor: 'transparent',
     paddingBottom: space['16'],
   },
 
   hero: {
     backgroundColor: surface.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: surface.line,
+    borderRadius: radius.xl,
+    ...elevation[2],
     padding: space['5'],
     gap: space['2'],
   },

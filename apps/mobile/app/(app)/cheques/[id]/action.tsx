@@ -20,7 +20,7 @@ import {
   Section,
 } from '@/components/ui';
 import { isValidDate, todayIso } from '@/lib/dates';
-import { space, surface } from '@/theme';
+import { space } from '@/theme';
 
 /** Which extra inputs each action needs. Drives the whole form. */
 const NEEDS_CONTACT = new Set<string>([
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   container: {
     padding: space['4'],
     gap: space['4'],
-    backgroundColor: surface.page,
+    backgroundColor: 'transparent',
     paddingBottom: space['16'],
   },
 });

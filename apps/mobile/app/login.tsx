@@ -239,7 +239,7 @@ export default function LoginScreen() {
 
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={t('auth.loginAction')}
+              accessibilityLabel={t('auth.submit')}
               accessibilityState={{ disabled: pending }}
               disabled={pending}
               onPress={() => void submit()}
@@ -251,7 +251,7 @@ export default function LoginScreen() {
             >
               <IconChevronEnd size={20} color={text.onBrand} />
               <Text style={styles.submitText}>
-                {pending ? t('common.loading') : t('auth.loginAction')}
+                {pending ? t('common.loading') : t('auth.submit')}
               </Text>
               <View style={styles.submitSpacer} />
             </Pressable>

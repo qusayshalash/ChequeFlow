@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   container: {
     padding: space['4'],
     gap: space['4'],
-    backgroundColor: surface.page,
+    backgroundColor: 'transparent',
     paddingBottom: space['16'],
   },
   chips: { gap: space['2'] },

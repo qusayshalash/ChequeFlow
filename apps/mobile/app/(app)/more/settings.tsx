@@ -10,7 +10,7 @@ import { useApi, useApp, useTranslator } from '@/components/providers';
 import { Banner, Body, Button, InfoRow, Picker, Section } from '@/components/ui';
 import { clearDrafts, listDrafts, type CaptureDraft } from '@/lib/draft-store';
 import { syncDrafts } from '@/lib/draft-sync';
-import { accent, radius, space, surface, text, type } from '@/theme';
+import { accent, elevation, radius, space, surface, text, type } from '@/theme';
 
 export default function SettingsScreen() {
   const api = useApi();
@@ -230,9 +230,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: space['3'],
     backgroundColor: surface.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: surface.line,
+    borderRadius: radius.xl,
+    ...elevation[2],
     padding: space['4'],
   },
   avatar: {
@@ -249,7 +248,7 @@ const styles = StyleSheet.create({
   container: {
     padding: space['4'],
     gap: space['4'],
-    backgroundColor: surface.page,
+    backgroundColor: 'transparent',
     paddingBottom: space['16'],
   },
   meta: { fontSize: 13, color: text.secondary, textAlign: 'right' },

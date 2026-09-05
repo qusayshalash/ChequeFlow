@@ -79,29 +79,58 @@ export const radius = {
   sm: 8,
   md: 12,
   lg: 16,
+  /** The sign-in card's corner, for anything that floats. */
+  xl: 24,
   pill: 999,
 } as const;
 
 /**
  * Surfaces.
  *
- * Swiss style separates with a line, not a shadow. The one elevation defined
- * here is for content that genuinely floats above the page — a sheet — and
- * nothing else is allowed to use it.
+ * **This replaces the earlier "a line, not a shadow" rule.** That was the
+ * Swiss reading, and it held until the sign-in screen was rebuilt to the
+ * reference design: a mint field with the card floating on it. One screen lit
+ * differently from every other screen is worse than either choice made
+ * consistently, so the rest of the app follows it.
+ *
+ * The direction is `ui-ux-pro-max`'s **Dimensional Layering**, which the skill
+ * returns for "elevation, floating, cards, spatial hierarchy" and lists as
+ * best for dashboards and card layouts — what this app is. Its own note marks
+ * the style `accessibility risk:high`, requiring 4.5:1 text, so depth never
+ * carries meaning here: every status still says its name and keeps its colour.
+ *
+ * Lines have not gone. A hairline still separates rows inside a card; the
+ * shadow separates the card from the page. Two jobs, two tools.
  */
 export const surface = {
-  page: '#F7F8F8',
+  page: '#F2F6F5',
   card: brand.surface,
   sunken: '#EFF2F1',
   line: '#E4E8E7',
   lineStrong: '#CFD6D4',
 } as const;
 
+/**
+ * The soft mint field the sign-in screen introduced, now the app's ground.
+ *
+ * Three stops rather than two: a flat two-stop ramp bands visibly on an OLED
+ * phone at this low contrast.
+ */
+export const pageGradient = ['#EAF3F0', '#F4F8F7', '#E6F0EC'] as const;
+
 export const text = {
   primary: brand.text,
   secondary: brand.textMuted,
-  /** For a value that is absent rather than zero. */
-  faint: '#8B9995',
+  /**
+   * For a value that is absent rather than zero, and for captions.
+   *
+   * `#8B9995` looked right and measured 2.96:1 on white — under the 4.5 floor
+   * for text, and it carries real sentences here ("not yet", a due distance,
+   * an amount's caption). Darkened until it passes on *both* grounds it lands
+   * on: 5.48:1 on a card, 4.71:1 on the darkest stop of the page gradient.
+   * One value for both, because a caption does not know which it is on.
+   */
+  faint: '#5F6C68',
   onBrand: '#FFFFFF',
 } as const;
 
@@ -111,13 +140,54 @@ export const accent = {
   wash: brand.brandLight,
 } as const;
 
-export const sheetElevation = {
-  shadowColor: '#0B1F1A',
-  shadowOpacity: 0.16,
-  shadowRadius: 24,
-  shadowOffset: { width: 0, height: -6 },
-  elevation: 16,
+/**
+ * Four levels, from the skill's Dimensional Layering scale.
+ *
+ * A scale, not one-off values: the anti-pattern the skill names is "random
+ * shadow values", and a card that is 12px on one screen and 28px on the next
+ * reads as a rendering fault rather than a hierarchy.
+ *
+ * `shadowColor` is the brand's near-black, not pure black — grey shadow under
+ * a mint page looks like dirt. Android reads only `elevation` and ignores the
+ * rest, which is why both are always given together.
+ */
+export const elevation = {
+  /** A card resting on the page. */
+  1: {
+    shadowColor: '#0B1F1A',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+  },
+  /** The standard card. */
+  2: {
+    shadowColor: '#0B1F1A',
+    shadowOpacity: 0.07,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
+  },
+  /** Something that should read as lifted — the sign-in card, a primary action. */
+  3: {
+    shadowColor: '#0B1F1A',
+    shadowOpacity: 0.1,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 6,
+  },
+  /** Only for content genuinely above the page: a sheet. */
+  4: {
+    shadowColor: '#0B1F1A',
+    shadowOpacity: 0.16,
+    shadowRadius: 32,
+    shadowOffset: { width: 0, height: -6 },
+    elevation: 16,
+  },
 } as const;
+
+/** Kept as the name the sheet already uses. */
+export const sheetElevation = elevation[4];
 
 /** Minimum tap target: 44pt on iOS, 48dp on Android (Apple HIG, Material). */
 export const TAP = Platform.OS === 'ios' ? 44 : 48;

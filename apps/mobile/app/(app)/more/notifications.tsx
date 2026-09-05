@@ -7,7 +7,7 @@ import { colors } from '@cheque-flow/ui/tokens';
 
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { Badge, Button, EmptyView, ErrorView, LoadingView } from '@/components/ui';
-import { radius, space, surface, text } from '@/theme';
+import { elevation, radius, space, surface, text } from '@/theme';
 
 /** Snooze options, in minutes. */
 const SNOOZE = [
@@ -119,13 +119,12 @@ export default function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  list: { flex: 1, backgroundColor: surface.page },
+  list: { flex: 1, backgroundColor: 'transparent' },
   content: { padding: space['4'], gap: space['2'], paddingBottom: space['16'] },
   row: {
     backgroundColor: surface.card,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: surface.line,
+    borderRadius: radius.xl,
+    ...elevation[2],
     padding: space['4'],
     gap: space['2'],
   },

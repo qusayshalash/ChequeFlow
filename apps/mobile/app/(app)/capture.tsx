@@ -164,7 +164,7 @@ export default function CaptureScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: space['4'], gap: space['4'], backgroundColor: surface.page },
+  container: { padding: space['4'], gap: space['4'], backgroundColor: 'transparent' },
   cameraBox: { height: 260, borderRadius: radius.md, overflow: 'hidden', backgroundColor: '#000' },
   camera: { flex: 1 },
   thumbs: { flexDirection: 'row', gap: space['2'] },
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 90,
     borderRadius: radius.sm,
-    backgroundColor: surface.page,
+    backgroundColor: 'transparent',
   },
   thumbEmpty: { borderWidth: 1, borderColor: surface.line, borderStyle: 'dashed' },
   warning: { color: colors.warning, fontSize: 14, textAlign: 'right' },

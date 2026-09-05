@@ -19,7 +19,7 @@ import {
   Sheet,
 } from '@/components/ui';
 import { fieldErrorsFrom, validateForm, type FieldErrors } from '@/lib/form';
-import { accent, radius, space, surface, text, type } from '@/theme';
+import { accent, elevation, radius, space, surface, text, type } from '@/theme';
 
 /**
  * Members of the organization and what they may do.
@@ -220,16 +220,15 @@ const styles = StyleSheet.create({
   initial: { ...type.bodyStrong, color: accent.dark },
   container: {
     flex: 1,
-    backgroundColor: surface.page,
+    backgroundColor: 'transparent',
     padding: space['4'],
     gap: space['2'],
   },
   list: { gap: space['2'], paddingBottom: space['4'] },
   row: {
     backgroundColor: surface.card,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: surface.line,
+    borderRadius: radius.xl,
+    ...elevation[2],
     padding: space['4'],
     gap: 4,
   },

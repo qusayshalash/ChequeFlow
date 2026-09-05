@@ -23,7 +23,7 @@ import {
 import { BankMark } from '@/components/marks';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { Banner, ErrorView, LoadingView, StatusPill } from '@/components/ui';
-import { TAP, accent, radius, space, surface, text, type } from '@/theme';
+import { TAP, accent, elevation, radius, space, surface, text, type } from '@/theme';
 
 /** How far ahead the upcoming list looks. */
 const UPCOMING_HORIZON_DAYS = 90;
@@ -359,7 +359,7 @@ function QuickAction({
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: surface.page },
+  page: { flex: 1, backgroundColor: 'transparent' },
   container: { padding: space['4'], paddingBottom: space['10'], gap: space['3'] },
   pressed: { backgroundColor: surface.sunken },
 
@@ -392,18 +392,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: space['1'],
     backgroundColor: surface.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: surface.line,
+    borderRadius: radius.xl,
+    ...elevation[2],
     padding: space['2'],
   },
   quickLabel: { ...type.caption, color: text.primary, textAlign: 'center' },
 
   panel: {
     backgroundColor: surface.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: surface.line,
+    borderRadius: radius.xl,
+    ...elevation[2],
     padding: space['3'],
   },
   panelHead: {

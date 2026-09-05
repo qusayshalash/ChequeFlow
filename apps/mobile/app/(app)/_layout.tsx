@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Redirect, Tabs } from 'expo-router';
-import { Platform, type ColorValue } from 'react-native';
+import { Platform, StyleSheet, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, MIN_TOUCH_TARGET } from '@cheque-flow/ui/tokens';
@@ -16,6 +17,7 @@ import {
 } from '@/components/icons';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { LoadingView } from '@/components/ui';
+import { pageGradient } from '@/theme';
 
 /**
  * Draws a tab's icon in the tint the navigator asks for.
@@ -55,9 +57,20 @@ export default function AppLayout() {
 
   return (
     <BiometricGate>
+      {/* The sign-in screen's mint field, painted once behind every tab rather
+          than repeated in nineteen screens. `sceneContainerStyle` is
+          transparent so this shows through; each screen keeps its own padding
+          and draws its cards on top. */}
+      <LinearGradient
+        colors={[...pageGradient]}
+        locations={[0, 0.45, 1]}
+        style={StyleSheet.absoluteFill}
+      />
       <Tabs
         screenOptions={{
           headerShown: false,
+          // Transparent, so the gradient above shows through every tab.
+          sceneStyle: { backgroundColor: 'transparent' },
           tabBarActiveTintColor: colors.brand,
           tabBarInactiveTintColor: colors.textMuted,
           tabBarStyle: {

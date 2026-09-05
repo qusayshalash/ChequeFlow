@@ -22,7 +22,7 @@ import {
   Sheet,
   StatusPill,
 } from '@/components/ui';
-import { TAP, accent, radius, space, surface, text, type } from '@/theme';
+import { TAP, accent, elevation, radius, space, surface, text, type } from '@/theme';
 
 /**
  * The list tabs.
@@ -391,7 +391,7 @@ export default function ChequeListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: surface.page, padding: space['4'], gap: space['3'] },
+  container: { flex: 1, backgroundColor: 'transparent', padding: space['4'], gap: space['3'] },
 
   searchRow: { flexDirection: 'row', gap: space['2'], alignItems: 'center' },
   search: {
@@ -442,9 +442,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: surface.card,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: surface.line,
+    borderRadius: radius.xl,
+    ...elevation[2],
     overflow: 'hidden',
     minHeight: 92,
   },

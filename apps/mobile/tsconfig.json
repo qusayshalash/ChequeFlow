@@ -7,7 +7,12 @@
     // `ignoreDeprecations` would have deferred the same removal to TS 7.
     "jsx": "react-jsx",
     "moduleResolution": "Bundler",
-    "types": ["react"],
+    // `node` is here for the test files only — `theme.contrast.test.ts` reads
+    // the theme as text because importing it drags in React Native's
+    // Flow-typed entry point. App code that reaches for a node API this
+    // permits will still fail loudly at bundle time, which the build check
+    // catches; it is not a door into the runtime.
+    "types": ["react", "node"],
     "paths": {
       "@/*": ["./src/*"]
     }
