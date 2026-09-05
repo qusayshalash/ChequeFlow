@@ -77,13 +77,18 @@
     "title": "Backup"
   },
   "bulk": {
+    "applied": "Applied to",
     "apply": "Apply to selected",
     "applyRest": "Apply to the rest only",
-    "applied": "Applied to",
     "blocked": "Nothing was applied — these cheques cannot take this action",
+    "confirmBatch": "Confirm the batch",
+    "confirmBatchDone": "{count} cheques confirmed — now in hand",
+    "confirmBatchHint": "{count} cheques were created as drafts. Confirm them together instead of opening each one.",
+    "receiveHint": "Moves the selected cheques from draft to in-hand — this is the confirmation step. An unconfirmed cheque counts towards no balance and cannot be deposited.",
     "selectAll": "Select every cheque shown",
     "selectRow": "Select cheque",
-    "selected": "Selected"
+    "selected": "Selected",
+    "skipTitle": "Not applied to"
   },
   "capture": {
     "back": "Capture the back",
@@ -176,6 +181,7 @@
     "locationGroup": "Cheque location",
     "newTitle": "New cheque",
     "noImages": "No images for this cheque",
+    "noLocations": "No storage places defined yet — add one under Storage places",
     "noReplacement": "No replacement cheque",
     "notConverted": "No rate recorded",
     "notYet": "Not yet",

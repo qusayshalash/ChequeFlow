@@ -173,6 +173,14 @@ export function BulkActionBar({
           </select>
         </div>
 
+        {/* "Receive" is the confirmation step, and nobody looking for
+            "confirm" would guess that. Said in words rather than renamed,
+            because the action really is a receipt: it records who handed the
+            cheques over and where they went. */}
+        {action === 'RECEIVE' ? (
+          <p className="w-full text-xs leading-relaxed text-slate-500">{t('bulk.receiveHint')}</p>
+        ) : null}
+
         {NEEDS_LOCATION.has(action) ? (
           <div className="w-44">
             <select

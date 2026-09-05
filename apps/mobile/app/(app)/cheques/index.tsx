@@ -12,6 +12,7 @@ import {
 import { colors } from '@cheque-flow/ui/tokens';
 
 import { IconAlert, IconArrowIn, IconArrowOut, IconFilter } from '@/components/icons';
+import { BulkBar } from '@/components/bulk-bar';
 import { BankMark } from '@/components/marks';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import {
@@ -81,6 +82,15 @@ export default function ChequeListScreen() {
   const [search, setSearch] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
 
+  /**
+   * Which cheques are selected, if any.
+   *
+   * Entered by long-pressing a row, which is the platform convention and
+   * leaves a plain tap meaning "open" as it always did. Confirming a book of
+   * twenty cheques used to mean opening twenty screens.
+   */
+  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
+
   // Draft filter state lives separately so closing the sheet without applying
   // leaves the list exactly as it was.
   const [status, setStatus] = useState<string | null>(params.status ?? null);
@@ -130,6 +140,27 @@ export default function ChequeListScreen() {
   });
 
   const banks = useQuery({ queryKey: ['banks'], queryFn: () => api.listBanks() });
+  // Only fetched once a selection exists: the pickers are inside a sheet that
+  // cannot be opened before then.
+  const contacts = useQuery({
+    queryKey: ['contacts', 'all'],
+    queryFn: () => api.listContacts({ pageSize: 100 }),
+    enabled: selected.size > 0,
+  });
+  const locations = useQuery({
+    queryKey: ['locations'],
+    queryFn: () => api.listLocations(),
+    enabled: selected.size > 0,
+  });
+
+  function toggleSelected(id: string): void {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   /**
    * How many cheques each tab holds.
@@ -265,8 +296,22 @@ export default function ChequeListScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`${item.chequeNumber} ${money(item.amount, item.currency)}`}
-              style={({ pressed }) => [styles.row, pressed && styles.rowDown]}
-              onPress={() => router.push(`/(app)/cheques/${item.id}`)}
+              accessibilityState={{ selected: selected.has(item.id) }}
+              style={({ pressed }) => [
+                styles.row,
+                pressed && styles.rowDown,
+                selected.has(item.id) && styles.rowSelected,
+              ]}
+              // While a selection is running a tap picks rather than opens —
+              // otherwise the second tap would navigate away from the very
+              // list being selected.
+              onPress={() =>
+                selected.size > 0
+                  ? toggleSelected(item.id)
+                  : router.push(`/(app)/cheques/${item.id}`)
+              }
+              onLongPress={() => toggleSelected(item.id)}
+              delayLongPress={250}
             >
               {/* A late cheque is marked by a bar down its leading edge as well
                   as by the badge below: the row must still read as urgent in a
@@ -326,6 +371,19 @@ export default function ChequeListScreen() {
           )}
         />
       ) : null}
+
+      <BulkBar
+        selected={selected}
+        onClear={() => setSelected(new Set())}
+        contacts={(contacts.data?.data ?? []).map((entry) => ({
+          id: entry.id,
+          name: entry.name,
+        }))}
+        locations={(locations.data ?? []).map((entry) => ({
+          id: entry.id,
+          name: entry.name,
+        }))}
+      />
 
       <Sheet
         visible={filtersOpen}
@@ -482,6 +540,7 @@ const styles = StyleSheet.create({
     minHeight: 92,
   },
   rowDown: { backgroundColor: surface.sunken },
+  rowSelected: { borderWidth: 2, borderColor: accent.base },
   overdueEdge: { width: 4, backgroundColor: colors.danger },
   rowBody: { flex: 1, paddingVertical: space['3'], paddingEnd: space['4'], gap: space['1'] },
   rowMark: { marginStart: space['4'], marginEnd: space['3'] },
