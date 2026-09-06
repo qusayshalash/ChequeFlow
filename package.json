@@ -23,10 +23,12 @@
     "infra:up": "docker compose --env-file .env -f infrastructure/docker-compose.yml up -d",
     "infra:down": "docker compose --env-file .env -f infrastructure/docker-compose.yml down",
     "infra:logs": "docker compose --env-file .env -f infrastructure/docker-compose.yml logs -f",
-    "infra:reset": "docker compose --env-file .env -f infrastructure/docker-compose.yml down -v"
+    "infra:reset": "docker compose --env-file .env -f infrastructure/docker-compose.yml down -v",
+    "test:e2e:ui": "playwright test"
   },
   "devDependencies": {
     "@cheque-flow/config": "workspace:*",
+    "@playwright/test": "^1.63.0",
     "prettier": "3.9.6",
     "turbo": "2.10.12",
     "typescript": "5.9.3"

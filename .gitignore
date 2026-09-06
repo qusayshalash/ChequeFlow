@@ -47,3 +47,7 @@ apps/web/next-env.d.ts
 /*-qr.png
 /screenshots/
 /*-screenshots-*/
+
+# Playwright
+test-results/
+playwright-report/
