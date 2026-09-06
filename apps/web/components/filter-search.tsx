@@ -1,7 +1,17 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
+
 import { IconSearch } from '@/components/icons';
 import { useTranslator } from '@/components/providers';
+
+/**
+ * How long typing must pause before the list is refetched.
+ *
+ * Long enough that a word typed at speed is one request, short enough that the
+ * list still feels like it answers as you type.
+ */
+const SETTLE_MS = 300;
 
 /**
  * The search that narrows the list in front of you.
@@ -16,6 +26,13 @@ import { useTranslator } from '@/components/providers';
  * and nothing distinguished them. This one now lives inside the filter row
  * with the status and bank selects, so its scope is legible from where it is,
  * and it says so in words too — "filter this list", not "search".
+ *
+ * Typing is debounced. The value goes straight into the list's query key, so
+ * every keystroke used to be its own request: typing "صائب" fired five in
+ * about a second. At 120 requests a minute that empties the budget quickly,
+ * and the next request the page makes — the refetch after a bulk action, say —
+ * comes back 429 and the whole list turns into an error. The field itself
+ * stays immediate; only the refetch waits.
  */
 export function FilterSearch({
   value,
@@ -29,6 +46,26 @@ export function FilterSearch({
 }) {
   const t = useTranslator();
 
+  const [draft, setDraft] = useState(value);
+
+  // The parent can change the value on its own — clearing the filters, or
+  // arriving with one in the URL — and the field has to follow when it does.
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
+
+  // Held in a ref because every parent passes an inline arrow: as a dependency
+  // it would change on each render, restarting the timer forever so the search
+  // never actually ran.
+  const commit = useRef(onChange);
+  commit.current = onChange;
+
+  useEffect(() => {
+    if (draft === value) return;
+    const timer = setTimeout(() => commit.current(draft), SETTLE_MS);
+    return () => clearTimeout(timer);
+  }, [draft, value]);
+
   return (
     <label className="relative flex h-11 min-w-0 flex-1 items-center sm:w-64 sm:flex-none">
       <span className="pointer-events-none absolute start-3 text-slate-400">
@@ -36,8 +73,16 @@ export function FilterSearch({
       </span>
       <input
         type="search"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+        // Enter is a deliberate "now": it skips the wait rather than adding a
+        // second way to search.
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            commit.current(draft);
+          }
+        }}
         placeholder={placeholder}
         // Named for what it does rather than repeating the placeholder, so a
         // screen reader announces the difference from the global field.

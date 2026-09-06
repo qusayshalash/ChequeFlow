@@ -18,6 +18,7 @@ import {
 } from '@cheque-flow/ui';
 
 import { DataTable } from '@/components/data-table';
+import { loadErrorRequestId, loadErrorTitle } from '@/lib/query-error';
 import { IconClose, IconPlus } from '@/components/icons';
 import { FilterSearch } from '@/components/filter-search';
 import { PageHeader } from '@/components/page-header';
@@ -267,7 +268,8 @@ function UsersManager() {
 
       {users.isError ? (
         <ErrorState
-          title={t('errors.loadFailed')}
+          title={loadErrorTitle(t, users.error)}
+          requestId={loadErrorRequestId(users.error)}
           onRetry={() => void users.refetch()}
           retryLabel={t('common.retry')}
         />

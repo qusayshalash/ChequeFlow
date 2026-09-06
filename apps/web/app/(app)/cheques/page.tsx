@@ -9,6 +9,7 @@ import { ChequeStatus, type ChequeSummaryView, type Paginated } from '@cheque-fl
 import { Button, ErrorState, LoadingState } from '@cheque-flow/ui';
 
 import { BulkActionBar } from '@/components/bulk-action-bar';
+import { loadErrorRequestId, loadErrorTitle } from '@/lib/query-error';
 import { CHEQUE_COLUMN_KEYS, ChequeTable } from '@/components/cheque-table';
 import { ExportButton } from '@/components/export-button';
 import {
@@ -424,7 +425,8 @@ export default function ChequesPage() {
 
       {query.isError ? (
         <ErrorState
-          title={t('errors.loadFailed')}
+          title={loadErrorTitle(t, query.error)}
+          requestId={loadErrorRequestId(query.error)}
           onRetry={() => void query.refetch()}
           retryLabel={t('common.retry')}
         />

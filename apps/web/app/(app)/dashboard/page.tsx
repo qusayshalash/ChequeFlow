@@ -8,6 +8,7 @@ import { ChequeStatus, utcToday, type DashboardSummary } from '@cheque-flow/shar
 import { EmptyState, ErrorState, LoadingState } from '@cheque-flow/ui';
 
 import { AttentionList } from '@/components/attention-list';
+import { loadErrorRequestId, loadErrorTitle } from '@/lib/query-error';
 import { BankMark } from '@/components/bank-mark';
 import {
   IconAlert,
@@ -198,7 +199,8 @@ export default function DashboardPage() {
   if (dashboard.isError || !dashboard.data) {
     return (
       <ErrorState
-        title={t('errors.loadFailed')}
+        title={loadErrorTitle(t, dashboard.error)}
+        requestId={loadErrorRequestId(dashboard.error)}
         onRetry={() => void dashboard.refetch()}
         retryLabel={t('common.retry')}
       />

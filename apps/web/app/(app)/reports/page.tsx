@@ -7,6 +7,7 @@ import { Permission, utcToday } from '@cheque-flow/shared-types';
 import { EmptyState, ErrorState, LoadingState } from '@cheque-flow/ui';
 
 import { IconAlert, IconCalendar, IconSafe } from '@/components/icons';
+import { loadErrorRequestId, loadErrorTitle } from '@/lib/query-error';
 import { LineChart } from '@/components/line-chart';
 import { PageHeader } from '@/components/page-header';
 import { Panel } from '@/components/panel';
@@ -246,7 +247,8 @@ function ReportsPageBody() {
         {cashFlow.isPending ? <LoadingState label={t('common.loading')} /> : null}
         {cashFlow.isError ? (
           <ErrorState
-            title={t('errors.loadFailed')}
+            title={loadErrorTitle(t, cashFlow.error)}
+            requestId={loadErrorRequestId(cashFlow.error)}
             onRetry={() => void cashFlow.refetch()}
             retryLabel={t('common.retry')}
           />
@@ -341,7 +343,8 @@ function ReportsPageBody() {
         {custody.isPending ? <LoadingState label={t('common.loading')} /> : null}
         {custody.isError ? (
           <ErrorState
-            title={t('errors.loadFailed')}
+            title={loadErrorTitle(t, custody.error)}
+            requestId={loadErrorRequestId(custody.error)}
             onRetry={() => void custody.refetch()}
             retryLabel={t('common.retry')}
           />

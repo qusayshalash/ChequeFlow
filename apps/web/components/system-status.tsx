@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ErrorState, LoadingState } from '@cheque-flow/ui';
 
 import { Panel } from '@/components/panel';
+import { loadErrorRequestId, loadErrorTitle } from '@/lib/query-error';
 import { useApi, useTranslator } from '@/components/providers';
 
 const STATE_STYLES = {
@@ -43,7 +44,8 @@ export function SystemStatus() {
     return (
       <Panel title={t('diagnostics.title')}>
         <ErrorState
-          title={t('errors.loadFailed')}
+          title={loadErrorTitle(t, query.error)}
+          requestId={loadErrorRequestId(query.error)}
           onRetry={() => void query.refetch()}
           retryLabel={t('common.retry')}
         />

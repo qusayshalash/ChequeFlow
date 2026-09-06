@@ -7,6 +7,7 @@ import type { ReminderRow } from '@cheque-flow/api-client';
 import { Badge, Button, EmptyState, ErrorState, LoadingState, StatCard } from '@cheque-flow/ui';
 
 import { PageHeader } from '@/components/page-header';
+import { loadErrorRequestId, loadErrorTitle } from '@/lib/query-error';
 import { Panel } from '@/components/panel';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { formatDate, formatDateTime, money } from '@/lib/format';
@@ -63,7 +64,8 @@ export default function NotificationsPage() {
 
       {query.isError ? (
         <ErrorState
-          title={t('errors.loadFailed')}
+          title={loadErrorTitle(t, query.error)}
+          requestId={loadErrorRequestId(query.error)}
           onRetry={() => void query.refetch()}
           retryLabel={t('common.retry')}
         />

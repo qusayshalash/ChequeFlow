@@ -7,6 +7,7 @@ import { utcToday, type DepositSlipView } from '@cheque-flow/shared-types';
 import { Button, EmptyState, ErrorState, LoadingState } from '@cheque-flow/ui';
 
 import { PageHeader } from '@/components/page-header';
+import { loadErrorRequestId, loadErrorTitle } from '@/lib/query-error';
 import { Panel } from '@/components/panel';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { formatDate, money } from '@/lib/format';
@@ -83,7 +84,8 @@ export default function DepositSlipPage() {
 
       {slip.isError ? (
         <ErrorState
-          title={t('errors.loadFailed')}
+          title={loadErrorTitle(t, slip.error)}
+          requestId={loadErrorRequestId(slip.error)}
           onRetry={() => void slip.refetch()}
           retryLabel={t('common.retry')}
         />
