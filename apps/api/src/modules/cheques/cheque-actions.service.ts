@@ -4,6 +4,7 @@ import {
   ApiErrorCode,
   ChequeAction,
   assertTransition,
+  getTransition,
   utcToday,
   type ChequeDetailView,
   type ChequeEventView,
@@ -103,20 +104,26 @@ export class ChequeActionsService {
     payload: ChequeActionPayload,
     auditMeta: Partial<AuditContext> = {},
   ): Promise<ChequeDetailView> {
+    // 1. Is the caller allowed to do this at all?
+    //
+    // First, and before the cheque is even read. The permission an action needs
+    // is a property of the action, not of the cheque's state, so nothing here
+    // has to wait for the row. It used to run third, which meant a caller with
+    // no permission still learned things: 409 said the cheque existed and was
+    // in the wrong state, 404 said it did not exist, 403 said it was ready to
+    // act on. Now the answer is the same 403 whatever the cheque is.
+    const required = getTransition(action).permission;
+    if (!user.permissions.includes(required)) {
+      throw AppError.forbidden(`Action ${action} requires ${required}`, { required });
+    }
+
     const cheque = await this.prisma.db.cheque.findFirst({
       where: { id: chequeId, organizationId: user.organizationId, deletedAt: null },
     });
     if (!cheque) throw AppError.notFound('Cheque', chequeId);
 
-    // 1. Is the transition legal at all?
+    // 2. Is the transition legal from where the cheque actually is?
     const transition = assertTransition(cheque.status, action, cheque.direction);
-
-    // 2. Does the caller hold the permission the transition requires?
-    if (!user.permissions.includes(transition.permission)) {
-      throw AppError.forbidden(`Action ${action} requires ${transition.permission}`, {
-        required: transition.permission,
-      });
-    }
 
     // 3. Is the counterparty present when the transition needs one?
     if (transition.requiresCounterparty) {
@@ -182,6 +189,14 @@ export class ChequeActionsService {
   ): Promise<BulkActionResult> {
     const today = utcToday();
 
+    // Before anything is read, for the same reason as the single-cheque path:
+    // the permission belongs to the action, and a caller without it should not
+    // be told which of the ids exist or what state they are in.
+    const required = getTransition(action).permission;
+    if (!user.permissions.includes(required)) {
+      throw AppError.forbidden(`Action ${action} requires ${required}`, { required });
+    }
+
     const cheques = await this.prisma.db.cheque.findMany({
       where: { id: { in: [...chequeIds] }, organizationId: user.organizationId, deletedAt: null },
     });
@@ -210,16 +225,6 @@ export class ChequeActionsService {
           reason: 'errors.INVALID_STATE_TRANSITION',
         });
         continue;
-      }
-
-      // A missing permission is about the caller, not about this cheque, so
-      // it fails the request outright the way the single-cheque path does.
-      // Reporting it as a per-row "skip" would also confirm to someone without
-      // the permission that the cheque exists.
-      if (!user.permissions.includes(transition.permission)) {
-        throw AppError.forbidden(`Action ${action} requires ${transition.permission}`, {
-          required: transition.permission,
-        });
       }
 
       runnable.push({ cheque, transition });

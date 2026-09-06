@@ -113,6 +113,7 @@
     "amountRange": "Amount range",
     "awaitingReview": "This cheque has not been reviewed — the values below are unconfirmed",
     "backImage": "Back",
+    "backToList": "Back to the cheque list",
     "bank": "Bank",
     "bankBranch": "Bank branch",
     "bankGroup": "Bank details",
@@ -572,6 +573,7 @@
     "processing": "Reading the cheque…",
     "reviewSubtitle": "Check and correct the values before saving",
     "reviewTitle": "Review extracted data",
+    "run": "Read the cheque automatically",
     "suggestionNotice": "These values are automatic suggestions and are not confirmed yet"
   },
   "pageDescription": {

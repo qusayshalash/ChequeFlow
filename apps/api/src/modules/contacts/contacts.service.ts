@@ -23,6 +23,7 @@ import type {
 } from '@cheque-flow/validation';
 
 import { AppError } from '../../common/errors/app-error';
+import { escapeLike } from '../../common/utils/search';
 import type { RequestUser } from '../../common/types/request-user';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditAction, AuditService, type AuditContext } from '../audit/audit.service';
@@ -58,6 +59,8 @@ export class ContactsService {
   ) {}
 
   async list(user: RequestUser, query: ListContactsQuery): Promise<Paginated<ContactListItemView>> {
+    // A typed % or _ is a character, not a LIKE pattern.
+    const term = escapeLike(query.search ?? '');
     const where: Prisma.ContactWhereInput = {
       organizationId: user.organizationId,
       ...(query.type ? { type: query.type } : {}),
@@ -65,10 +68,10 @@ export class ContactsService {
       ...(query.search
         ? {
             OR: [
-              { name: { contains: query.search, mode: 'insensitive' } },
-              { companyName: { contains: query.search, mode: 'insensitive' } },
-              { phone: { contains: query.search } },
-              { email: { contains: query.search, mode: 'insensitive' } },
+              { name: { contains: term, mode: 'insensitive' } },
+              { companyName: { contains: term, mode: 'insensitive' } },
+              { phone: { contains: term } },
+              { email: { contains: term, mode: 'insensitive' } },
             ],
           }
         : {}),

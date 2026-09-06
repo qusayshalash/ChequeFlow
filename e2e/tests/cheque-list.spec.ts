@@ -63,6 +63,23 @@ test.describe('the cheque list', () => {
     ).toBe(true);
   });
 
+  test('a row is selectable by a target big enough to hit', async ({ page }) => {
+    const box = page.locator('tbody tr input[type=checkbox]').first();
+    test.skip((await box.count()) === 0, 'no rows');
+
+    // The input itself is 16px, which is under the 24px WCAG 2.2 asks of a
+    // pointer target and poor on a touch screen — and it is the only way into
+    // the whole bulk workflow. The label around it is what you actually hit.
+    const target = page.locator('tbody tr label').first();
+    const size = await target.boundingBox();
+    expect(size!.width, 'selection target is too narrow').toBeGreaterThanOrEqual(24);
+    expect(size!.height, 'selection target is too short').toBeGreaterThanOrEqual(24);
+
+    // And hitting its edge — not the box in the middle — still selects.
+    await page.mouse.click(size!.x + 3, size!.y + 3);
+    await expect(box).toBeChecked();
+  });
+
   test('selecting rows opens the bulk bar inside the content column', async ({ page }) => {
     const boxes = page.locator('tbody tr input[type=checkbox]');
     test.skip((await boxes.count()) < 2, 'not enough rows');

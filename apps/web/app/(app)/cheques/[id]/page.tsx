@@ -1,8 +1,11 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+
+import { ApiClientError } from '@cheque-flow/api-client';
 import Link from 'next/link';
-import { use, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { use } from 'react';
 
 import {
   ChequeStatus,
@@ -27,6 +30,7 @@ import { Panel } from '@/components/panel';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { usePermission } from '@/components/session';
 import { formatDate, formatDateTime, money } from '@/lib/format';
+import { loadErrorRequestId, loadErrorTitle } from '@/lib/query-error';
 
 export default function ChequeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -38,8 +42,19 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
    *
    * The page used to stack all four, which put the ledger — the reason most
    * people open a cheque — at the bottom of a long scroll.
+   *
+   * Kept in the URL rather than in component state. It was state, so a reload
+   * dropped you back on the overview, and a link to a cheque could never point
+   * at its movement ledger — which is the tab worth sending someone.
    */
-  const [tab, setTab] = useState('overview');
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tab = searchParams.get('tab') ?? 'overview';
+  const setTab = (next: string) => {
+    // `replace`, not `push`: flipping between tabs is not four steps back.
+    router.replace(next === 'overview' ? pathname : `${pathname}?tab=${next}`, { scroll: false });
+  };
   const canViewImages = usePermission(Permission.CHEQUE_VIEW_IMAGE);
 
   const today = utcToday();
@@ -57,12 +72,25 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
 
   if (cheque.isPending) return <LoadingState label={t('common.loading')} />;
   if (cheque.isError || !cheque.data) {
+    // A cheque that is not there will not be there on the second attempt, so
+    // "try again" is a button that cannot work. Offer it only for the failures
+    // retrying can actually fix, and a way out of the dead end otherwise.
+    const missing =
+      cheque.error instanceof ApiClientError && cheque.error.status === 404;
+
     return (
-      <ErrorState
-        title={t('errors.NOT_FOUND')}
-        onRetry={() => void cheque.refetch()}
-        retryLabel={t('common.retry')}
-      />
+      <div className="flex flex-col items-start gap-4">
+        <ErrorState
+          title={missing ? t('errors.NOT_FOUND') : loadErrorTitle(t, cheque.error)}
+          requestId={loadErrorRequestId(cheque.error)}
+          {...(missing
+            ? {}
+            : { onRetry: () => void cheque.refetch(), retryLabel: t('common.retry') })}
+        />
+        <Link href="/cheques" className="text-sm font-semibold text-teal-700 hover:underline">
+          {t('cheque.backToList')}
+        </Link>
+      </div>
     );
   }
 

@@ -27,6 +27,7 @@ import type {
 } from '@cheque-flow/validation';
 
 import { FieldEncryptionService } from '../../common/crypto/field-encryption.service';
+import { escapeLike } from '../../common/utils/search';
 import { AppError } from '../../common/errors/app-error';
 import type { RequestUser } from '../../common/types/request-user';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -710,7 +711,7 @@ export class ChequeService {
     if (query.recipientId) and.push({ currentRecipientId: query.recipientId });
     if (query.locationId) and.push({ currentLocationId: query.locationId });
     if (query.chequeNumber)
-      and.push({ chequeNumber: { contains: query.chequeNumber, mode: 'insensitive' } });
+      and.push({ chequeNumber: { contains: escapeLike(query.chequeNumber), mode: 'insensitive' } });
 
     if (query.dueFrom || query.dueTo) {
       and.push({
@@ -732,7 +733,7 @@ export class ChequeService {
 
     // Free text search across the fields staff actually search by.
     if (query.search) {
-      const contains = { contains: query.search, mode: 'insensitive' as const };
+      const contains = { contains: escapeLike(query.search), mode: 'insensitive' as const };
       and.push({
         OR: [
           { chequeNumber: contains },

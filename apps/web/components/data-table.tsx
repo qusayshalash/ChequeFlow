@@ -97,14 +97,17 @@ export function DataTable<Row>({
         <thead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-sm">
           <tr className="text-slate-500">
             {selection ? (
-              <th scope="col" className="w-12 border-b border-slate-200 px-4 py-3.5">
-                <input
-                  type="checkbox"
-                  aria-label={selection.selectAllLabel}
-                  checked={allSelected}
-                  onChange={() => selection.onToggleAll(keys)}
-                  className="size-4 rounded accent-teal-700"
-                />
+              <th scope="col" className="w-12 border-b border-slate-200 px-2 py-1.5">
+                {/* The box stays 16px; the label around it is what you hit. */}
+                <label className="flex size-11 cursor-pointer items-center justify-center">
+                  <input
+                    type="checkbox"
+                    aria-label={selection.selectAllLabel}
+                    checked={allSelected}
+                    onChange={() => selection.onToggleAll(keys)}
+                    className="size-4 rounded accent-teal-700"
+                  />
+                </label>
               </th>
             ) : null}
             {columns.map((column) => {
@@ -164,24 +167,27 @@ export function DataTable<Row>({
                 }`}
               >
                 {selection ? (
-                  <td className="border-b border-slate-100 px-4 py-3.5">
-                    <input
-                      type="checkbox"
-                      aria-label={rowLabel ? rowLabel(row) : key}
-                      checked={isSelected}
-                      onChange={() => selection.onToggle(key)}
-                      // The action bar is fixed to the bottom of the window, so
-                      // a checkbox the browser scrolls "into view" can land
-                      // underneath it — WCAG 2.2 calls that focus obscured. The
-                      // scroll margin reserves the bar's height, so tabbing
-                      // down a long table always leaves the focused row visible.
-                      className="size-4 rounded accent-teal-700"
-                      // The action bar is fixed to the bottom of the window, so a
-                      // checkbox scrolled "into view" can land underneath it —
-                      // WCAG 2.2 calls that focus obscured. The bar publishes
-                      // its own height, so this stays right however it restyles.
-                      style={{ scrollMarginBottom: 'calc(var(--bulk-bar-height, 0px) + 1rem)' }}
-                    />
+                  <td className="border-b border-slate-100 px-2 py-1.5">
+                    {/* The visible box is 16px, which is under the 24px WCAG 2.2
+                        asks of a pointer target and is a poor thing to hit on a
+                        touch screen — and it is the only way into the whole bulk
+                        workflow. The label around it is the target instead, so
+                        the row still looks the same and 44px of it is clickable. */}
+                    <label className="flex size-11 cursor-pointer items-center justify-center">
+                      <input
+                        type="checkbox"
+                        aria-label={rowLabel ? rowLabel(row) : key}
+                        checked={isSelected}
+                        onChange={() => selection.onToggle(key)}
+                        className="size-4 rounded accent-teal-700"
+                        // The action bar sticks to the bottom of the list, so a
+                        // checkbox the browser scrolls "into view" can land
+                        // underneath it — WCAG 2.2 calls that focus obscured. The
+                        // bar publishes its own height, so this stays right
+                        // however it is restyled.
+                        style={{ scrollMarginBottom: 'calc(var(--bulk-bar-height, 0px) + 1rem)' }}
+                      />
+                    </label>
                   </td>
                 ) : null}
                 {columns.map((column) => (

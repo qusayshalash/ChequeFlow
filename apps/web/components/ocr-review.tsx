@@ -97,8 +97,11 @@ export function OcrReviewPanel({ cheque }: { cheque: ChequeDetailView }) {
       <Card className="flex flex-col items-start gap-3">
         <h2 className="text-lg font-semibold text-slate-900">{t('ocr.reviewTitle')}</h2>
         <p className="text-sm text-slate-600">{t('ocr.suggestionNotice')}</p>
+        {/* An action, not a status. This said "reading the cheque data…" while
+            nothing was happening, so it read as a stuck spinner and nobody
+            pressed it. `ocr.processing` belongs to the waiting state above. */}
         <Button onClick={() => runOcr.mutate()} loading={runOcr.isPending}>
-          {t('ocr.processing')}
+          {t('ocr.run')}
         </Button>
         {error ? (
           <p role="alert" className="text-sm text-red-700">

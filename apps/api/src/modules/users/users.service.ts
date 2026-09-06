@@ -5,6 +5,7 @@ import type { Prisma } from '@cheque-flow/database';
 import type { CreateUserInput, ListUsersQuery, UpdateUserInput } from '@cheque-flow/validation';
 
 import { AppError } from '../../common/errors/app-error';
+import { escapeLike } from '../../common/utils/search';
 import type { RequestUser } from '../../common/types/request-user';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditAction, AuditService, type AuditContext } from '../audit/audit.service';
@@ -44,14 +45,16 @@ export class UsersService {
   ) {}
 
   async list(user: RequestUser, query: ListUsersQuery): Promise<Paginated<UserView>> {
+    // A typed % or _ is a character, not a LIKE pattern.
+    const term = escapeLike(query.search ?? '');
     const where: Prisma.UserWhereInput = {
       organizationId: user.organizationId,
       ...(query.status ? { status: query.status } : {}),
       ...(query.search
         ? {
             OR: [
-              { name: { contains: query.search, mode: 'insensitive' } },
-              { email: { contains: query.search, mode: 'insensitive' } },
+              { name: { contains: term, mode: 'insensitive' } },
+              { email: { contains: term, mode: 'insensitive' } },
             ],
           }
         : {}),

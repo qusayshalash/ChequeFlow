@@ -68,4 +68,42 @@ test.describe('permissions are enforced by the server', () => {
     const after = await (await request.get(`${API}/cheques/${cheque.id}`, { headers: auth(owner.accessToken) })).json();
     expect(after.status, 'the refused request must not have changed anything').toBe(cheque.status);
   });
+
+  test('the refusal says nothing about the cheque it was aimed at', async ({ request }) => {
+    const owner = await apiLogin(request, 'owner');
+    const viewer = await apiLogin(request, 'viewer');
+    const auth = (t: string) => ({ Authorization: `Bearer ${t}` });
+
+    const cleared = await request.get(`${API}/cheques?status=CLEARED&pageSize=1`, {
+      headers: auth(owner.accessToken),
+    });
+    const settled = (await cleared.json()).data[0];
+    test.skip(!settled, 'no cleared cheque to aim at');
+
+    // The body has to be valid, or the request never reaches the permission
+    // check: the payload schema runs first and answers 422 either way, which
+    // would make this pass without testing anything.
+    const locations = await (await request.get(`${API}/locations`, { headers: auth(owner.accessToken) })).json();
+    const contacts = await (await request.get(`${API}/contacts?pageSize=1`, { headers: auth(owner.accessToken) })).json();
+    const body = { toLocationId: locations[0]?.id, fromContactId: contacts.data[0]?.id };
+
+    // Two requests differing only in the cheque behind the id: one in the wrong
+    // state for the action, one that does not exist. The permission check runs
+    // before either is looked at, so both have to answer identically —
+    // otherwise the status code alone tells someone without permission what
+    // state a cheque is in, or whether it exists.
+    const attempts = await Promise.all(
+      [settled.id, '00000000-0000-4000-8000-000000000000'].map((id) =>
+        request.post(`${API}/cheques/${id}/receive`, {
+          headers: auth(viewer.accessToken),
+          data: body,
+          failOnStatusCode: false,
+        }),
+      ),
+    );
+
+    for (const attempt of attempts) {
+      expect(attempt.status(), 'the answer must not depend on the cheque').toBe(403);
+    }
+  });
 });

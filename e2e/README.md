@@ -53,13 +53,13 @@ a disposable one instead of clearing the shared cache — otherwise every later
 spec would sign in again and the run would fail on 429 somewhere unrelated to
 whatever actually broke.
 
-## Tests that are red on purpose
+## History
 
-One spec fails, and it is a real defect rather than a flaky test. It is
-written to pass once the defect is fixed:
+Six specs were written red, against defects a QA pass had found, and each
+turned green when its defect was fixed: the impossible calendar date, the real
+leap day, the invented currency code, the per-keystroke search request,
+`Escape` in the contact edit dialog, and `%` in the search box.
 
-- `%` in the search box reaches SQL `LIKE` unescaped and returns every row
-
-Five others were red and are now green: the impossible calendar date, the real
-leap day, the invented currency code, the per-keystroke search request, and
-`Escape` in the contact edit dialog.
+They are worth keeping in that shape. A test written after the fix only says
+the code does what the code does; one written against the failure has been
+seen to catch it.
