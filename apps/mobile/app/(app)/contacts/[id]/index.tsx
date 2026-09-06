@@ -25,7 +25,7 @@ import {
   Sheet,
   StatusPill,
 } from '@/components/ui';
-import { accent, elevation, radius, space, surface, text } from '@/theme';
+import { accent, elevation, numeric, radius, space, surface, text, type } from '@/theme';
 
 /**
  * One contact's account statement.
@@ -161,6 +161,33 @@ export default function ContactStatementScreen() {
       ) : (
         currencies.map((totals) => (
           <Section key={totals.currency} title={`${t('contact.statement')} — ${totals.currency}`}>
+            {/* The balance leads. It is the question the statement is opened
+                to answer, and four buckets do not answer it on their own. */}
+            <View style={styles.net}>
+              <View style={styles.netText}>
+                <Text style={styles.netLabel}>{t('contact.netLabel')}</Text>
+                <Text style={styles.netSense}>
+                  {Number(totals.net) === 0
+                    ? t('contact.settled')
+                    : totals.net.startsWith('-')
+                      ? t('contact.weOwe')
+                      : t('contact.owesUs')}
+                </Text>
+              </View>
+              <Text
+                style={[
+                  styles.netValue,
+                  Number(totals.net) === 0
+                    ? styles.netSettled
+                    : totals.net.startsWith('-')
+                      ? styles.netOwing
+                      : styles.netOwed,
+                ]}
+              >
+                {money(totals.net, totals.currency)}
+              </Text>
+            </View>
+
             <InfoRow
               label={`${t('contact.pending')} (${totals.pending.count})`}
               value={money(totals.pending.total, totals.currency)}
@@ -177,6 +204,15 @@ export default function ContactStatementScreen() {
               label={`${t('contact.returned')} (${totals.returned.count})`}
               value={money(totals.returned.total, totals.currency)}
             />
+            <InfoRow
+              label={`${t('contact.unconfirmed')} (${totals.unconfirmed.count})`}
+              value={money(totals.unconfirmed.total, totals.currency)}
+            />
+            {/* Only when there is something to explain: otherwise cheques in
+                the list below but not in the balance look like a lost number. */}
+            {totals.unconfirmed.count > 0 ? (
+              <Body muted>{t('contact.unconfirmedHint')}</Body>
+            ) : null}
           </Section>
         ))
       )}
@@ -280,6 +316,25 @@ const styles = StyleSheet.create({
   meta: { fontSize: 13, color: text.secondary, textAlign: 'right' },
   overdue: { color: colors.danger, fontWeight: '700' },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: text.primary, textAlign: 'right' },
+
+  net: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space['3'],
+    backgroundColor: surface.sunken,
+    borderRadius: radius.md,
+    paddingHorizontal: space['3'],
+    paddingVertical: space['2'],
+  },
+  netText: { flex: 1, alignItems: 'flex-end' },
+  netLabel: { ...type.label, color: text.primary },
+  netSense: { ...type.caption, color: text.faint },
+  // Same three colours as the balance column in the list, so a contact does
+  // not change sign between the two screens.
+  netValue: { ...type.title, ...numeric, writingDirection: 'ltr' },
+  netOwed: { color: '#12805C' },
+  netOwing: { color: colors.danger },
+  netSettled: { color: text.faint },
   reachRow: { flexDirection: 'row', gap: space['2'] },
   reachButton: {
     flex: 1,

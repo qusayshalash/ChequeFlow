@@ -377,6 +377,63 @@ describeWithDb('phase 2 surface (e2e)', () => {
       expect(Number(sar.bounced.total)).toBeGreaterThan(0);
     });
 
+    it('nets the statement the same way the contacts list does', async () => {
+      const [statement, list] = await Promise.all([
+        request(app.getHttpServer())
+          .get(`${API}/contacts/${fixtures.customerId}/statement`)
+          .set(auth())
+          .expect(200),
+        request(app.getHttpServer()).get(`${API}/contacts`).set(auth()).expect(200),
+      ]);
+
+      const row = list.body.data.find(
+        (item: { id: string }) => item.id === fixtures.customerId,
+      );
+
+      // The list column and the statement headline answer the same question.
+      // They are computed by different queries — a raw lateral unpivot there,
+      // a Prisma groupBy here — so a drift between them is a real risk, and a
+      // contact that owes money on one screen and nothing on the other is the
+      // kind of bug nobody reports because they assume they misread it.
+      for (const entry of statement.body.currencies) {
+        const listed = row.balances.find(
+          (balance: { currency: string }) => balance.currency === entry.currency,
+        );
+        expect(Number(entry.net)).toBeCloseTo(Number(listed?.net ?? 0), 2);
+      }
+    });
+
+    it('counts an unconfirmed cheque without letting it move the balance', async () => {
+      const before = await request(app.getHttpServer())
+        .get(`${API}/contacts/${fixtures.customerId}/statement`)
+        .set(auth())
+        .expect(200);
+      const usdBefore = before.body.currencies.find(
+        (entry: { currency: string }) => entry.currency === 'USD',
+      );
+
+      await createCheque({ amount: '777.00' });
+
+      const after = await request(app.getHttpServer())
+        .get(`${API}/contacts/${fixtures.customerId}/statement`)
+        .set(auth())
+        .expect(200);
+      const usdAfter = after.body.currencies.find(
+        (entry: { currency: string }) => entry.currency === 'USD',
+      );
+
+      // A cheque somebody typed in is a piece of paper, not money owed, so it
+      // stays out of the balance...
+      expect(Number(usdAfter.net)).toBeCloseTo(Number(usdBefore.net), 2);
+      // ...but it is still reported, because otherwise the buckets do not add
+      // up to the cheque list printed beside them.
+      expect(usdAfter.unconfirmed.count).toBe(usdBefore.unconfirmed.count + 1);
+      expect(Number(usdAfter.unconfirmed.total)).toBeCloseTo(
+        Number(usdBefore.unconfirmed.total) + 777,
+        2,
+      );
+    });
+
     it('deletes an unreferenced contact but only deactivates a referenced one', async () => {
       const created = await request(app.getHttpServer())
         .post(`${API}/contacts`)

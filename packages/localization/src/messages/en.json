@@ -353,6 +353,7 @@
     "mergeSuccess": "Merged",
     "name": "Name",
     "nationalId": "National ID",
+    "netLabel": "Net balance",
     "newTitle": "New contact",
     "noPhone": "No phone number",
     "owesUs": "Owed to us",
@@ -366,6 +367,8 @@
     "taxNumber": "Tax number",
     "title": "Contacts",
     "type": "Type",
+    "unconfirmed": "Unconfirmed",
+    "unconfirmedHint": "Entered but not yet received — not counted in the balance",
     "updateSuccess": "Contact updated",
     "weOwe": "Owed by us"
   },

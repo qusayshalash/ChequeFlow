@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import {
+  ChequeDirection,
   ChequeStatus,
   OUTSTANDING_CHEQUE_STATUSES,
   utcToday,
@@ -424,7 +425,10 @@ export class ContactsService {
 
     const [grouped, rows, totalCheques] = await Promise.all([
       this.prisma.db.cheque.groupBy({
-        by: ['currency', 'status'],
+        // Direction as well as status, because the net balance signs each
+        // cheque: what came from them counts towards us, what went to them
+        // counts against.
+        by: ['currency', 'status', 'direction'],
         where: involved,
         _count: { _all: true },
         _sum: { amount: true },
@@ -448,6 +452,8 @@ export class ContactsService {
       collected: { count: 0, total: '0.00' },
       bounced: { count: 0, total: '0.00' },
       returned: { count: 0, total: '0.00' },
+      unconfirmed: { count: 0, total: '0.00' },
+      net: '0.00',
     });
 
     for (const row of grouped) {
@@ -455,13 +461,24 @@ export class ContactsService {
       if (!bucketName) continue;
 
       const entry = byCurrency.get(row.currency) ?? blank(row.currency);
+      const amount = row._sum.amount ?? toMoney('0');
       const current = entry[bucketName];
       entry[bucketName] = {
         count: current.count + row._count._all,
         // Sums come from PostgreSQL as decimals; adding the two group sums as
         // strings would be wrong, so re-add them as decimals.
-        total: moneyToString(toMoney(current.total).plus(row._sum.amount ?? toMoney('0'))),
+        total: moneyToString(toMoney(current.total).plus(amount)),
       };
+
+      // Only outstanding cheques move the balance. A cleared one is money that
+      // already arrived, and a bounced or draft one is not money at all.
+      if (OUTSTANDING_CHEQUE_STATUSES.includes(row.status)) {
+        const net = toMoney(entry.net);
+        entry.net = moneyToString(
+          row.direction === ChequeDirection.INCOMING ? net.plus(amount) : net.minus(amount),
+        );
+      }
+
       byCurrency.set(row.currency, entry);
     }
 
@@ -482,13 +499,19 @@ export class ContactsService {
   /** Which statement bucket a status belongs to, or null if it belongs to none. */
   private static bucketFor(
     status: ChequeStatus,
-  ): 'pending' | 'collected' | 'bounced' | 'returned' | null {
+  ): 'pending' | 'collected' | 'bounced' | 'returned' | 'unconfirmed' | null {
     if (OUTSTANDING_CHEQUE_STATUSES.includes(status)) return 'pending';
     if (status === ChequeStatus.CLEARED) return 'collected';
     if (status === ChequeStatus.BOUNCED) return 'bounced';
     if (status === ChequeStatus.RETURNED) return 'returned';
-    // DRAFT, PENDING_REVIEW, CANCELLED and LOST are deliberately excluded:
-    // none of them represents money owed, collected or returned.
+    // Typed in but not confirmed. Kept out of the balance and counted on its
+    // own, so a contact whose cheques are all still drafts reads as "five
+    // cheques, none of them confirmed" rather than as a contact with nothing.
+    if (status === ChequeStatus.DRAFT || status === ChequeStatus.PENDING_REVIEW) {
+      return 'unconfirmed';
+    }
+    // CANCELLED and LOST stay excluded: neither is money owed, collected,
+    // returned or waiting to be confirmed.
     return null;
   }
 

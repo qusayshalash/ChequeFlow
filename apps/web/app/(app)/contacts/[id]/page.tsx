@@ -273,34 +273,69 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
       </Panel>
 
       {/* The position, per currency. A single figure across currencies would
-          be meaningless, so each gets its own row of four numbers. */}
+          be meaningless, so each gets its own balance and its own breakdown. */}
       {currencies.length > 0 ? (
         <Panel title={t('contact.statement')}>
-          <div className="flex flex-col gap-4">
-            {currencies.map((entry) => (
-              <div key={entry.currency}>
-                <p className="mb-2 text-sm font-bold text-slate-900">{entry.currency}</p>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  {(
-                    [
-                      ['contact.pending', entry.pending, 'text-amber-600'],
-                      ['contact.collected', entry.collected, 'text-teal-700'],
-                      ['contact.bounced', entry.bounced, 'text-red-600'],
-                      ['contact.returned', entry.returned, 'text-slate-600'],
-                    ] as const
-                  ).map(([labelKey, bucket, tone]) => (
-                    <div key={labelKey} className="rounded-xl border border-slate-200 p-3">
+          <div className="flex flex-col gap-5">
+            {currencies.map((entry) => {
+              // The net is the number the statement exists to answer, so it
+              // leads rather than having to be worked out from four buckets.
+              const owed = !entry.net.startsWith('-');
+              const settled = Number(entry.net) === 0;
+
+              return (
+                <div key={entry.currency}>
+                  <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2 rounded-xl bg-slate-50 px-4 py-3">
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">{entry.currency}</p>
                       <p className="text-xs text-slate-500">
-                        {t(labelKey)} ({bucket.count})
-                      </p>
-                      <p className={`mt-1 text-sm font-bold tabular-nums ${tone}`}>
-                        {money(locale, bucket.total, entry.currency)}
+                        {settled
+                          ? t('contact.settled')
+                          : owed
+                            ? t('contact.owesUs')
+                            : t('contact.weOwe')}
                       </p>
                     </div>
-                  ))}
+                    <p
+                      dir="ltr"
+                      className={`text-xl font-bold tabular-nums ${
+                        settled ? 'text-slate-500' : owed ? 'text-emerald-700' : 'text-red-700'
+                      }`}
+                    >
+                      {money(locale, entry.net, entry.currency)}
+                    </p>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                    {(
+                      [
+                        ['contact.pending', entry.pending, 'text-amber-600'],
+                        ['contact.collected', entry.collected, 'text-teal-700'],
+                        ['contact.bounced', entry.bounced, 'text-red-600'],
+                        ['contact.returned', entry.returned, 'text-slate-600'],
+                        ['contact.unconfirmed', entry.unconfirmed, 'text-slate-500'],
+                      ] as const
+                    ).map(([labelKey, bucket, tone]) => (
+                      <div key={labelKey} className="rounded-xl border border-slate-200 p-3">
+                        <p className="text-xs text-slate-500">
+                          {t(labelKey)} ({bucket.count})
+                        </p>
+                        <p className={`mt-1 text-sm font-bold tabular-nums ${tone}`}>
+                          {money(locale, bucket.total, entry.currency)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Said only when there is something to explain: otherwise
+                      cheques sitting in the list but not in the balance look
+                      like a missing number. */}
+                  {entry.unconfirmed.count > 0 ? (
+                    <p className="mt-2 text-xs text-slate-500">{t('contact.unconfirmedHint')}</p>
+                  ) : null}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Panel>
       ) : null}

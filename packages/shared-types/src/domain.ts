@@ -356,6 +356,24 @@ export interface ContactStatementCurrency {
   collected: Bucket;
   bounced: Bucket;
   returned: Bucket;
+  /**
+   * Entered but not yet confirmed — drafts and cheques awaiting review.
+   *
+   * These are not part of `net`: an unconfirmed cheque is a piece of paper
+   * somebody typed in, not money either side owes. They are reported anyway
+   * because without them the buckets do not add up to the cheque list beside
+   * them, and a statement whose parts do not reconcile reads as broken.
+   */
+  unconfirmed: Bucket;
+  /**
+   * The one figure the statement is for: outstanding cheques from this contact
+   * minus outstanding cheques handed to them, in this currency alone.
+   *
+   * Positive means they still owe us, negative means we owe them. Computed by
+   * the same rule as the balance column in the contacts list, so the two can
+   * never disagree — and never summed across currencies.
+   */
+  net: MoneyString;
 }
 
 export interface ContactStatementView {
