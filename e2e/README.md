@@ -14,8 +14,13 @@ than ten times a minute and the production default is ten, so a run against a
 default stack fails partway through on 429:
 
 ```bash
-RATE_LIMIT_AUTH_PER_MINUTE=1000 pnpm --filter @cheque-flow/api dev
+RATE_LIMIT_AUTH_PER_MINUTE=1000 RATE_LIMIT_DEFAULT_PER_MINUTE=100000 \
+  pnpm --filter @cheque-flow/api dev
 ```
+
+The general limit matters too: a full run makes a few hundred requests, and
+back-to-back runs while fixing something will exhaust the default 120 a minute
+and start failing on setup rather than on anything under test.
 
 ```bash
 E2E_PASSWORD='<the seeded development password>' pnpm test:e2e:ui
@@ -50,12 +55,11 @@ whatever actually broke.
 
 ## Tests that are red on purpose
 
-Two specs currently fail, and each is a real defect rather than a flaky test.
-They are written to pass once the defect is fixed:
+One spec fails, and it is a real defect rather than a flaky test. It is
+written to pass once the defect is fixed:
 
-- `Escape` does not close the contact edit dialog — three of the four
-  `role="dialog"` modals have no keyboard handler
 - `%` in the search box reaches SQL `LIKE` unescaped and returns every row
 
-Four others were red and are now green: the impossible calendar date, the real
-leap day, the invented currency code, and the per-keystroke search request.
+Five others were red and are now green: the impossible calendar date, the real
+leap day, the invented currency code, the per-keystroke search request, and
+`Escape` in the contact edit dialog.

@@ -39,8 +39,12 @@ test('a contact can be created, edited in the dialog, and deleted', async ({ pag
   await expect(page.getByRole('heading', { name: renamed })).toBeVisible({ timeout: 15_000 });
 
   // ── delete, and confirm it is really gone ────────────────────────────────
-  page.once('dialog', (d) => void d.accept());
-  await page.getByRole('button', { name: /حذف/ }).first().click();
+  // Two deliberate clicks: the second one lives in a panel the first opens,
+  // so a destructive action is never one stray click away.
+  await page.getByRole('button', { name: /^حذف$/ }).first().click();
+  const confirm = page.getByRole('button', { name: /^حذف$/ }).last();
+  await expect(confirm).toBeVisible();
+  await confirm.click();
   await page.waitForTimeout(1500);
 
   const { accessToken } = await apiLogin(page.request);

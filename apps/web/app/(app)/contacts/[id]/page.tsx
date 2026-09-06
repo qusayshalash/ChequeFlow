@@ -10,8 +10,8 @@ import { Badge, Button, ErrorState, LoadingState, SuccessBanner } from '@cheque-
 
 import { ChequeTable } from '@/components/cheque-table';
 import { ContactEditForm } from '@/components/contact-edit-form';
+import { Drawer } from '@/components/drawer';
 import { FactGrid } from '@/components/fact-grid';
-import { IconClose } from '@/components/icons';
 import { PageHeader } from '@/components/page-header';
 import { Panel } from '@/components/panel';
 import { useApi, useApp, useTranslator } from '@/components/providers';
@@ -174,36 +174,13 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
         />
       </Panel>
 
-      {editing ? (
-        <>
-          <button
-            type="button"
-            aria-label={t('common.close')}
-            className="fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-[2px]"
-            onClick={() => setEditing(false)}
-          />
-          <aside
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="edit-contact-title"
-            className="fixed inset-y-0 end-0 z-50 flex w-full max-w-2xl flex-col bg-white shadow-2xl"
-          >
-            <div className="flex h-20 shrink-0 items-center justify-between border-b border-slate-200 px-6">
-              <div>
-                <p className="text-xs font-semibold text-teal-700">{contact.name}</p>
-                <h2 id="edit-contact-title" className="mt-1 text-xl font-bold text-slate-950">
-                  {t('contact.editTitle')}
-                </h2>
-              </div>
-              <button
-                type="button"
-                aria-label={t('common.close')}
-                className="flex size-10 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-                onClick={() => setEditing(false)}
-              >
-                <IconClose />
-              </button>
-            </div>
+      <Drawer
+        open={editing}
+        onClose={() => setEditing(false)}
+        eyebrow={contact.name}
+        title={t('contact.editTitle')}
+        width="2xl"
+      >
             <div className="min-h-0 flex-1 overflow-y-auto p-6">
               <ContactEditForm
                 contact={contact}
@@ -215,9 +192,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                 }}
               />
             </div>
-          </aside>
-        </>
-      ) : null}
+      </Drawer>
 
       {/* Above the statement on purpose: whether this customer is already
           holding more than agreed is the question you ask before taking

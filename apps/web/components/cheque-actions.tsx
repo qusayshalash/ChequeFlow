@@ -7,7 +7,8 @@ import { ApiClientError } from '@cheque-flow/api-client';
 import { ChequeAction, type ChequeDetailView } from '@cheque-flow/shared-types';
 import { Button, Card, Field, inputClassName } from '@cheque-flow/ui';
 
-import { IconClose } from '@/components/icons';
+
+import { Drawer } from '@/components/drawer';
 import { useApi, useTranslator } from '@/components/providers';
 
 /** Actions that need a counterparty or a reason before they can be submitted. */
@@ -141,38 +142,15 @@ export function ChequeActionsPanel({
         ))}
       </div>
 
+      {/* Mounted only while there is an action, so the form below can rely on
+          it being set rather than narrowing it at every use. */}
       {action ? (
-        <>
-          <button
-            type="button"
-            aria-label={t('common.close')}
-            className="fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-[2px]"
-            onClick={() => setAction(null)}
-          />
-          <aside
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="cheque-action-title"
-            className="fixed inset-y-0 end-0 z-50 flex w-full max-w-lg flex-col bg-white shadow-2xl"
-          >
-            <div className="flex h-20 shrink-0 items-center justify-between border-b border-slate-200 px-6">
-              <div>
-                <p className="text-xs font-semibold text-teal-700" dir="ltr">
-                  {cheque.chequeNumber}
-                </p>
-                <h2 id="cheque-action-title" className="mt-1 text-xl font-bold text-slate-950">
-                  {t(`action.${action}`)}
-                </h2>
-              </div>
-              <button
-                type="button"
-                aria-label={t('common.close')}
-                className="flex size-10 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-                onClick={() => setAction(null)}
-              >
-                <IconClose />
-              </button>
-            </div>
+        <Drawer
+          open
+          onClose={() => setAction(null)}
+          eyebrow={<span dir="ltr">{cheque.chequeNumber}</span>}
+          title={t(`action.${action}`)}
+        >
 
             <form
               className="flex min-h-0 flex-1 flex-col"
@@ -283,8 +261,7 @@ export function ChequeActionsPanel({
                 </Button>
               </div>
             </form>
-          </aside>
-        </>
+        </Drawer>
       ) : null}
     </Card>
   );

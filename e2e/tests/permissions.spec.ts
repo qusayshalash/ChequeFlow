@@ -42,12 +42,21 @@ test.describe('permissions are enforced by the server', () => {
     const viewer = await apiLogin(request, 'viewer');
     const auth = (t: string) => ({ Authorization: `Bearer ${t}` });
 
-    const drafts = await request.get(`${API}/cheques?status=DRAFT&pageSize=1`, { headers: auth(owner.accessToken) });
-    const cheque = (await drafts.json()).data[0];
+    // Read through a helper that checks the status first: a throttled or
+    // refused setup request otherwise surfaces as "cannot read '0' of
+    // undefined", which says nothing about what actually went wrong.
+    const fetchJson = async (path: string) => {
+      const res = await request.get(`${API}${path}`, { headers: auth(owner.accessToken) });
+      expect(res.status(), `setup request ${path} failed`).toBe(200);
+      return res.json();
+    };
+
+    const drafts = await fetchJson('/cheques?status=DRAFT&pageSize=1');
+    const cheque = drafts.data[0];
     test.skip(!cheque, 'no draft cheque to act on');
 
-    const locations = await (await request.get(`${API}/locations`, { headers: auth(owner.accessToken) })).json();
-    const contacts = await (await request.get(`${API}/contacts?pageSize=1`, { headers: auth(owner.accessToken) })).json();
+    const locations = await fetchJson('/locations');
+    const contacts = await fetchJson('/contacts?pageSize=1');
 
     const res = await request.post(`${API}/cheques/${cheque.id}/receive`, {
       headers: auth(viewer.accessToken),

@@ -88,6 +88,22 @@ interface UploadedImageFile {
   size: number;
 }
 
+/**
+ * The two limits these routes carry, read from the environment.
+ *
+ * Read here rather than through `AppConfigService` because a decorator runs
+ * when the module is imported, before anything is injected. They were the
+ * literals 30 and 20, which meant RATE_LIMIT_UPLOAD_PER_MINUTE and
+ * RATE_LIMIT_OCR_PER_MINUTE did nothing at all. Defaults are those literals.
+ */
+const perMinute = (name: string, fallback: number): number => {
+  const parsed = Number(process.env[name]);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const UPLOAD_PER_MINUTE = perMinute('RATE_LIMIT_UPLOAD_PER_MINUTE', 30);
+const OCR_PER_MINUTE = perMinute('RATE_LIMIT_OCR_PER_MINUTE', 20);
+
 @ApiTags('cheques')
 @ApiBearerAuth()
 @Controller('cheques')
@@ -337,7 +353,7 @@ export class ChequeController {
 
   @Post(':id/images')
   @RequirePermissions(Permission.CHEQUE_CREATE)
-  @Throttle({ upload: { limit: 30, ttl: 60_000 } })
+  @Throttle({ upload: { limit: UPLOAD_PER_MINUTE, ttl: 60_000 } })
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -402,7 +418,7 @@ export class ChequeController {
 
   @Post(':id/process-ocr')
   @RequirePermissions(Permission.CHEQUE_CREATE)
-  @Throttle({ ocr: { limit: 20, ttl: 60_000 } })
+  @Throttle({ ocr: { limit: OCR_PER_MINUTE, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Run OCR and store the result as an unconfirmed suggestion' })
   processOcr(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {

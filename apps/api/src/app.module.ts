@@ -38,14 +38,28 @@ import { UsersModule } from './modules/users/users.module';
     CryptoModule,
     AuditModule,
     StorageModule,
+    /**
+     * One limit applies everywhere; the named ones are opened per route.
+     *
+     * Every registered throttler is evaluated on every request, and the
+     * strictest one wins — so registering `ocr` at 20 a minute did not limit
+     * OCR, it limited *the whole API* to 20 a minute. Raising
+     * RATE_LIMIT_DEFAULT_PER_MINUTE to 100000 still left a 20-request ceiling
+     * on the contact list, and nothing said why.
+     *
+     * So the three special buckets are registered effectively open and the
+     * real number is supplied by the `@Throttle` on the one route each is for,
+     * where it applies to that route alone. `default` stays the only limit
+     * that governs everything.
+     */
     ThrottlerModule.forRootAsync({
       inject: [AppConfigService],
       useFactory: (config: AppConfigService) => ({
         throttlers: [
           { name: 'default', ttl: 60_000, limit: config.rateLimits.default },
-          { name: 'auth', ttl: 60_000, limit: config.rateLimits.auth },
-          { name: 'upload', ttl: 60_000, limit: config.rateLimits.upload },
-          { name: 'ocr', ttl: 60_000, limit: config.rateLimits.ocr },
+          { name: 'auth', ttl: 60_000, limit: Number.MAX_SAFE_INTEGER },
+          { name: 'upload', ttl: 60_000, limit: Number.MAX_SAFE_INTEGER },
+          { name: 'ocr', ttl: 60_000, limit: Number.MAX_SAFE_INTEGER },
         ],
       }),
     }),

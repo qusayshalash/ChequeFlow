@@ -18,8 +18,9 @@ import {
 } from '@cheque-flow/ui';
 
 import { DataTable } from '@/components/data-table';
+import { Drawer } from '@/components/drawer';
 import { loadErrorRequestId, loadErrorTitle } from '@/lib/query-error';
-import { IconClose, IconPlus } from '@/components/icons';
+import { IconPlus } from '@/components/icons';
 import { FilterSearch } from '@/components/filter-search';
 import { PageHeader } from '@/components/page-header';
 import { Panel } from '@/components/panel';
@@ -153,36 +154,12 @@ function UsersManager() {
       {formError ? <ErrorState title={formError} /> : null}
       {create.isSuccess ? <SuccessBanner message={t('user.createSuccess')} /> : null}
 
-      {createOpen ? (
-        <>
-          <button
-            type="button"
-            aria-label={t('common.close')}
-            className="fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-[2px]"
-            onClick={() => setCreateOpen(false)}
-          />
-          <aside
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="new-user-title"
-            className="fixed inset-y-0 end-0 z-50 flex w-full max-w-lg flex-col bg-white shadow-2xl"
-          >
-            <div className="flex h-20 shrink-0 items-center justify-between border-b border-slate-200 px-6">
-              <div>
-                <p className="text-xs font-semibold text-teal-700">{t('user.title')}</p>
-                <h2 id="new-user-title" className="mt-1 text-xl font-bold text-slate-950">
-                  {t('user.newTitle')}
-                </h2>
-              </div>
-              <button
-                type="button"
-                aria-label={t('common.close')}
-                className="flex size-10 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-                onClick={() => setCreateOpen(false)}
-              >
-                <IconClose />
-              </button>
-            </div>
+      <Drawer
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        eyebrow={t('user.title')}
+        title={t('user.newTitle')}
+      >
 
             <form
               className="flex min-h-0 flex-1 flex-col"
@@ -262,9 +239,7 @@ function UsersManager() {
                 </Button>
               </div>
             </form>
-          </aside>
-        </>
-      ) : null}
+      </Drawer>
 
       {users.isError ? (
         <ErrorState
