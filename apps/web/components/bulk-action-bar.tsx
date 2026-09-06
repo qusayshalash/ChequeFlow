@@ -24,6 +24,19 @@ const NEEDS_DATE: ReadonlySet<BulkAction> = new Set(['POSTPONE']);
  * Appears only when something is selected, and docks to the bottom of the
  * screen: the selection is made at the top of a long table, and an action bar
  * you have to scroll back up to find is one people stop using.
+ *
+ * It sticks rather than being `fixed`. `fixed` is positioned against the
+ * viewport, which includes the sidebar — measured at 1500px wide, the bar ran
+ * from 16 to 1484 while the sidebar occupied 1228 to 1500, so the count, the
+ * action select and half the destination select were behind it. Sticky is
+ * positioned inside the content column instead, so it cannot reach under the
+ * sidebar at any width or collapse state.
+ *
+ * Messages stack above the pill instead of inside it. A `w-full` child in a
+ * wrapping flex row forces the row to its maximum: choosing "receive" added a
+ * one-line hint and stretched the bar from content-width to the full 1468px,
+ * which then threw the buttons to the opposite end of the screen from the
+ * controls they belong to.
  */
 export function BulkActionBar({
   selected,
@@ -122,11 +135,13 @@ export function BulkActionBar({
 
   if (selected.size === 0) {
     return done !== null ? (
-      <div
-        role="status"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-teal-200 bg-teal-50/95 p-3 text-center text-sm font-medium text-teal-900 shadow-[0_-12px_30px_-22px_rgb(16_24_40/0.45)] backdrop-blur-xl"
-      >
-        {t('bulk.applied')}: {done}
+      <div className="pointer-events-none sticky bottom-5 z-40 flex justify-center px-4">
+        <p
+          role="status"
+          className="pointer-events-auto rounded-2xl border border-teal-200 bg-teal-50/95 px-4 py-2.5 text-sm font-medium text-teal-900 shadow-[0_18px_40px_-16px_rgb(16_24_40/0.35)] backdrop-blur-xl"
+        >
+          {t('bulk.applied')}: {done}
+        </p>
       </div>
     ) : null;
   }
@@ -144,9 +159,50 @@ export function BulkActionBar({
     // its own footprint.
     <div
       ref={barRef}
-      className="pointer-events-none fixed inset-x-0 bottom-5 z-40 flex justify-center px-4"
+      className="pointer-events-none sticky bottom-5 z-40 flex flex-col items-center gap-2 px-4"
     >
-      <div className="pointer-events-auto flex max-w-full flex-wrap items-center gap-2.5 rounded-2xl border border-slate-200 bg-white/95 p-2.5 shadow-[0_18px_40px_-16px_rgb(16_24_40/0.35)] backdrop-blur-xl">
+      {/* Said before the pill, not inside it: a full-width line in the pill's
+          wrapping row stretches the pill to the whole column. */}
+      {action === 'RECEIVE' ? (
+        <p className="pointer-events-auto max-w-[62ch] rounded-xl border border-slate-200 bg-white/95 px-3 py-2 text-xs leading-relaxed text-slate-600 shadow-[0_10px_28px_-18px_rgb(16_24_40/0.35)] backdrop-blur-xl">
+          {t('bulk.receiveHint')}
+        </p>
+      ) : null}
+
+      {blocked.length > 0 ? (
+        <div
+          role="alert"
+          className="pointer-events-auto max-w-[72ch] rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 shadow-[0_10px_28px_-18px_rgb(16_24_40/0.35)]"
+        >
+          <p className="font-semibold">{t('bulk.blocked')}</p>
+          <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+            {blocked.map((entry) => (
+              <li key={entry.chequeId} dir="auto">
+                <span className="font-semibold tabular-nums">{entry.chequeNumber || '—'}</span>{' '}
+                {t(entry.reason)}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-2">
+            {/* The override is a separate, deliberate click — never the
+                button the user already pressed. */}
+            <Button variant="danger" onClick={() => run(true)} loading={mutation.isPending}>
+              {t('bulk.applyRest')}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      {error ? (
+        <p
+          role="alert"
+          className="pointer-events-auto max-w-[62ch] rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 shadow-[0_10px_28px_-18px_rgb(16_24_40/0.35)]"
+        >
+          {error}
+        </p>
+      ) : null}
+
+      <div className="pointer-events-auto flex max-w-full flex-wrap items-center justify-center gap-2.5 rounded-2xl border border-slate-200 bg-white/95 p-2.5 shadow-[0_18px_40px_-16px_rgb(16_24_40/0.35)] backdrop-blur-xl">
         <span className="text-sm font-semibold text-slate-900">
           {t('bulk.selected')}: <span className="tabular-nums">{selected.size}</span>
         </span>
@@ -172,14 +228,6 @@ export function BulkActionBar({
             ))}
           </select>
         </div>
-
-        {/* "Receive" is the confirmation step, and nobody looking for
-            "confirm" would guess that. Said in words rather than renamed,
-            because the action really is a receipt: it records who handed the
-            cheques over and where they went. */}
-        {action === 'RECEIVE' ? (
-          <p className="w-full text-xs leading-relaxed text-slate-500">{t('bulk.receiveHint')}</p>
-        ) : null}
 
         {NEEDS_LOCATION.has(action) ? (
           <div className="w-44">
@@ -239,7 +287,7 @@ export function BulkActionBar({
           />
         </div>
 
-        <div className="ms-auto flex gap-2">
+        <div className="flex gap-2">
           <Button variant="secondary" onClick={onClear}>
             {t('common.cancel')}
           </Button>
@@ -247,36 +295,6 @@ export function BulkActionBar({
             {t('bulk.apply')}
           </Button>
         </div>
-
-        {blocked.length > 0 ? (
-          <div
-            role="alert"
-            className="w-full rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
-          >
-            <p className="font-semibold">{t('bulk.blocked')}</p>
-            <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
-              {blocked.map((entry) => (
-                <li key={entry.chequeId} dir="auto">
-                  <span className="font-semibold tabular-nums">{entry.chequeNumber || '—'}</span>{' '}
-                  {t(entry.reason)}
-                </li>
-              ))}
-            </ul>
-            <div className="mt-2">
-              {/* The override is a separate, deliberate click — never the
-                  button the user already pressed. */}
-              <Button variant="danger" onClick={() => run(true)} loading={mutation.isPending}>
-                {t('bulk.applyRest')}
-              </Button>
-            </div>
-          </div>
-        ) : null}
-
-        {error ? (
-          <p role="alert" className="w-full text-sm text-red-700">
-            {error}
-          </p>
-        ) : null}
       </div>
     </div>
   );

@@ -488,14 +488,10 @@ export default function ChequesPage() {
         />
       ) : null}
 
-      {/* Docked to the bottom of the window, so it is reachable from anywhere
-          in a long table. Padding below keeps it from covering the last row. */}
-      <div
-        aria-hidden
-        // Real space at the end of the page, matching the bar, so the last row
-        // can always be scrolled clear of it instead of ending underneath.
-        style={{ height: 'var(--bulk-bar-height, 0px)' }}
-      />
+      {/* Sticks to the bottom of the window while there is table below it, so
+          it is reachable from anywhere in a long list. No spacer beneath it:
+          a sticky element keeps its place in the flow, so the space that lets
+          the last row clear it is already there. */}
       <BulkActionBar selected={selected} onClear={() => setSelected(new Set())} />
     </div>
   );
