@@ -42,6 +42,7 @@ export const envSchema = z
     }),
 
     RATE_LIMIT_AUTH_PER_MINUTE: z.coerce.number().int().min(1).default(10),
+    RATE_LIMIT_REFRESH_PER_MINUTE: z.coerce.number().int().min(1).default(30),
     RATE_LIMIT_UPLOAD_PER_MINUTE: z.coerce.number().int().min(1).default(30),
     RATE_LIMIT_OCR_PER_MINUTE: z.coerce.number().int().min(1).default(20),
     RATE_LIMIT_DEFAULT_PER_MINUTE: z.coerce.number().int().min(1).default(120),

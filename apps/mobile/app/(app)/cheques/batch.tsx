@@ -10,7 +10,7 @@ import {
   suggestNextRow,
   type SerialChequeRow,
 } from '@cheque-flow/shared-types';
-import { createChequeBatchSchema } from '@cheque-flow/validation';
+import { COMMON_CURRENCIES, createChequeBatchSchema } from '@cheque-flow/validation';
 import { colors } from '@cheque-flow/ui/tokens';
 
 import { FormScreen } from '@/components/form-screen';
@@ -28,7 +28,7 @@ import {
 import { todayIso } from '@/lib/dates';
 import { radius, space, surface, text } from '@/theme';
 
-const CURRENCIES = ['ILS', 'USD', 'JOD', 'EUR'];
+const CURRENCIES = COMMON_CURRENCIES;
 
 interface Row extends SerialChequeRow {
   id: string;

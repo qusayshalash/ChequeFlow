@@ -9,6 +9,14 @@ for a suite that needs one Chromium.
 
 The stack must already be up: PostgreSQL, the API, and the web app.
 
+The API has to be started with a raised sign-in limit. The suite signs in more
+than ten times a minute and the production default is ten, so a run against a
+default stack fails partway through on 429:
+
+```bash
+RATE_LIMIT_AUTH_PER_MINUTE=1000 pnpm --filter @cheque-flow/api dev
+```
+
 ```bash
 E2E_PASSWORD='<the seeded development password>' pnpm test:e2e:ui
 ```
@@ -42,11 +50,12 @@ whatever actually broke.
 
 ## Tests that are red on purpose
 
-Four specs currently fail, and each one is a real defect rather than a flaky
-test. They are written to pass once the defect is fixed:
+Two specs currently fail, and each is a real defect rather than a flaky test.
+They are written to pass once the defect is fixed:
 
-- an impossible calendar date (`2027-02-31`) is accepted and stored three days
-  later
-- a currency code that is not a currency (`XYZ`) is accepted
-- `Escape` does not close the contact edit dialog
-- `%` in the search box is treated as a SQL wildcard and returns every row
+- `Escape` does not close the contact edit dialog — three of the four
+  `role="dialog"` modals have no keyboard handler
+- `%` in the search box reaches SQL `LIKE` unescaped and returns every row
+
+Four others were red and are now green: the impossible calendar date, the real
+leap day, the invented currency code, and the per-keystroke search request.

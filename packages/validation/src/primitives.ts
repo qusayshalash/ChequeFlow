@@ -29,22 +29,107 @@ export const exchangeRateSchema = z
     message: 'validation.exchangeRate.positive',
   });
 
-/** Calendar date, `YYYY-MM-DD`. Used for issue/due/received dates. */
+/**
+ * Calendar date, `YYYY-MM-DD`. Used for issue/due/received dates.
+ *
+ * The shape check is not enough and `Date.parse` is not either: it accepts a
+ * day past the end of its month and rolls it forward. `2027-02-31` parsed to
+ * the 3rd of March, `2025-02-30` to the 2nd, `2027-04-31` to the 1st of May —
+ * so a due date typed one digit wrong was stored days away from what was
+ * entered, silently, on the one field the whole system is organised around.
+ * Only an impossible *month* was ever rejected.
+ *
+ * So the parsed date is read back and compared to what was typed. A date
+ * survives only if it is still itself.
+ *
+ * The NaN guard is not decoration: an impossible month gives an Invalid Date,
+ * whose `toISOString` *throws*. Unguarded, `2027-13-01` would leave here as a
+ * 500 instead of the 422 it is.
+ */
 export const isoDateSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'validation.date.invalid' })
-  .refine((value) => !Number.isNaN(Date.parse(`${value}T00:00:00Z`)), {
-    message: 'validation.date.invalid',
-  });
+  .refine(
+    (value) => {
+      const parsed = new Date(`${value}T00:00:00Z`);
+      return !Number.isNaN(parsed.getTime()) && parsed.toISOString().startsWith(value);
+    },
+    { message: 'validation.date.invalid' },
+  );
 
 /** Full UTC instant. */
 export const isoDateTimeSchema = z.iso.datetime({ offset: true });
 
+/**
+ * Every active ISO 4217 currency code.
+ *
+ * A list, not a shape. The rule was `/^[A-Z]{3}$/`, which accepts `XYZ` — and
+ * totals here are kept per currency and deliberately never summed across them,
+ * so one typo does not produce a wrong number, it produces a permanent extra
+ * column that nothing can ever be reconciled against.
+ *
+ * The full standard rather than a hand-picked regional set: the first attempt
+ * at this listed eight codes and immediately rejected `KWD`, which the test
+ * suite has always used. "Is a currency" is a question ISO already answers.
+ */
+export const ISO_4217_CURRENCIES = [
+  'AED','AFN','ALL','AMD','ANG','AOA','ARS','AUD','AWG','AZN',
+  'BAM','BBD','BDT','BGN','BHD','BIF','BMD','BND','BOB','BOV','BRL','BSD','BTN','BWP','BYN','BZD',
+  'CAD','CDF','CHE','CHF','CHW','CLF','CLP','CNY','COP','COU','CRC','CUP','CVE','CZK',
+  'DJF','DKK','DOP','DZD',
+  'EGP','ERN','ETB','EUR',
+  'FJD','FKP',
+  'GBP','GEL','GHS','GIP','GMD','GNF','GTQ','GYD',
+  'HKD','HNL','HTG','HUF',
+  'IDR','ILS','INR','IQD','IRR','ISK',
+  'JMD','JOD','JPY',
+  'KES','KGS','KHR','KMF','KPW','KRW','KWD','KYD','KZT',
+  'LAK','LBP','LKR','LRD','LSL','LYD',
+  'MAD','MDL','MGA','MKD','MMK','MNT','MOP','MRU','MUR','MVR','MWK','MXN','MXV','MYR','MZN',
+  'NAD','NGN','NIO','NOK','NPR','NZD',
+  'OMR',
+  'PAB','PEN','PGK','PHP','PKR','PLN','PYG',
+  'QAR',
+  'RON','RSD','RUB','RWF',
+  'SAR','SBD','SCR','SDG','SEK','SGD','SHP','SLE','SOS','SRD','SSP','STN','SVC','SYP','SZL',
+  'THB','TJS','TMT','TND','TOP','TRY','TTD','TWD','TZS',
+  'UAH','UGX','USD','USN','UYI','UYU','UYW','UZS',
+  'VED','VES','VND','VUV',
+  'WST',
+  'XAF','XCD','XCG','XDR','XOF','XPF','XSU','XUA',
+  'YER',
+  'ZAR','ZMW','ZWG',
+] as const;
+
+/**
+ * The handful the pickers offer.
+ *
+ * Three screens each carried their own copy of this array — two on the web and
+ * one on the phone, already in different orders. Kept here so the short list
+ * and the accepted list cannot drift apart, and so a typo in it fails to
+ * compile rather than producing a dropdown entry the server will refuse.
+ */
+export const COMMON_CURRENCIES: readonly IsoCurrency[] = ['ILS', 'USD', 'JOD', 'EUR'];
+
+export type IsoCurrency = (typeof ISO_4217_CURRENCIES)[number];
+
+
+/**
+ * Deliberately still typed `string`, not the union.
+ *
+ * Narrowing the inferred type would ripple into every query object that
+ * carries a currency — the list filters, the report ranges, the mobile app's
+ * own parameter types — and none of those want a literal union. The guarantee
+ * that matters is the runtime one: nothing reaches the database unless it is
+ * on the list.
+ */
 export const currencySchema = z
   .string()
   .trim()
   .toUpperCase()
-  .regex(/^[A-Z]{3}$/, { message: 'validation.currency.invalid' });
+  .refine((value) => (ISO_4217_CURRENCIES as readonly string[]).includes(value), {
+    message: 'validation.currency.invalid',
+  });
 
 export const countrySchema = z
   .string()

@@ -26,6 +26,26 @@ function metaFrom(request: Request): RequestMeta {
   };
 }
 
+/**
+ * The two sign-in limits, read from the environment.
+ *
+ * Read here rather than through `AppConfigService` because a decorator is
+ * evaluated when the module is imported, long before anything is injected.
+ * They were literals — `10` and `30` — which silently overrode the `auth`
+ * throttler the module builds from `RATE_LIMIT_AUTH_PER_MINUTE`, so raising
+ * that variable in production did nothing at all and nobody could see why.
+ *
+ * The defaults are the previous literals, so nothing changes for a deployment
+ * that sets neither.
+ */
+const perMinute = (name: string, fallback: number): number => {
+  const parsed = Number(process.env[name]);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const LOGIN_PER_MINUTE = perMinute('RATE_LIMIT_AUTH_PER_MINUTE', 10);
+const REFRESH_PER_MINUTE = perMinute('RATE_LIMIT_REFRESH_PER_MINUTE', 30);
+
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
@@ -35,7 +55,7 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   // Login is the most attacked endpoint: keep its own tight limit.
-  @Throttle({ auth: { limit: 10, ttl: 60_000 } })
+  @Throttle({ auth: { limit: LOGIN_PER_MINUTE, ttl: 60_000 } })
   @ApiOperation({ summary: 'Sign in with email and password' })
   @ApiResponse({ status: 200, type: AuthTokensDto })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
@@ -46,7 +66,9 @@ export class AuthController {
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ auth: { limit: 30, ttl: 60_000 } })
+  // Higher than sign-in on purpose: several tabs can rotate a token at once,
+  // and that is a signed-in user, not an attacker guessing passwords.
+  @Throttle({ auth: { limit: REFRESH_PER_MINUTE, ttl: 60_000 } })
   @ApiOperation({ summary: 'Rotate a refresh token' })
   @ApiResponse({ status: 200, type: AuthTokensDto })
   refresh(@Body(zodBody(refreshSchema)) body: RefreshInput, @Req() request: Request) {

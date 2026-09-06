@@ -7,14 +7,14 @@ import { useState, type FormEvent } from 'react';
 
 import { ApiClientError } from '@cheque-flow/api-client';
 import { ContactType } from '@cheque-flow/shared-types';
-import { createContactSchema } from '@cheque-flow/validation';
+import { COMMON_CURRENCIES, createContactSchema } from '@cheque-flow/validation';
 import { Button, Field, inputClassName } from '@cheque-flow/ui';
 
 import { PageHeader } from '@/components/page-header';
 import { Panel } from '@/components/panel';
 import { useApi, useTranslator } from '@/components/providers';
 
-const CURRENCIES = ['USD', 'ILS', 'JOD', 'EUR'];
+const CURRENCIES = COMMON_CURRENCIES;
 
 /**
  * Recording a contact.

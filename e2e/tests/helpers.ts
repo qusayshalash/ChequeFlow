@@ -33,7 +33,7 @@ export function apiLogin(request: APIRequestContext, role: 'owner' | 'viewer' = 
 
   const fresh = (async () => {
     const res = await request.post(`${API}/auth/login`, { data: credentials(role) });
-    expect(res.status(), 'sign-in should succeed').toBe(200);
+    expect(res.status(), signInFailure(res.status())).toBe(200);
     return (await res.json()) as Session;
   })();
   sessions.set(role, fresh);
@@ -49,8 +49,22 @@ export function apiLogin(request: APIRequestContext, role: 'owner' | 'viewer' = 
  */
 export async function apiLoginDisposable(request: APIRequestContext, role: 'owner' | 'viewer' = 'owner'): Promise<Session> {
   const res = await request.post(`${API}/auth/login`, { data: credentials(role) });
-  expect(res.status(), 'sign-in should succeed').toBe(200);
+  expect(res.status(), signInFailure(res.status())).toBe(200);
   return (await res.json()) as Session;
+}
+
+/**
+ * Says which problem it is.
+ *
+ * A run against a stack on the default limit fails here with 429 partway
+ * through, and "sign-in should succeed" sends the reader looking for a broken
+ * login instead of at the stack's configuration.
+ */
+function signInFailure(status: number): string {
+  return status === 429
+    ? 'sign-in was rate limited. The suite signs in more than ten times a minute; ' +
+      'start the API for testing with RATE_LIMIT_AUTH_PER_MINUTE=1000.'
+    : 'sign-in should succeed';
 }
 
 /**
