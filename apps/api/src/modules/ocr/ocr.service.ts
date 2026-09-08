@@ -134,7 +134,19 @@ export class OcrService {
           data: { ocrStatus: OcrStatus.FAILED },
         }),
       ]);
-      throw new AppError(ApiErrorCode.INTERNAL_ERROR, 'OCR provider failed', { cause: error });
+      // Not an internal error: the request reached the provider and the
+      // provider refused it. Reported as INTERNAL_ERROR, the screen said "an
+      // unexpected error occurred" for a cause that was neither unexpected nor
+      // ours — the first real run failed on `PERMISSION_DENIED: this API
+      // method requires billing to be enabled`, which is a five-minute fix
+      // nobody could see from the message.
+      //
+      // The provider's own text stays in the log rather than the response: it
+      // carries project identifiers and request details that a signed-in user
+      // has no reason to receive.
+      throw new AppError(ApiErrorCode.SERVICE_UNAVAILABLE, 'OCR provider failed', {
+        cause: error,
+      });
     }
 
     const confidence: Record<string, number> = Object.fromEntries(

@@ -27,6 +27,8 @@ export const ApiErrorCode = {
   RATE_LIMITED: 'RATE_LIMITED',
   UNSUPPORTED_MEDIA_TYPE: 'UNSUPPORTED_MEDIA_TYPE',
   PAYLOAD_TOO_LARGE: 'PAYLOAD_TOO_LARGE',
+  /** The request reached a dependency we do not control, and it refused. */
+  SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
   INTERNAL_ERROR: 'INTERNAL_ERROR',
 } as const;
 export type ApiErrorCode = (typeof ApiErrorCode)[keyof typeof ApiErrorCode];

@@ -475,6 +475,7 @@
     "NOT_FOUND": "Not found",
     "PAYLOAD_TOO_LARGE": "File is too large",
     "RATE_LIMITED": "Too many attempts, try again later",
+    "SERVICE_UNAVAILABLE": "The service is unavailable — the request reached an external provider and was refused. The reason is in the server log, against the request id.",
     "UNAUTHENTICATED": "Please sign in",
     "UNSUPPORTED_MEDIA_TYPE": "Unsupported file type",
     "VALIDATION_ERROR": "Some fields are invalid",

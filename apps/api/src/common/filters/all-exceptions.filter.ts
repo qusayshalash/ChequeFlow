@@ -175,6 +175,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       RATE_LIMITED: 'Too many requests. Please try again later.',
       UNSUPPORTED_MEDIA_TYPE: 'Unsupported file type.',
       PAYLOAD_TOO_LARGE: 'The uploaded file is too large.',
+      SERVICE_UNAVAILABLE: 'A service this depends on is unavailable.',
       INTERNAL_ERROR: 'An unexpected error occurred.',
     };
     return messages[code];
