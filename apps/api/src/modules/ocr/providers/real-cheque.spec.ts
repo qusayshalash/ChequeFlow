@@ -91,3 +91,74 @@ describe('a photographed Arab Bank cheque', () => {
     expect(fields.bankName.value).toMatch(/العربي|ARAB BANK/);
   });
 });
+
+/**
+ * A second bank, photographed through the phone.
+ *
+ * The first fixture came from one Arab Bank cheque, and four heuristics were
+ * written against it. This one is a Bank of Palestine cheque taken with the
+ * app's own camera, and it broke the one that looked most settled: its MICR
+ * band came back as `20000012 ±89/462004 0829429300–`, with `±` and an en dash
+ * where the E-13B glyphs should be. A rule that required `#` did not see a
+ * band at all, so the cheque number fell through to "any six-to-ten digit run"
+ * and picked up `Ac No. 0829429300` printed at the top — the account number,
+ * reported as the cheque number, on a cheque whose real number was 20000012.
+ */
+const BANK_OF_PALESTINE = [
+  'بنك فلسطين',
+  'BANK OF PALESTINE',
+  'AL-ERSAL BRANCH',
+  'فرع الارسال',
+  'Pay to order of',
+  'The amount of',
+  'command',
+  'option',
+  'Ac No. 0829429300',
+  'ABAS ASAD ABAS DWEIK',
+  'عباس اسعد عباس دويك',
+  'ID. 201496320',
+  'Tel. 0547964639',
+  'RAMALLAH - EAN MOSBAH - ALJABA',
+  'ادفعوا لأمر',
+  'مبلغ وقدره',
+  'تسعة الان دولار لاغير',
+  'Signature',
+  'توقيع',
+  '.10-6-226',
+  'Date',
+  'تاريخ',
+  '20000012 ±89/462004 0829429300–',
+  'رام الله - عين مصباح - عماره ال',
+  'BANK OF PALESTINE',
+  'USD 9000 *',
+  'BANK',
+  'BANK OF PALESTINE',
+].join('\n');
+
+describe('a Bank of Palestine cheque, photographed in the app', () => {
+  const fields = parseChequeText({ text: BANK_OF_PALESTINE, engineConfidence: 1 });
+
+  it('takes the cheque number from the band, not from `Ac No.`', () => {
+    expect(fields.chequeNumber.value).toBe('20000012');
+  });
+
+  it('and reads the account number from the same band', () => {
+    expect(fields.accountNumber.value).toBe('0829429300');
+  });
+
+  it('reads the amount beside the currency', () => {
+    // `ID. 201496320` is larger than the amount here too.
+    expect(fields.numericAmount.value).toBe('9000');
+    expect(fields.currency.value).toBe('USD');
+  });
+
+  it('reads the account holder as the drawer', () => {
+    expect(fields.drawerName.value).toMatch(/ABAS ASAD ABAS DWEIK|عباس اسعد/);
+  });
+
+  it('leaves the date empty when the year did not survive recognition', () => {
+    // Vision read `10-6-2026` as `.10-6-226`. There is no honest date in that,
+    // and inventing 2026 from 226 would be a guess wearing a fact's clothes.
+    expect(fields.dueDate.value).toBeNull();
+  });
+});

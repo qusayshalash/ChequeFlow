@@ -60,13 +60,34 @@ const CHEQUE_NUMBER_LABELS = /رقم\s*الشيك|شيك\s*رقم|cheque\s*(no|n
 const WRITTEN_AMOUNT_MARKERS = /فقط|لا\s*غير|only\b/i;
 
 /**
- * The symbols that mark a MICR band.
+ * Is this the magnetic band along the bottom edge?
  *
- * `⑆⑇⑈⑉` are the E-13B glyphs; engines that cannot render them fall back to
- * `#`, `:` or `<`. Requiring one of these is what separates the band from any
- * other line of digits and dashes on the cheque.
+ * Judged by shape, not by symbol. The E-13B glyphs `⑆⑇⑈⑉` almost never survive
+ * recognition intact — one bank's band came back with `#`, another's with `±`,
+ * `/` and an en dash — so a fixed list of delimiters is a rule about one
+ * photograph rather than about cheques. Requiring `#` read the account number
+ * printed at the top as the cheque number on the very next bank tried.
+ *
+ * What the band actually is: several long runs of digits and almost nothing
+ * else. That separates it from the two things it kept being confused with —
+ * the branch-and-account line under the holder's address (fourteen digits), and
+ * a labelled `Ac No.` or `ID.` (one run, and a word in front of it).
+ *
+ * The letter allowance is for the character OCR invents inside a band it finds
+ * hard; the real thing carries none.
  */
-const MICR_DELIMITERS = /[⑆⑇⑈⑉#<>]/;
+export function looksLikeMicrLine(line: string): boolean {
+  const digits = (line.match(/\d/g) ?? []).length;
+  if (digits < 18) return false;
+
+  // Two runs, not one: a band carries separate fields. A single unbroken run
+  // that long is an IBAN or a reference, not a band. The digit floor above is
+  // what actually separates it from the address line, which has fourteen.
+  const groups = line.split(/[^\d]+/).filter((group) => group.length > 0);
+  if (groups.length < 2) return false;
+
+  return (line.match(/\p{L}/gu) ?? []).length <= 2;
+}
 
 /**
  * Labels whose number is an identity, not money.
@@ -81,13 +102,32 @@ const IDENTITY_LABELS = /\bid\b|\bi\.?d\.?\b|هوية|الهوية|\btel\b|\bpho
 const ACCOUNT_HOLDER_PREFIX = /^\s*(mr|mrs|ms|messrs)\.?\s+|^\s*(السيد|السيدة|السادة)\s*\/?\s*/i;
 
 /**
+ * The account-number label, which the holder's name is printed against.
+ *
+ * Not every bank uses a courtesy title: Arab Bank prints `MR. …`, Bank of
+ * Palestine prints the name bare on the line under `Ac No.`. The label is the
+ * anchor when the title is missing.
+ */
+const ACCOUNT_LABEL = /\bac\.?\s*(no|number)\b|رقم\s*الحساب/i;
+
+/**
+ * Wording that marks a line as a street address rather than a name.
+ *
+ * The holder block runs name, address, identity — so the line after the
+ * account number is the name, but the lines after that are not, and a branch
+ * or a street reads enough like a name to be mistaken for one.
+ */
+const ADDRESS_MARKERS =
+  /\b(st|street|road|rd|ave|avenue|branch|block|bldg|building|p\.?o\.?\s*box)\b|شارع|عمارة|عماره|بناية|ص\.?\s*ب|فرع/i;
+
+/**
  * Pre-printed wording that is never a value.
  *
  * `pay to the order of` is followed on the page by `the amount of`, so when
  * the payee line is left blank the label below it was being read as the name.
  */
 const PRINTED_LABELS =
-  /^(the\s+amount\s+of|pay\s+to\s+the\s+order\s+of|signature|date|تاریخ|تاريخ|التوقيع|توقيع|مبلغ\s*وقدره|ادفعوا?\s*لأمر)\b/i;
+  /^(the\s+amount\s+of|(pay\s+to\s+)?(the\s+)?order\s+of|signature|date|تاریخ|تاريخ|التوقيع|توقيع|مبلغ\s*وقدره|ادفعوا?\s*لأمر)\b/i;
 
 /** Normalises Arabic-Indic digits and separators to their ASCII equivalents. */
 export function normalizeDigits(value: string): string {
@@ -116,14 +156,7 @@ function found<T>(value: T, confidence: number, rawText?: string): ExtractedFiel
 export function findMicrLine(lines: readonly string[]): string | null {
   const candidates = lines
     .map((line) => normalizeDigits(line).trim())
-    // A band delimiter is what makes a line MICR. The old rule was "digits,
-    // spaces and punctuation only", which described the branch-and-account
-    // line printed under the holder's address just as well — on a real Arab
-    // Bank cheque `9340-149604-2/510` won, and the cheque number came back as
-    // `149604`. Worse, the actual band was rejected: OCR had read a stray `A`
-    // into it, and a letter failed the character test outright.
-    .filter((line) => MICR_DELIMITERS.test(line))
-    .filter((line) => (line.match(/\d/g) ?? []).length >= 12);
+    .filter(looksLikeMicrLine);
 
   if (candidates.length === 0) return null;
   // The longest run of digits is the most likely to be the real MICR line.
@@ -392,17 +425,28 @@ function extractDrawerName(lines: readonly string[]): ExtractedField<string> {
   const labelled = extractName(lines, DRAWER_LABELS);
   if (labelled.value !== null) return labelled;
 
-  const holder = lines.find((line) => {
-    if (!ACCOUNT_HOLDER_PREFIX.test(line)) return false;
-    const name = line.replace(ACCOUNT_HOLDER_PREFIX, '').trim();
-    // Long enough to be a name, and not mostly digits.
-    return name.length >= 4 && (name.match(/\d/g) ?? []).length <= name.length / 4;
-  });
-  if (!holder) return empty<string>();
+  const nameLike = (candidate: string): boolean =>
+    candidate.length >= 4 && (candidate.match(/\d/g) ?? []).length <= candidate.length / 4;
 
-  const name = holder.replace(ACCOUNT_HOLDER_PREFIX, '').trim();
-  // Found by shape, not by a label: the reviewer confirms it.
-  return found(name, PATTERN_ONLY, holder.trim());
+  const titled = lines.find(
+    (line) => ACCOUNT_HOLDER_PREFIX.test(line) && nameLike(line.replace(ACCOUNT_HOLDER_PREFIX, '').trim()),
+  );
+  if (titled) {
+    const name = titled.replace(ACCOUNT_HOLDER_PREFIX, '').trim();
+    // Found by shape, not by a label: the reviewer confirms it.
+    return found(name, PATTERN_ONLY, titled.trim());
+  }
+
+  // No courtesy title. The holder's name is printed against the account
+  // number, so take the line under it — but only if it reads like a name and
+  // not like the street address that follows a line or two later.
+  const accountLine = lines.findIndex((line) => ACCOUNT_LABEL.test(line));
+  const beside = accountLine === -1 ? undefined : lines[accountLine + 1]?.trim();
+  if (beside && nameLike(beside) && !ADDRESS_MARKERS.test(beside)) {
+    return found(beside, PATTERN_ONLY, beside);
+  }
+
+  return empty<string>();
 }
 
 function extractBankName(
