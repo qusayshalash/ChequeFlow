@@ -1,3 +1,5 @@
+import { File } from 'expo-file-system';
+
 import type { ChequeFlowApiClient } from '@cheque-flow/api-client';
 import { ChequeDirection } from '@cheque-flow/shared-types';
 
@@ -70,12 +72,25 @@ export async function uploadCapturedCheque(
 
   for (const image of images) {
     const form = new FormData();
-    // React Native's FormData accepts this file descriptor shape.
-    form.append('file', {
-      uri: image.uri,
-      name: `${image.side.toLowerCase()}.jpg`,
-      type: 'image/jpeg',
-    } as unknown as Blob);
+
+    // A real file, not a `{ uri, name, type }` descriptor.
+    //
+    // That descriptor is React Native's own extension, and it worked while
+    // `fetch` was the XHR-backed polyfill. Expo's WinterCG fetch replaces that
+    // global, and it converts multipart bodies itself — its converter accepts a
+    // string, a Blob, or anything exposing `bytes()`, and rejects everything
+    // else with "Unsupported FormDataPart implementation". Its own source says
+    // so plainly: "`uri` is not supported for React Native's FormData."
+    //
+    // The failure was invisible from the outside: the request never left the
+    // device, so the API logged nothing, and the screen reported it as
+    // `errors.network` — "could not reach the server", for a server that was
+    // never contacted. The cheque record had already been created by then, so
+    // each attempt left a TMP-numbered draft behind with no image on it.
+    //
+    // `expo-file-system`'s File implements Blob and carries its own name and
+    // media type, which is exactly the shape the converter wants.
+    form.append('file', new File(image.uri) as unknown as Blob);
     form.append('side', image.side);
     form.append('capturedAt', new Date().toISOString());
     await api.uploadChequeImage(created.cheque.id, form, true);

@@ -97,6 +97,20 @@ export default function CaptureScreen() {
       const chequeId = await uploadCapturedCheque(api, images);
       router.replace(`/(app)/cheques/${chequeId}/review`);
     } catch (caught) {
+      // The reason, in the log, before it is turned into a message.
+      // `errors.network` covers every transport failure alike, so the screen
+      // says "could not reach the server" whether the server was unreachable,
+      // the file could not be read, or the request was rejected before it left
+      // the device — and the one line that distinguishes them was being
+      // discarded here. A capture that fails is worth being able to diagnose.
+      console.error('[capture] upload failed', {
+        message: caught instanceof Error ? caught.message : String(caught),
+        ...(caught instanceof ApiClientError
+          ? { key: caught.messageKey, status: caught.status, requestId: caught.requestId }
+          : {}),
+        images: images.map((image) => image.side),
+      });
+
       // Keep the capture locally so a flaky connection never loses work. The
       // draft is uploaded by `syncDrafts` as soon as the API is reachable
       // again — it is a real queue, not a record of what was lost.
