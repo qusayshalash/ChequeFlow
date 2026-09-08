@@ -377,6 +377,36 @@ describeWithDb('phase 2 surface (e2e)', () => {
       expect(Number(sar.bounced.total)).toBeGreaterThan(0);
     });
 
+    it('refuses a review payload written in the extraction\'s vocabulary', async () => {
+      const { id } = await createCheque({ amount: '1.00' });
+      const before = await request(app.getHttpServer())
+        .get(`${API}/cheques/${id}`)
+        .set(auth())
+        .expect(200);
+
+      // The extraction reports `numericAmount`, `payeeName` and `bankName`;
+      // this endpoint takes `amount`, `originalPayeeName` and `bankNameRaw`.
+      // Both clients translate, but a payload that does not used to be
+      // accepted with a 200 and quietly stripped — a confirmed reading of
+      // 4,250 left the cheque at its old amount and nothing said so.
+      const response = await request(app.getHttpServer())
+        .post(`${API}/cheques/${id}/review`)
+        .set(auth())
+        .send({
+          confirmed: { numericAmount: '4250.00', payeeName: 'Al Sharq' },
+          rejectedFields: [],
+          version: before.body.version,
+        })
+        .expect(422);
+      expect(response.body.error.code).toBe('VALIDATION_ERROR');
+
+      const after = await request(app.getHttpServer())
+        .get(`${API}/cheques/${id}`)
+        .set(auth())
+        .expect(200);
+      expect(after.body.amount).toBe(before.body.amount);
+    });
+
     it('nets the statement the same way the contacts list does', async () => {
       const [statement, list] = await Promise.all([
         request(app.getHttpServer())
