@@ -51,3 +51,16 @@ apps/web/next-env.d.ts
 # Playwright
 test-results/
 playwright-report/
+
+# Service-account and API credentials.
+#
+# A Google Vision key is a JSON file the console hands you with a name like
+# `my-project-4f3a1c9b2d8e.json`, and the natural place to drop it is next to
+# the code — which is exactly how a private key ends up in a public history.
+# Keep it outside the repository and point GOOGLE_VISION_KEY_FILE at it; these
+# patterns are the second line of defence, not the first.
+*-key.json
+*credential*.json
+*service-account*.json
+gcp-*.json
+secrets/
