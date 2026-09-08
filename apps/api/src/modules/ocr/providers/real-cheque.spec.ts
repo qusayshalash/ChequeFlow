@@ -152,13 +152,103 @@ describe('a Bank of Palestine cheque, photographed in the app', () => {
     expect(fields.currency.value).toBe('USD');
   });
 
-  it('reads the account holder as the drawer', () => {
-    expect(fields.drawerName.value).toMatch(/ABAS ASAD ABAS DWEIK|عباس اسعد/);
+  it('reads the account holder in Arabic, not the bank\'s transliteration', () => {
+    // The bank prints both, on consecutive lines. The ledger is Arabic-first,
+    // and `عباس اسعد عباس دويك` matches a contact where `ABAS ASAD ABAS DWEIK`
+    // does not.
+    expect(fields.drawerName.value).toBe('عباس اسعد عباس دويك');
+  });
+
+  it('mends the amount in words, and only because the figure agrees', () => {
+    // `تسعة الان دولار لاغير` for a cheque written `تسعة آلاف دولار لا غير`.
+    // The mended words read back as 9000, which is what the amount box says,
+    // so the repair is corroborated rather than merely plausible.
+    expect(fields.writtenAmount.value).toBe('تسعة آلاف دولار لا غير');
+    // Scored as a value found against an anchor, because it was: the anchor is
+    // the figure in the box, which reads the same.
+    expect(fields.writtenAmount.confidence).toBeGreaterThanOrEqual(0.7);
+  });
+
+  it('does not raise its confidence when the figure disagrees', () => {
+    // Same line, a different figure in the box. The repair still happens — the
+    // reviewer should see readable words — but nothing corroborates it now, so
+    // it must not be presented as the settled reading.
+    const mismatched = BANK_OF_PALESTINE.replace('USD 9000 *', 'USD 4000 *');
+    const fields = parseChequeText({ text: mismatched, engineConfidence: 1 });
+
+    expect(fields.writtenAmount.value).toBe('تسعة آلاف دولار لا غير');
+    expect(fields.writtenAmount.confidence).toBeLessThan(0.5);
   });
 
   it('leaves the date empty when the year did not survive recognition', () => {
     // Vision read `10-6-2026` as `.10-6-226`. There is no honest date in that,
     // and inventing 2026 from 226 would be a guess wearing a fact's clothes.
     expect(fields.dueDate.value).toBeNull();
+  });
+});
+
+/**
+ * The same cheque, photographed a second time.
+ *
+ * Nothing changed but the angle, and recognition emitted the holder block in a
+ * different order: `ID. 201496320` landed between the Latin name and the
+ * Arabic one. A rule that looked at the line after `Ac No.`, and the line
+ * after that, found only the transliteration.
+ *
+ * Two photographs of one cheque disagreeing about line order is the ordinary
+ * case, not a freak one — which is why the block is scanned rather than
+ * counted through.
+ */
+const SAME_CHEQUE_REPHOTOGRAPHED = [
+  'J',
+  'بنك فلسطين',
+  'BANK OF PALESTINE',
+  'AL-ERSAL BRANCH',
+  'فرع الارسال',
+  'Pay to order of',
+  'The amount of',
+  'H',
+  'command',
+  'option',
+  'Ac No. 0829429300',
+  'ABAS ASAD ABAS DWEIK',
+  'ID. 201496320',
+  'عباس اسعد عباس دويك',
+  'Tel. 0547964639',
+  'RAMALLAH - EAN MOSBAH - ALJABA',
+  'ادفعوا لأمر',
+  'نسمة الان دولار لاغير',
+  'مبلغ وقدره',
+  'Signature',
+  'توقيع',
+  '.10-6-2026',
+  'Date',
+  'تاريخ',
+  '20000012 ±89/462004 0829429300–',
+  'USD 9000 *',
+  'BANK OF PALESTINE',
+].join('\n');
+
+describe('the same cheque, photographed again at a different angle', () => {
+  const fields = parseChequeText({ text: SAME_CHEQUE_REPHOTOGRAPHED, engineConfidence: 1 });
+
+  it('still finds the Arabic name, now separated from the label by the ID line', () => {
+    expect(fields.drawerName.value).toBe('عباس اسعد عباس دويك');
+  });
+
+  it('reads the date this time, because the year survived', () => {
+    // The first photograph lost a digit — `.10-6-226`. A steadier shot kept it.
+    expect(fields.dueDate.value).toBe('2026-06-10');
+  });
+
+  it('mends the amount in words against the figure', () => {
+    expect(fields.writtenAmount.value).toBe('تسعة آلاف دولار لا غير');
+  });
+
+  it('agrees with the other photograph on everything that matters', () => {
+    expect(fields.chequeNumber.value).toBe('20000012');
+    expect(fields.numericAmount.value).toBe('9000');
+    expect(fields.accountNumber.value).toBe('0829429300');
+    expect(fields.currency.value).toBe('USD');
   });
 });

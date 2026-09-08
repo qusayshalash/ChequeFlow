@@ -1,5 +1,7 @@
 import type { ChequeExtractedFields, ExtractedField } from '@cheque-flow/shared-types';
 
+import { parseArabicAmountWords, repairArabicAmountWords } from './arabic-amount';
+
 /**
  * Turns the raw text of a scanned cheque into typed fields.
  *
@@ -117,6 +119,9 @@ const ACCOUNT_LABEL = /\bac\.?\s*(no|number)\b|رقم\s*الحساب/i;
  * account number is the name, but the lines after that are not, and a branch
  * or a street reads enough like a name to be mistaken for one.
  */
+/** Any Arabic letter, used to prefer the Arabic rendering of a name. */
+const ARABIC_LETTERS = /[\u0600-\u06FF]/;
+
 const ADDRESS_MARKERS =
   /\b(st|street|road|rd|ave|avenue|branch|block|bldg|building|p\.?o\.?\s*box)\b|شارع|عمارة|عماره|بناية|ص\.?\s*ب|فرع/i;
 
@@ -286,9 +291,38 @@ function extractNumericAmount(lines: readonly string[]): ExtractedField<string> 
   return empty<string>();
 }
 
-function extractWrittenAmount(lines: readonly string[]): ExtractedField<string> {
+/**
+ * The amount in words, repaired only as far as the figure will vouch for it.
+ *
+ * Recognition mangles this line more than any other — it is handwritten and
+ * cursive, and the engine does not know it is reading numbers. A real cheque
+ * came back `تسعة الان دولار لاغير`, where `الان` is `آلاف` misread.
+ *
+ * Repairing that is worth doing and dangerous to do blind: this is the amount
+ * that prevails in a dispute, so a tidy-looking guess is worse than a visibly
+ * garbled line the reviewer cannot help but check. So the repair has to earn
+ * its confidence — the mended words are read back as a number and compared
+ * with the figure from the amount box. Agreement between two independent
+ * readings is evidence; a line cleaned up until it looks right is not.
+ */
+function extractWrittenAmount(
+  lines: readonly string[],
+  numericAmount: string | null,
+): ExtractedField<string> {
   const candidate = lines.find((line) => WRITTEN_AMOUNT_MARKERS.test(line) && line.length > 8);
-  return candidate ? found(candidate.trim(), PATTERN_ONLY, candidate.trim()) : empty<string>();
+  if (!candidate) return empty<string>();
+
+  const raw = candidate.trim();
+  const repaired = repairArabicAmountWords(raw);
+  if (repaired === raw) return found(raw, PATTERN_ONLY, raw);
+
+  const spelled = parseArabicAmountWords(repaired);
+  const figure = numericAmount === null ? null : Number(numericAmount);
+  const corroborated = spelled !== null && figure !== null && spelled === figure;
+
+  // The raw text is kept either way, so what the engine actually saw is never
+  // lost behind the repair.
+  return found(repaired, corroborated ? ANCHORED : PATTERN_ONLY - 0.1, raw);
 }
 
 function extractCurrency(text: string, expected?: string): ExtractedField<string> {
@@ -441,12 +475,29 @@ function extractDrawerName(lines: readonly string[]): ExtractedField<string> {
   // number, so take the line under it — but only if it reads like a name and
   // not like the street address that follows a line or two later.
   const accountLine = lines.findIndex((line) => ACCOUNT_LABEL.test(line));
-  const beside = accountLine === -1 ? undefined : lines[accountLine + 1]?.trim();
-  if (beside && nameLike(beside) && !ADDRESS_MARKERS.test(beside)) {
-    return found(beside, PATTERN_ONLY, beside);
-  }
+  if (accountLine === -1) return empty<string>();
 
-  return empty<string>();
+  // The holder block: the name in both scripts, the identity number, the
+  // telephone, the address — in whatever order recognition happened to emit
+  // them. On one photograph of this cheque the two names were consecutive; on
+  // the next, `ID.` had landed between them. So the block is scanned rather
+  // than the line after the label, and the lines that are plainly not names —
+  // an identity number, a telephone, a street — are dropped.
+  const candidates = [1, 2, 3, 4]
+    .map((offset) => lines[accountLine + offset]?.trim())
+    .filter(
+      (line): line is string =>
+        !!line && nameLike(line) && !ADDRESS_MARKERS.test(line) && !IDENTITY_LABELS.test(line),
+    );
+
+  // Prefer the Arabic rendering: this is an Arabic-first ledger, and a name
+  // the bank transliterated into Latin matches a contact far less often than
+  // the name as it is actually written.
+  const arabic = candidates.find((line) => ARABIC_LETTERS.test(line));
+
+  const chosen = arabic ?? candidates[0];
+
+  return chosen ? found(chosen, PATTERN_ONLY, chosen) : empty<string>();
 }
 
 function extractBankName(
@@ -480,10 +531,12 @@ export function parseChequeText(input: ParseChequeTextInput): ChequeExtractedFie
   const chequeNumber = extractChequeNumber(lines, micr);
   const { issueDate, dueDate } = extractDates(lines);
 
+  const numericAmount = extractNumericAmount(lines);
+
   const fields: ChequeExtractedFields = {
     chequeNumber,
-    numericAmount: extractNumericAmount(lines),
-    writtenAmount: extractWrittenAmount(lines),
+    numericAmount,
+    writtenAmount: extractWrittenAmount(lines, numericAmount.value),
     currency: extractCurrency(input.text, input.expectedCurrency),
     issueDate,
     dueDate,
