@@ -59,6 +59,36 @@ const DRAWER_LABELS = /الساحب|اسم\s*العميل|drawer|account\s*holde
 const CHEQUE_NUMBER_LABELS = /رقم\s*الشيك|شيك\s*رقم|cheque\s*(no|number)|check\s*(no|number)/i;
 const WRITTEN_AMOUNT_MARKERS = /فقط|لا\s*غير|only\b/i;
 
+/**
+ * The symbols that mark a MICR band.
+ *
+ * `⑆⑇⑈⑉` are the E-13B glyphs; engines that cannot render them fall back to
+ * `#`, `:` or `<`. Requiring one of these is what separates the band from any
+ * other line of digits and dashes on the cheque.
+ */
+const MICR_DELIMITERS = /[⑆⑇⑈⑉#<>]/;
+
+/**
+ * Labels whose number is an identity, not money.
+ *
+ * The holder's national ID is the largest number printed on a cheque, so any
+ * rule that reaches for the biggest figure finds it first. On the cheque that
+ * exposed this, `Id. 850504325` was read as the amount of a 3,500 cheque.
+ */
+const IDENTITY_LABELS = /\bid\b|\bi\.?d\.?\b|هوية|الهوية|\btel\b|\bphone\b|هاتف|جوال|\bfax\b|\biban\b|\bswift\b/i;
+
+/** How a cheque actually prints the account holder, having no "Drawer:" label. */
+const ACCOUNT_HOLDER_PREFIX = /^\s*(mr|mrs|ms|messrs)\.?\s+|^\s*(السيد|السيدة|السادة)\s*\/?\s*/i;
+
+/**
+ * Pre-printed wording that is never a value.
+ *
+ * `pay to the order of` is followed on the page by `the amount of`, so when
+ * the payee line is left blank the label below it was being read as the name.
+ */
+const PRINTED_LABELS =
+  /^(the\s+amount\s+of|pay\s+to\s+the\s+order\s+of|signature|date|تاریخ|تاريخ|التوقيع|توقيع|مبلغ\s*وقدره|ادفعوا?\s*لأمر)\b/i;
+
 /** Normalises Arabic-Indic digits and separators to their ASCII equivalents. */
 export function normalizeDigits(value: string): string {
   return value
@@ -86,8 +116,13 @@ function found<T>(value: T, confidence: number, rawText?: string): ExtractedFiel
 export function findMicrLine(lines: readonly string[]): string | null {
   const candidates = lines
     .map((line) => normalizeDigits(line).trim())
-    // MICR delimiters survive OCR as these symbols or as punctuation.
-    .filter((line) => /^[\d\s⑆-⑉:;<>@#|/-]+$/.test(line))
+    // A band delimiter is what makes a line MICR. The old rule was "digits,
+    // spaces and punctuation only", which described the branch-and-account
+    // line printed under the holder's address just as well — on a real Arab
+    // Bank cheque `9340-149604-2/510` won, and the cheque number came back as
+    // `149604`. Worse, the actual band was rejected: OCR had read a stray `A`
+    // into it, and a letter failed the character test outright.
+    .filter((line) => MICR_DELIMITERS.test(line))
     .filter((line) => (line.match(/\d/g) ?? []).length >= 12);
 
   if (candidates.length === 0) return null;
@@ -157,12 +192,22 @@ function extractAccountNumber(
  * part, an account fragment, or a cheque number.
  */
 function extractNumericAmount(lines: readonly string[]): ExtractedField<string> {
-  const candidates: Array<{ value: string; decimals: boolean; line: string }> = [];
+  const candidates: Array<{
+    value: string;
+    decimals: boolean;
+    beside: boolean;
+    line: string;
+  }> = [];
 
   for (const line of lines) {
     const normalized = normalizeDigits(line);
-    // Skip the MICR line and anything that is clearly a date.
+    // Skip the MICR band and anything that is clearly a date.
     if (/^[\d\s⑆-⑉:;<>@#|/-]+$/.test(normalized.trim())) continue;
+    // …and any line whose number is an identity rather than money.
+    if (IDENTITY_LABELS.test(normalized)) continue;
+
+    // A figure written beside a currency is the figure the cheque is for.
+    const beside = CURRENCY_PATTERNS.some(({ pattern }) => pattern.test(normalized));
 
     const pattern =
       /(?<![\d./-])(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+\.\d{1,2}|\d{2,9})(?![\d/-])/g;
@@ -172,23 +217,40 @@ function extractNumericAmount(lines: readonly string[]): ExtractedField<string> 
       const cleaned = raw.replace(/,/g, '');
       const numeric = Number(cleaned);
       if (!Number.isFinite(numeric) || numeric <= 0) continue;
-      candidates.push({ value: cleaned, decimals: cleaned.includes('.'), line });
+      candidates.push({ value: cleaned, decimals: cleaned.includes('.'), beside, line });
     }
   }
 
   if (candidates.length === 0) return empty<string>();
 
-  const withDecimals = candidates.filter((candidate) => candidate.decimals);
-  if (withDecimals.length > 0) {
-    // Several decimal amounts usually means the figure box and a duplicate;
-    // the largest is the amount, the smaller ones are fragments.
-    const best = withDecimals.reduce((a, b) => (Number(b.value) > Number(a.value) ? b : a));
-    return found(best.value, ANCHORED, best.line.trim());
+  /**
+   * Best evidence first, and only then the largest.
+   *
+   * The old rule was "prefer decimals, otherwise take the biggest number on
+   * the cheque". A handwritten amount rarely carries decimals — people write
+   * 3500, not 3500.00 — so that fallback ran on exactly the cheques that
+   * matter, and the biggest number on a cheque is the holder's ID.
+   *
+   * Sitting next to a currency is much stronger evidence than being large.
+   */
+  const tiers: Array<{ rows: typeof candidates; confidence: number }> = [
+    { rows: candidates.filter((c) => c.decimals && c.beside), confidence: ANCHORED + 0.1 },
+    { rows: candidates.filter((c) => c.beside), confidence: ANCHORED },
+    { rows: candidates.filter((c) => c.decimals), confidence: ANCHORED - 0.1 },
+    // Nothing but a bare number somewhere on the page. Kept as a last resort
+    // and scored below the review threshold, never passed through unchecked.
+    { rows: candidates, confidence: PATTERN_ONLY - 0.1 },
+  ];
+
+  for (const { rows, confidence } of tiers) {
+    if (rows.length === 0) continue;
+    // Within one tier the largest is the amount; the smaller ones are the
+    // figure box read twice, or a fragment of it.
+    const best = rows.reduce((a, b) => (Number(b.value) > Number(a.value) ? b : a));
+    return found(best.value, confidence, best.line.trim());
   }
 
-  const best = candidates.reduce((a, b) => (Number(b.value) > Number(a.value) ? b : a));
-  // No decimal point is a weak signal — never let it pass review unchecked.
-  return found(best.value, PATTERN_ONLY - 0.1, best.line.trim());
+  return empty<string>();
 }
 
 function extractWrittenAmount(lines: readonly string[]): ExtractedField<string> {
@@ -312,7 +374,35 @@ function extractName(lines: readonly string[], label: RegExp): ExtractedField<st
   // A name made mostly of digits is a misread label, not a name.
   const digits = (value.match(/\d/g) ?? []).length;
   if (digits > value.length / 3) return empty<string>();
+  // Nor is another piece of the pre-printed form. An unfilled payee line was
+  // taking the "the amount of" printed beneath it.
+  if (PRINTED_LABELS.test(value)) return empty<string>();
   return found(value, ANCHORED, value);
+}
+
+/**
+ * The name of whoever the cheque book belongs to.
+ *
+ * A cheque does not label this — it prints the holder's name over their
+ * address, usually behind `MR.` or `السيد/`. The parser only looked for an
+ * explicit "Drawer:" label, so on every real cheque the field came back empty.
+ * The label is still tried first, because a scanned form may have one.
+ */
+function extractDrawerName(lines: readonly string[]): ExtractedField<string> {
+  const labelled = extractName(lines, DRAWER_LABELS);
+  if (labelled.value !== null) return labelled;
+
+  const holder = lines.find((line) => {
+    if (!ACCOUNT_HOLDER_PREFIX.test(line)) return false;
+    const name = line.replace(ACCOUNT_HOLDER_PREFIX, '').trim();
+    // Long enough to be a name, and not mostly digits.
+    return name.length >= 4 && (name.match(/\d/g) ?? []).length <= name.length / 4;
+  });
+  if (!holder) return empty<string>();
+
+  const name = holder.replace(ACCOUNT_HOLDER_PREFIX, '').trim();
+  // Found by shape, not by a label: the reviewer confirms it.
+  return found(name, PATTERN_ONLY, holder.trim());
 }
 
 function extractBankName(
@@ -353,7 +443,7 @@ export function parseChequeText(input: ParseChequeTextInput): ChequeExtractedFie
     currency: extractCurrency(input.text, input.expectedCurrency),
     issueDate,
     dueDate,
-    drawerName: extractName(lines, DRAWER_LABELS),
+    drawerName: extractDrawerName(lines),
     payeeName: extractName(lines, PAYEE_LABELS),
     bankName: extractBankName(input.text, lines, input.knownBankNames ?? []),
     bankBranch: empty<string>(),
