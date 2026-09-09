@@ -1,3 +1,4 @@
+import { parseArabicAmountWords } from './arabic-amount';
 import { parseChequeText } from './cheque-text-parser';
 
 /**
@@ -394,5 +395,89 @@ describe('an Arab Bank cheque in a different hand', () => {
     expect(fields.currency.value).toBe('USD');
     expect(fields.accountNumber.value).toBe('3170411510');
     expect(fields.drawerName.value).toBe('زايد ناجي عيسي نعسان');
+  });
+});
+
+/**
+ * A third bank, a shekel cheque, and two faults in one line.
+ *
+ * The amount box is printed with a rule after the figure, so recognition
+ * returned `NIS #70,000/`. The amount pattern carried one `(?![\d/-])` after
+ * the whole alternation — there to keep a date's parts out — and the trailing
+ * slash failed the grouped-thousands branch on it. Matching fell through to
+ * the bare-integer branch, which took `70`. The cheque was offered at seventy
+ * and confirmed at seventy.
+ *
+ * And the figure itself is wrong. The cheque is for ten thousand, which is
+ * what the words say; the handwritten `1` came back as a `7`. So the reading
+ * this fixture pins is `70000` — faithful to the text recognition produced,
+ * which is all a text parser can be — while the words, read independently, say
+ * ten thousand.
+ *
+ * That disagreement is the whole point of a cheque stating its amount twice.
+ * Neither side is trusted when they differ: the parser has no way to know
+ * which one slipped, and here it was the figure.
+ */
+const SHEKEL_CHEQUE_WITH_A_RULE = [
+  '₪30000321 281/836424 1440823011!',
+  'البنك الإسلامي الفلسطيني',
+  'Palestine Islamic Bank',
+  'Masyoun Branch',
+  'فرع الماصيون',
+  '11',
+  'PALESTINE ISLAMIC BANK',
+  'Ac No.0001440823',
+  'HUSSAM RAED ODEH ABDELNABI',
+  'ID. 403816986',
+  'حسام رائد عوده عبدالنبي',
+  'Tel. 0598569324',
+  'RAMALLAH',
+  'بيتونيا الرئيسي',
+  'LESTINE ISLAMIC BANK ادفعوا لامر',
+  'PAL',
+  'NIS #70,000/',
+  'البنك السالمي الفلسطيني',
+  'Palestine Islamic Bank',
+  'مبلغ وقدره',
+  'عشرة الآف شكل فقط لاغير',
+  'Pay to the order of',
+  'The amount of',
+  ': 2-30- 2026 : حسام بر الى',
+  'تاريخ',
+  '• ·2·30',
+  'Date',
+  'توقيع',
+  'Signature',
+  '#30000322 81/83642A 1440823011',
+].join('\n');
+
+describe('a shekel cheque whose amount box is printed with a rule', () => {
+  const fields = parseChequeText({ text: SHEKEL_CHEQUE_WITH_A_RULE, engineConfidence: 1 });
+
+  it('reads the whole grouped figure, not the part before the separator', () => {
+    expect(fields.numericAmount.value).toBe('70000');
+  });
+
+  it('reads the shekel', () => {
+    expect(fields.currency.value).toBe('ILS');
+  });
+
+  it('doubts both readings when they disagree, not just the words', () => {
+    // Ten thousand in words against seventy thousand in the box. Scoring only
+    // the words down would treat the figure as the authority — and on this
+    // cheque the figure is the one that is wrong.
+    expect(fields.writtenAmount.confidence).toBeLessThan(0.5);
+    expect(fields.numericAmount.confidence).toBeLessThan(0.5);
+  });
+
+  it('still reads the words as ten thousand', () => {
+    expect(parseArabicAmountWords(fields.writtenAmount.value ?? '')).toBe(10000);
+  });
+
+  it('gets the rest of the record', () => {
+    expect(fields.chequeNumber.value).toBe('30000321');
+    expect(fields.accountNumber.value).toBe('1440823011');
+    expect(fields.drawerName.value).toBe('حسام رائد عوده عبدالنبي');
+    expect(fields.bankName.value).toMatch(/الإسلامي|Islamic/);
   });
 });

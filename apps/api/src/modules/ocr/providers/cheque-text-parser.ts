@@ -270,10 +270,21 @@ function extractNumericAmount(lines: readonly string[]): ExtractedField<string> 
     // A figure written beside a currency is the figure the cheque is for.
     const beside = CURRENCY_PATTERNS.some(({ pattern }) => pattern.test(normalized));
 
+    // Each shape guards its own end.
+    //
+    // One shared `(?![\d/-])` used to follow the whole alternation, to keep a
+    // date's parts out. But the amount box is often printed with a rule after
+    // it, and `NIS #70,000/` then failed the grouped-thousands branch on the
+    // trailing slash and fell back to the bare-integer branch — which matched
+    // `70`. A cheque for seventy thousand shekels was read as seventy.
+    //
+    // A number written with thousand separators cannot be a date, so it only
+    // has to not run into another digit. The looser shapes keep the strict
+    // guard, which is what it was for.
     const pattern =
-      /(?<![\d./-])(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+\.\d{1,2}|\d{2,9})(?![\d/-])/g;
+      /(?<![\d.])(?:(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?)(?!\d)|(?<![/-])(\d+\.\d{1,2})(?![\d/-])|(?<![/-])(\d{2,9})(?![\d/-]))/g;
     for (const match of normalized.matchAll(pattern)) {
-      const raw = match[1];
+      const raw = match[1] ?? match[2] ?? match[3];
       if (!raw) continue;
       const cleaned = raw.replace(/,/g, '');
       const numeric = Number(cleaned);
@@ -331,22 +342,28 @@ function extractNumericAmount(lines: readonly string[]): ExtractedField<string> 
 function extractWrittenAmount(
   lines: readonly string[],
   numericAmount: string | null,
-): ExtractedField<string> {
+): { written: ExtractedField<string>; agrees: boolean | null } {
   const candidate = lines.find((line) => WRITTEN_AMOUNT_MARKERS.test(line) && line.length > 8);
-  if (!candidate) return empty<string>();
+  if (!candidate) return { written: empty<string>(), agrees: null };
 
   const raw = candidate.trim();
   const words = raw.replace(WRITTEN_AMOUNT_PREFIX, '').trim();
   const repaired = normalizeArabicAmountWords(words);
-  if (repaired === raw) return found(raw, PATTERN_ONLY, raw);
+  if (repaired === raw) return { written: found(raw, PATTERN_ONLY, raw), agrees: null };
 
   const spelled = parseArabicAmountWords(repaired);
   const figure = numericAmount === null ? null : Number(numericAmount);
-  const corroborated = spelled !== null && figure !== null && spelled === figure;
+
+  // `null` when the words could not be read as a number at all: that is silence,
+  // not disagreement, and it says nothing about the figure.
+  const agrees = spelled === null || figure === null ? null : spelled === figure;
 
   // The raw text is kept either way, so what the engine actually saw is never
   // lost behind the repair.
-  return found(repaired, corroborated ? ANCHORED : PATTERN_ONLY - 0.1, raw);
+  return {
+    written: found(repaired, agrees === true ? ANCHORED : PATTERN_ONLY - 0.1, raw),
+    agrees,
+  };
 }
 
 function extractCurrency(text: string, expected?: string): ExtractedField<string> {
@@ -567,11 +584,26 @@ export function parseChequeText(input: ParseChequeTextInput): ChequeExtractedFie
   const { issueDate, dueDate } = extractDates(lines);
 
   const numericAmount = extractNumericAmount(lines);
+  const { written, agrees } = extractWrittenAmount(lines, numericAmount.value);
+
+  /**
+   * When the two readings of the amount disagree, neither is trusted.
+   *
+   * A cheque states its amount twice so that a misreading of one shows up
+   * against the other. Scoring only the words down treated the figure as the
+   * authority, and on a real cheque it was the figure that was wrong: a
+   * handwritten `10,000` came back `70,000` while the words said ten thousand
+   * plainly. The parser cannot tell which side slipped, so it says so about
+   * both and the reviewer looks at the photograph.
+   */
+  const amountInDoubt = agrees === false;
 
   const fields: ChequeExtractedFields = {
     chequeNumber,
-    numericAmount,
-    writtenAmount: extractWrittenAmount(lines, numericAmount.value),
+    numericAmount: amountInDoubt
+      ? found(numericAmount.value as string, PATTERN_ONLY - 0.1, numericAmount.rawText)
+      : numericAmount,
+    writtenAmount: written,
     currency: extractCurrency(input.text, input.expectedCurrency),
     issueDate,
     dueDate,
