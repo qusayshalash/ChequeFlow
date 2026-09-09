@@ -123,7 +123,8 @@ export default function CaptureScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Heading>{side === 'FRONT' ? t('capture.front') : t('capture.back')}</Heading>
+      {/* The back is a second thing you may do, not the next step you owe. */}
+      <Heading>{side === 'FRONT' ? t('capture.front') : t('capture.backOptional')}</Heading>
 
       <View style={styles.cameraBox}>
         <CameraView ref={camera} style={styles.camera} facing="back" />
@@ -146,7 +147,11 @@ export default function CaptureScreen() {
                 {shot ? (
                   <Image source={{ uri: shot.uri }} style={styles.thumb} resizeMode="cover" />
                 ) : (
-                  <View style={[styles.thumb, styles.thumbEmpty]} />
+                  // An empty dashed box reads as something missing. Only the
+                  // front is needed, so the back's placeholder says so.
+                  <View style={[styles.thumb, styles.thumbEmpty]}>
+                    {key === 'BACK' ? <Text style={styles.optional}>{t('capture.optional')}</Text> : null}
+                  </View>
                 )}
                 {shot ? (
                   <Button
@@ -165,6 +170,11 @@ export default function CaptureScreen() {
       </Card>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
+
+      {/* Said once the front is in hand, which is when the question arises. */}
+      {shots.FRONT && !shots.BACK ? (
+        <Text style={styles.hint}>{t('capture.frontIsEnough')}</Text>
+      ) : null}
 
       <Button
         label={busy ? t('capture.uploading') : t('capture.usePhoto')}
@@ -190,7 +200,15 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     backgroundColor: 'transparent',
   },
-  thumbEmpty: { borderWidth: 1, borderColor: surface.line, borderStyle: 'dashed' },
+  thumbEmpty: {
+    borderWidth: 1,
+    borderColor: surface.line,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  optional: { fontSize: 12, color: text.faint },
+  hint: { fontSize: 13, color: text.secondary, textAlign: 'right', lineHeight: 19 },
   warning: { color: colors.warning, fontSize: 14, textAlign: 'right' },
   error: { color: colors.danger, fontSize: 14, textAlign: 'right' },
 });

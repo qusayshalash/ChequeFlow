@@ -92,8 +92,11 @@
   },
   "capture": {
     "back": "Capture the back",
+    "backOptional": "Photograph the back — optional",
     "button": "Capture cheque",
     "front": "Capture the front",
+    "frontIsEnough": "The front is enough. Photograph the back only if it carries an endorsement or a note.",
+    "optional": "Optional",
     "permissionDenied": "Camera permission was not granted",
     "qualityBlurry": "The image is blurry",
     "qualityGlare": "There is glare on the cheque",
