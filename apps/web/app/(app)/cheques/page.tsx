@@ -354,16 +354,22 @@ export default function ChequesPage() {
 
         {/* Everything that narrows the list, in one place, opened on demand.
             Status, bank and date used to sit permanently in the toolbar; they
-            are used far less often than search and were most of its bulk. */}
+            are used far less often than search and were most of its bulk.
+
+            Every control is one boxed row of the same height, so the panel
+            wraps into even rows instead of a ragged one. The amount was two
+            stacked fields of a different shape, which broke that alignment and
+            let "from" and "to" land on separate lines with a gap between them
+            — a pair of bounds is one control. */}
         {filtersOpen ? (
-          <div className="mt-3 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200/90 bg-white p-3">
+          <div className="mt-3 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200/90 bg-white p-3">
             {/* Sorting was reachable only by clicking a column header, so the
                 orders on offer were whichever columns were switched on, and an
                 arrow on the due date left the reader to work out which end it
                 meant. Each option here names the answer it gives — "due
                 soonest" — and the shared list is the same one the phone
                 shows. */}
-            <label className="inline-flex h-11 w-44 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 hover:border-slate-300 xl:w-56">
+            <label className="inline-flex h-11 w-full items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 hover:border-slate-300 sm:w-44 xl:w-56">
               <span className="text-xs font-medium text-slate-400">{t('common.sort')}</span>
               <select
                 className="min-w-0 flex-1 truncate bg-transparent text-sm font-semibold text-slate-700 outline-none"
@@ -390,7 +396,7 @@ export default function ChequesPage() {
               </select>
             </label>
 
-            <label className="inline-flex h-11 w-36 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 hover:border-slate-300 xl:w-44">
+            <label className="inline-flex h-11 w-full items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 hover:border-slate-300 sm:w-36 xl:w-44">
               <span className="text-xs font-medium text-slate-400">{t('cheque.status')}</span>
               <select
                 className="min-w-0 flex-1 truncate bg-transparent text-sm font-semibold text-slate-700 outline-none"
@@ -409,7 +415,7 @@ export default function ChequesPage() {
               </select>
             </label>
 
-            <label className="inline-flex h-11 w-36 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 hover:border-slate-300 xl:w-44">
+            <label className="inline-flex h-11 w-full items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 hover:border-slate-300 sm:w-36 xl:w-44">
               <span className="text-xs font-medium text-slate-400">{t('cheque.bank')}</span>
               <select
                 className="min-w-0 flex-1 truncate bg-transparent text-sm font-semibold text-slate-700 outline-none"
@@ -436,38 +442,41 @@ export default function ChequesPage() {
               }}
             />
 
-            <label className="flex min-w-44 flex-col gap-1.5">
-              <span className="text-xs font-semibold text-slate-500">
-                {t('common.amount')} — {t('cheque.from')}
+            {/* One box holding both bounds. Each input still carries its own
+                name for a screen reader, since "0.00" twice says nothing about
+                which end is which. */}
+            <div className="inline-flex h-11 w-full items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 hover:border-slate-300 sm:w-auto">
+              <span className="shrink-0 text-xs font-medium text-slate-400">
+                {t('common.amount')}
               </span>
               <input
                 dir="ltr"
                 inputMode="decimal"
+                aria-label={`${t('common.amount')} — ${t('cheque.from')}`}
                 placeholder="0.00"
                 value={amountMin}
                 onChange={(event) => {
                   setAmountMin(event.target.value);
                   setPage(1);
                 }}
-                className="h-11 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10"
+                className="w-20 bg-transparent text-sm font-semibold tabular-nums text-slate-700 outline-none"
               />
-            </label>
-            <label className="flex min-w-44 flex-col gap-1.5">
-              <span className="text-xs font-semibold text-slate-500">
-                {t('common.amount')} — {t('cheque.to')}
+              <span aria-hidden="true" className="text-slate-300">
+                —
               </span>
               <input
                 dir="ltr"
                 inputMode="decimal"
+                aria-label={`${t('common.amount')} — ${t('cheque.to')}`}
                 placeholder="0.00"
                 value={amountMax}
                 onChange={(event) => {
                   setAmountMax(event.target.value);
                   setPage(1);
                 }}
-                className="h-11 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10"
+                className="w-20 bg-transparent text-sm font-semibold tabular-nums text-slate-700 outline-none"
               />
-            </label>
+            </div>
           </div>
         ) : null}
       </section>
