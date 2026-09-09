@@ -252,3 +252,69 @@ describe('the same cheque, photographed again at a different angle', () => {
     expect(fields.currency.value).toBe('USD');
   });
 });
+
+/**
+ * A third photograph, and the pre-printed label came with the handwriting.
+ *
+ * On the two before this, `مبلغ وقدره` — "an amount of", printed on the cheque
+ * — sat on its own line and the handwritten words on another. Here recognition
+ * joined them: `و مبلغ وقدره تسعة الان دولار لا غير`. Taking the line whole put
+ * the cheque's own stationery into the amount field.
+ *
+ * It also cost the repair its corroboration. The mended words are read back as
+ * a number to check them against the figure, and `مبلغ` and `وقدره` are not
+ * numbers — so the reading failed, and a correct repair scored as an unchecked
+ * guess.
+ */
+const LABEL_JOINED_TO_HANDWRITING = [
+  'بنك فلسطين',
+  'BANK OF PALESTINE',
+  'AL-ERSAL BRANCH',
+  'فرع الارسال',
+  'Pay to order of',
+  'The amount of',
+  'Ac No. 0829429300',
+  'ABAS ASAD ABAS DWEIK',
+  'عباس اسعد عباس دويك',
+  'ID. 201496320',
+  'Tel. 0547964639',
+  'RAMALLAH - EAN MOSBAH - ALJABA',
+  '▪ ادفعوا لأمر',
+  'و مبلغ وقدره تسعة الان دولار لا غير',
+  'رام الله - عين مصباح - عماره ال',
+  'BANK OF PALESTINE',
+  'USD',
+  '9000*',
+  'Signature',
+  'وقيع',
+  '10-7-2026',
+  'Date',
+  '20000013 ±89/462004 0829429300-',
+  'BANK OF PALESTINE',
+].join('\n');
+
+describe('a cheque whose printed label ran into the handwriting', () => {
+  const fields = parseChequeText({ text: LABEL_JOINED_TO_HANDWRITING, engineConfidence: 1 });
+
+  it('keeps the words and drops the stationery', () => {
+    expect(fields.writtenAmount.value).toBe('تسعة آلاف دولار لا غير');
+  });
+
+  it('and the figure can vouch for them again once the label is gone', () => {
+    expect(fields.writtenAmount.confidence).toBeGreaterThanOrEqual(0.7);
+  });
+
+  it('reads the figure even with the currency on its own line', () => {
+    // `USD` and `9000*` came back as separate lines, so the amount is not
+    // beside a currency code on the page any more.
+    expect(fields.numericAmount.value).toBe('9000');
+    expect(fields.currency.value).toBe('USD');
+  });
+
+  it('still gets the rest of the record', () => {
+    expect(fields.chequeNumber.value).toBe('20000013');
+    expect(fields.accountNumber.value).toBe('0829429300');
+    expect(fields.drawerName.value).toBe('عباس اسعد عباس دويك');
+    expect(fields.dueDate.value).toBe('2026-07-10');
+  });
+});

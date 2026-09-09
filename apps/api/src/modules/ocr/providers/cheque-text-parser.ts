@@ -62,6 +62,21 @@ const CHEQUE_NUMBER_LABELS = /رقم\s*الشيك|شيك\s*رقم|cheque\s*(no|n
 const WRITTEN_AMOUNT_MARKERS = /فقط|لا\s*غير|only\b/i;
 
 /**
+ * The wording printed beside the space where the amount is written.
+ *
+ * Whether it arrives on its own line or joined to the handwriting is a
+ * property of the photograph, not of the cheque: two shots of one cheque came
+ * back each way. Joined, the whole line was taken, so the field held the
+ * cheque's own stationery — and the repair lost its corroboration too, because
+ * `مبلغ` and `وقدره` are not numbers and the reading back failed on them.
+ *
+ * The stray marks are the print flecks and the loose `و` that recognition adds
+ * at the head of a line it finds hard.
+ */
+const WRITTEN_AMOUNT_PREFIX =
+  /^[\s▪•·*.,:;\-–—|]*(و\s+)?(?:(مبلغ\s*و?\s*قدر[هة]|the\s+sum\s+of|the\s+amount\s+of)\s*)?/i;
+
+/**
  * Is this the magnetic band along the bottom edge?
  *
  * Judged by shape, not by symbol. The E-13B glyphs `⑆⑇⑈⑉` almost never survive
@@ -239,8 +254,12 @@ function extractNumericAmount(lines: readonly string[]): ExtractedField<string> 
 
   for (const line of lines) {
     const normalized = normalizeDigits(line);
-    // Skip the MICR band and anything that is clearly a date.
-    if (/^[\d\s⑆-⑉:;<>@#|/-]+$/.test(normalized.trim())) continue;
+    // Skip the MICR band. It was skipped by "digits and punctuation only",
+    // which one bank's band failed because OCR had put a `±` in it — and the
+    // cheque number out of that band then won "largest number on the cheque"
+    // and was reported as the amount. The same test that finds the band
+    // elsewhere is the one that should exclude it here.
+    if (looksLikeMicrLine(normalized) || /^[\d\s⑆-⑉:;<>@#|/-]+$/.test(normalized.trim())) continue;
     // …and any line whose number is an identity rather than money.
     if (IDENTITY_LABELS.test(normalized)) continue;
 
@@ -313,7 +332,8 @@ function extractWrittenAmount(
   if (!candidate) return empty<string>();
 
   const raw = candidate.trim();
-  const repaired = repairArabicAmountWords(raw);
+  const words = raw.replace(WRITTEN_AMOUNT_PREFIX, '').trim();
+  const repaired = repairArabicAmountWords(words);
   if (repaired === raw) return found(raw, PATTERN_ONLY, raw);
 
   const spelled = parseArabicAmountWords(repaired);
