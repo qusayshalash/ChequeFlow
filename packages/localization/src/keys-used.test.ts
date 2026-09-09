@@ -18,10 +18,26 @@ import { LOCALES, messages, translate } from './index.js';
 // root is two levels up. `import.meta` is avoided because this package is
 // compiled as CommonJS for the API's Jest setup.
 const ROOT = path.resolve(process.cwd(), '../..');
-const SOURCES = ['apps/web/app', 'apps/web/components', 'apps/mobile/app', 'apps/mobile/src'];
+const SOURCES = [
+  'apps/web/app',
+  'apps/web/components',
+  'apps/mobile/app',
+  'apps/mobile/src',
+  // Not a UI package, but it names message keys: the shared list of cheque
+  // sort orders carries a `labelKey` each, and the apps translate them
+  // through a variable — which the scanner below cannot see at the call site.
+  'packages/shared-types/src',
+];
 
-/** Literal keys only. A computed key such as `status.${x}` cannot be checked. */
-const CALL = /\bt\(\s*'([a-zA-Z0-9_.]+)'/g;
+/**
+ * Literal keys only. A computed key such as `status.${x}` cannot be checked.
+ *
+ * Two shapes: a key passed straight to the translator, and a key stored under
+ * `labelKey` to be translated later. The second is the one that slips — it is
+ * written far from the screen it appears on, and nothing at the call site
+ * spells it out.
+ */
+const CALL = /\bt\(\s*'([a-zA-Z0-9_.]+)'|\blabelKey:\s*'([a-zA-Z0-9_.]+)'/g;
 
 function walk(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
@@ -38,7 +54,7 @@ function collectKeys(): Map<string, string[]> {
     for (const file of walk(dir)) {
       const text = readFileSync(file, 'utf8');
       for (const match of text.matchAll(CALL)) {
-        const key = match[1];
+        const key = match[1] ?? match[2];
         if (!key) continue;
         const places = found.get(key) ?? [];
         places.push(path.relative(ROOT, file));

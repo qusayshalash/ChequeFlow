@@ -5,7 +5,14 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
-import { ChequeStatus, type ChequeSummaryView, type Paginated } from '@cheque-flow/shared-types';
+import {
+  CHEQUE_SORTS,
+  ChequeStatus,
+  DEFAULT_CHEQUE_SORT,
+  chequeSortOption,
+  type ChequeSummaryView,
+  type Paginated,
+} from '@cheque-flow/shared-types';
 import { Button, ErrorState, LoadingState } from '@cheque-flow/ui';
 
 import { BulkActionBar } from '@/components/bulk-action-bar';
@@ -54,7 +61,7 @@ export default function ChequesPage() {
   const [amountMin, setAmountMin] = useState('');
   const [amountMax, setAmountMax] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
-  // Newest first, until the reader sorts by a column themselves.
+  // Newest first, until the reader chooses another order.
   //
   // The page used to open on the due date, ascending — which puts the oldest
   // cheque in the book at the top, and a cheque entered a minute ago wherever
@@ -63,8 +70,8 @@ export default function ChequesPage() {
   // recorded, or to carry on with the batch they are entering. `createdAt` is
   // not a column, so no header shows an arrow — the table reads as unsorted,
   // which is what an entry order is.
-  const [sortBy, setSortBy] = useState<ChequeSortKey>('createdAt');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [sortBy, setSortBy] = useState<ChequeSortKey>(DEFAULT_CHEQUE_SORT.sortBy);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(DEFAULT_CHEQUE_SORT.sortOrder);
   const [visibleColumns, setVisibleColumns] = useState<ReadonlySet<string>>(
     () => new Set(CHEQUE_COLUMN_KEYS),
   );
@@ -350,6 +357,39 @@ export default function ChequesPage() {
             are used far less often than search and were most of its bulk. */}
         {filtersOpen ? (
           <div className="mt-3 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200/90 bg-white p-3">
+            {/* Sorting was reachable only by clicking a column header, so the
+                orders on offer were whichever columns were switched on, and an
+                arrow on the due date left the reader to work out which end it
+                meant. Each option here names the answer it gives — "due
+                soonest" — and the shared list is the same one the phone
+                shows. */}
+            <label className="inline-flex h-11 w-44 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 hover:border-slate-300 xl:w-56">
+              <span className="text-xs font-medium text-slate-400">{t('common.sort')}</span>
+              <select
+                className="min-w-0 flex-1 truncate bg-transparent text-sm font-semibold text-slate-700 outline-none"
+                value={chequeSortOption(sortBy, sortOrder)?.id ?? ''}
+                onChange={(event) => {
+                  const chosen = CHEQUE_SORTS.find((option) => option.id === event.target.value);
+                  if (!chosen) return;
+                  setSortBy(chosen.sortBy);
+                  setSortOrder(chosen.sortOrder);
+                  setPage(1);
+                }}
+              >
+                {/* A column header can also sort by number or status, which is
+                    not one of these. Saying so is better than displaying the
+                    nearest option and misreporting what is on screen. */}
+                {chequeSortOption(sortBy, sortOrder) ? null : (
+                  <option value="">{t('cheque.sortCustom')}</option>
+                )}
+                {CHEQUE_SORTS.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {t(option.labelKey)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
             <label className="inline-flex h-11 w-36 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 hover:border-slate-300 xl:w-44">
               <span className="text-xs font-medium text-slate-400">{t('cheque.status')}</span>
               <select

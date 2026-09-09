@@ -4,6 +4,8 @@ import { useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
+  CHEQUE_SORTS,
+  DEFAULT_CHEQUE_SORT,
   utcToday,
   type ChequeStatus,
   type ChequeSummaryView,
@@ -17,7 +19,6 @@ import { BankMark } from '@/components/marks';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import {
   Button,
-  Chip,
   DateField,
   EmptyView,
   ErrorView,
@@ -63,8 +64,6 @@ function tabQuery(tab: Tab, today: string): Record<string, unknown> {
   }
 }
 
-const SORTS = ['dueDate', 'amount', 'createdAt', 'chequeNumber'] as const;
-
 export default function ChequeListScreen() {
   const api = useApi();
   const t = useTranslator();
@@ -103,8 +102,9 @@ export default function ChequeListScreen() {
   // Newest first, matching the web list. The due date is a field of the cheque
   // and can be backdated to anything; only the entry date puts the cheque
   // someone has just photographed at the top, where they are looking for it.
-  const [sortBy, setSortBy] = useState<(typeof SORTS)[number]>('createdAt');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [sortId, setSortId] = useState(DEFAULT_CHEQUE_SORT.id);
+  const sort = CHEQUE_SORTS.find((option) => option.id === sortId) ?? DEFAULT_CHEQUE_SORT;
+  const { sortBy, sortOrder } = sort;
 
   const filters = useMemo(
     () => ({
@@ -455,28 +455,20 @@ export default function ChequeListScreen() {
           ltr
         />
 
+        {/* One choice, not two. This was a field picker beside chips labelled
+            `↑` and `↓`, which asked the reader to work out that a rising arrow
+            on a due date means the cheque due first — and gave no way to say
+            "the ones due soonest" outright. The options are the shared list,
+            so this and the web list offer the same orders. */}
         <Picker
           label={t('common.sort')}
-          options={SORTS.map((value) => ({
-            value,
-            label: t(
-              value === 'dueDate'
-                ? 'cheque.sortDueDate'
-                : value === 'amount'
-                  ? 'cheque.sortAmount'
-                  : value === 'createdAt'
-                    ? 'cheque.sortCreatedAt'
-                    : 'cheque.sortNumber',
-            ),
+          options={CHEQUE_SORTS.map((option) => ({
+            value: option.id,
+            label: t(option.labelKey),
           }))}
-          value={sortBy}
-          onChange={(next) => setSortBy(next as (typeof SORTS)[number])}
+          value={sortId}
+          onChange={setSortId}
         />
-
-        <View style={styles.chipRow}>
-          <Chip label="↑" selected={sortOrder === 'asc'} onPress={() => setSortOrder('asc')} />
-          <Chip label="↓" selected={sortOrder === 'desc'} onPress={() => setSortOrder('desc')} />
-        </View>
 
         <Button label={t('common.apply')} onPress={() => setFiltersOpen(false)} large />
         <Button label={t('common.clear')} variant="secondary" onPress={clearFilters} />
@@ -588,5 +580,4 @@ const styles = StyleSheet.create({
   },
   clearText: { ...type.label, color: text.secondary },
 
-  chipRow: { flexDirection: 'row', gap: space['2'] },
 });
