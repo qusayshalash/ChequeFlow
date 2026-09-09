@@ -100,8 +100,11 @@ export default function ChequeListScreen() {
   const [dueTo, setDueTo] = useState('');
   const [amountMin, setAmountMin] = useState('');
   const [amountMax, setAmountMax] = useState('');
-  const [sortBy, setSortBy] = useState<(typeof SORTS)[number]>('dueDate');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  // Newest first, matching the web list. The due date is a field of the cheque
+  // and can be backdated to anything; only the entry date puts the cheque
+  // someone has just photographed at the top, where they are looking for it.
+  const [sortBy, setSortBy] = useState<(typeof SORTS)[number]>('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   const filters = useMemo(
     () => ({

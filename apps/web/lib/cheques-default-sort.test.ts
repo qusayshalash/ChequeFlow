@@ -15,6 +15,10 @@ import { describe, expect, it } from 'vitest';
  * Two halves, and both have to hold: the page has to ask for that order, and
  * the API has to accept it. A default the query schema rejects would not sort
  * anything — it would turn the first load of the page into an error.
+ *
+ * The phone list is held to the same order by
+ * `apps/mobile/src/lib/cheque-list-default-sort.test.ts`; the two are meant to
+ * agree, so neither should be changed alone.
  */
 
 const SOURCE = readFileSync(join(__dirname, '..', 'app', '(app)', 'cheques', 'page.tsx'), 'utf8');
