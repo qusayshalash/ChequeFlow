@@ -54,8 +54,17 @@ export default function ChequesPage() {
   const [amountMin, setAmountMin] = useState('');
   const [amountMax, setAmountMax] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [sortBy, setSortBy] = useState<ChequeSortKey>('dueDate');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  // Newest first, until the reader sorts by a column themselves.
+  //
+  // The page used to open on the due date, ascending — which puts the oldest
+  // cheque in the book at the top, and a cheque entered a minute ago wherever
+  // its date happens to fall, often pages away. The one thing someone reliably
+  // wants to see on opening this page is what was just added: to check it was
+  // recorded, or to carry on with the batch they are entering. `createdAt` is
+  // not a column, so no header shows an arrow — the table reads as unsorted,
+  // which is what an entry order is.
+  const [sortBy, setSortBy] = useState<ChequeSortKey>('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [visibleColumns, setVisibleColumns] = useState<ReadonlySet<string>>(
     () => new Set(CHEQUE_COLUMN_KEYS),
   );
