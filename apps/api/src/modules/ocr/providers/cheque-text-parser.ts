@@ -1,6 +1,6 @@
 import type { ChequeExtractedFields, ExtractedField } from '@cheque-flow/shared-types';
 
-import { parseArabicAmountWords, repairArabicAmountWords } from './arabic-amount';
+import { normalizeArabicAmountWords, parseArabicAmountWords } from './arabic-amount';
 
 /**
  * Turns the raw text of a scanned cheque into typed fields.
@@ -74,7 +74,7 @@ const WRITTEN_AMOUNT_MARKERS = /فقط|لا\s*غير|only\b/i;
  * at the head of a line it finds hard.
  */
 const WRITTEN_AMOUNT_PREFIX =
-  /^[\s▪•·*.,:;\-–—|]*(و\s+)?(?:(مبلغ\s*و?\s*قدر[هة]|the\s+sum\s+of|the\s+amount\s+of)\s*)?/i;
+  /^[\s▪•·*.,:;\-–—|]*(?:و\s+)?(?:(?:مبلغ\s*و?\s*قدر[هة]|the\s+sum\s+of|the\s+amount\s+of)[\s▪•·*.,:;\-–—|]*)?/i;
 
 /**
  * Is this the magnetic band along the bottom edge?
@@ -146,8 +146,12 @@ const ADDRESS_MARKERS =
  * `pay to the order of` is followed on the page by `the amount of`, so when
  * the payee line is left blank the label below it was being read as the name.
  */
+// `(?!\p{L})` and not `\b`: JavaScript's word boundary is defined over ASCII
+// word characters, so it never fires between an Arabic letter and a space.
+// With `\b` here, `مبلغ وقدره الكراته…` did not register as a printed label at
+// all, and the garbled amount line was offered as the payee.
 const PRINTED_LABELS =
-  /^(the\s+amount\s+of|(pay\s+to\s+)?(the\s+)?order\s+of|signature|date|تاریخ|تاريخ|التوقيع|توقيع|مبلغ\s*وقدره|ادفعوا?\s*لأمر)\b/i;
+  /^(the\s+amount\s+of|(pay\s+to\s+)?(the\s+)?order\s+of|signature|date|تاریخ|تاريخ|التوقيع|توقيع|مبلغ\s*و?\s*قدر[هة]|ادفعوا?\s*لأمر)(?!\p{L})/iu;
 
 /** Normalises Arabic-Indic digits and separators to their ASCII equivalents. */
 export function normalizeDigits(value: string): string {
@@ -333,7 +337,7 @@ function extractWrittenAmount(
 
   const raw = candidate.trim();
   const words = raw.replace(WRITTEN_AMOUNT_PREFIX, '').trim();
-  const repaired = repairArabicAmountWords(words);
+  const repaired = normalizeArabicAmountWords(words);
   if (repaired === raw) return found(raw, PATTERN_ONLY, raw);
 
   const spelled = parseArabicAmountWords(repaired);
@@ -446,11 +450,22 @@ function findAfterLabel(lines: readonly string[], label: RegExp): string | null 
     const match = label.exec(line);
     if (!match) continue;
 
-    const after = line.slice(match.index + match[0].length).replace(/^[\s:：.-]+/, '');
-    if (after.trim().length > 0) return after.trim();
+    // `ادفعوا لأمر | محمد …` — the rule and the tick marks a bank prints between
+    // the label and the space for writing come back as part of the line.
+    const after = line
+      .slice(match.index + match[0].length)
+      .replace(/^[\s:：.,;▪•·*|\-–—]+/, '')
+      .trim();
+    if (after.length > 0 && !PRINTED_LABELS.test(after)) return after;
 
-    const next = lines[index + 1];
-    if (next && next.trim().length > 0) return next.trim();
+    const next = lines[index + 1]?.trim();
+    if (next && next.length > 0 && !PRINTED_LABELS.test(next)) return next;
+
+    // Neither the rest of this line nor the one below it holds a value — keep
+    // looking. A cheque prints its labels in both languages, so the first one
+    // found is often the English caption sitting above the Arabic line that
+    // actually has the writing on it. Returning here left the payee empty on a
+    // cheque that named one.
   }
   return null;
 }

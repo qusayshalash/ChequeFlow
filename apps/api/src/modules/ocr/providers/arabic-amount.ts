@@ -72,6 +72,21 @@ const MULTIPLIERS: Readonly<Record<string, number>> = {
   مئة: 100, مائة: 100,
 };
 
+/**
+ * Words that belong on an amount line and carry no number.
+ *
+ * Held as a list, not just a test, because it is also the vocabulary a
+ * truncated word is matched back against.
+ */
+const FILLER: readonly string[] = [
+  'دولار', 'دولارا', 'دولارات',
+  'شيكل', 'شيقل', 'شواقل',
+  'دينار', 'دنانير',
+  'يورو', 'جنيه', 'درهم', 'ريال',
+  'فلس', 'سنت', 'قرش',
+  'فقط', 'غير',
+];
+
 /** Currency names and filler that carry no numeric value. */
 const IGNORED =
   /^(دولار|دولارا|دولارات|شيكل|شيقل|شواقل|دينار|دنانير|يورو|جنيه|درهم|ريال|فقط|لا|غير|و|فلس|فلسا|سنت|سنتا|قرش|قرشا)$/;
@@ -154,4 +169,111 @@ export function parseArabicAmountWords(text: string): number | null {
   }
 
   return sawNumber ? total + group : null;
+}
+
+/**
+ * The whole closed vocabulary of an amount line, in the spelling to print.
+ *
+ * An amount written out on a cheque draws on a few dozen words and nothing
+ * else, which is what makes repairing it tractable at all.
+ */
+const VOCABULARY: readonly string[] = [
+  ...Object.keys(UNITS),
+  ...Object.keys(MULTIPLIERS),
+  ...FILLER,
+];
+
+const CANONICAL = new Map<string, string>();
+for (const word of VOCABULARY) {
+  // First spelling wins, so the tables above decide how a repair is written.
+  if (!CANONICAL.has(fold(word))) CANONICAL.set(fold(word), word);
+}
+
+// Written closed up by most people, and returned as one token — so it has to
+// be matchable as one, while being written back out as two.
+CANONICAL.set(fold('لاغير'), 'لا غير');
+CANONICAL.set(fold('لا'), 'لا');
+
+/** Levenshtein distance, bounded — anything past the limit stops early. */
+function distanceWithin(a: string, b: string, limit: number): number | null {
+  if (Math.abs(a.length - b.length) > limit) return null;
+
+  let previous = Array.from({ length: b.length + 1 }, (_, index) => index);
+  for (let i = 1; i <= a.length; i += 1) {
+    const current = [i];
+    let best = i;
+    for (let j = 1; j <= b.length; j += 1) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      current[j] = Math.min(
+        (previous[j] ?? 0) + 1,
+        (current[j - 1] ?? 0) + 1,
+        (previous[j - 1] ?? 0) + cost,
+      );
+      best = Math.min(best, current[j] ?? 0);
+    }
+    if (best > limit) return null;
+    previous = current;
+  }
+
+  const total = previous[b.length] ?? 0;
+  return total <= limit ? total : null;
+}
+
+/**
+ * Puts a truncated word back, but only when there is one word it could be.
+ *
+ * Handwriting loses letters, and every hand loses different ones: one cheque
+ * came back `دولا` and `لاغي` where a fixed list of misspellings had nothing to
+ * say. Matching against the closed vocabulary generalises to the next hand
+ * without inventing anything — the words an amount can contain are known.
+ *
+ * A tie is left alone. `سبع` and `تسع` are one edit apart, so a token close to
+ * both is not repaired into whichever came first; it reaches the reviewer as
+ * the engine wrote it, and the corroboration check will not pass.
+ */
+function nearestVocabularyWord(token: string): string | null {
+  const folded = fold(token);
+
+  // Already a word an amount can contain — leave it exactly as written.
+  //
+  // Returning the table's spelling instead would rewrite text that was read
+  // correctly: `ألف` became `الف` and the `و` of `وخمسون` was dropped. On the
+  // field that prevails in a dispute, only what was broken may be touched.
+  if (CANONICAL.has(folded)) return null;
+  if (folded.startsWith('و') && CANONICAL.has(folded.slice(1))) return null;
+
+  // One edit for a short word, two once there is enough of it to be sure.
+  const limit = folded.length <= 4 ? 1 : 2;
+
+  let best: { word: string; distance: number } | null = null;
+  let tied = false;
+
+  for (const [candidate, display] of CANONICAL) {
+    const distance = distanceWithin(folded, candidate, limit);
+    if (distance === null) continue;
+
+    if (!best || distance < best.distance) {
+      best = { word: display, distance };
+      tied = false;
+    } else if (distance === best.distance && display !== best.word) {
+      tied = true;
+    }
+  }
+
+  return best && !tied ? best.word : null;
+}
+
+/**
+ * Rewrites an amount line in the vocabulary it is drawn from.
+ *
+ * Tokens it cannot place are kept verbatim, so a line this does not understand
+ * still reaches the reviewer as it was read.
+ */
+export function normalizeArabicAmountWords(text: string): string {
+  return repairArabicAmountWords(text)
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((token) => nearestVocabularyWord(token) ?? token)
+    .join(' ')
+    .trim();
 }

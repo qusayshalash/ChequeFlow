@@ -318,3 +318,81 @@ describe('a cheque whose printed label ran into the handwriting', () => {
     expect(fields.dueDate.value).toBe('2026-07-10');
   });
 });
+
+/**
+ * A different hand, and the fixed list of misspellings ran out.
+ *
+ * Every fixture before this lost the same letters, so a table of exact
+ * misreadings kept up. This hand lost different ones — `دولا` for `دولار`,
+ * `لاغي` for `لا غير` — and a table has nothing to say about a truncation it
+ * has not met. Each new hand would have needed another entry.
+ *
+ * An amount written out on a cheque draws on a few dozen words and nothing
+ * else, so a truncated one is matched back against that closed vocabulary. It
+ * generalises to the next hand without inventing anything, and a token close
+ * to two words at once is left alone rather than guessed at.
+ *
+ * The line also puts the bank's rule between the label and the writing —
+ * `مبلغ وقدره | الف دولا فقط لاغي` — where the previous cheque had it in front.
+ */
+const A_DIFFERENT_HAND = [
+  '291',
+  'البنك العربي',
+  'ARAB BANK',
+  'الارسال',
+  'AL-IRSAL',
+  'pay to the order of',
+  'the amount of',
+  'Signature',
+  'UAE BA',
+  'ld. 905079992',
+  'ادفعوا لأمر | محمد محمود عوض مصريه',
+  'مبلغ وقدره | الف دولا فقط لاغي',
+  'اید ها',
+  '130.6.2016',
+  'date',
+  'ـريخ',
+  '#20317287 #49/87543, 3170411510⑉',
+  'السيد / زايد ناجي عيسي نعسان',
+  'MR. Zayed Naji Issa Nasan',
+  'الارسال',
+  '9340-317041-1/510',
+  'RAMALLAH-Moghayer-Main',
+  'Tel.',
+  '595999937',
+  'ARAB BANK',
+  'USD £ 1000',
+  'البنك الهوي',
+  'ARAB BANK',
+].join('\n');
+
+describe('an Arab Bank cheque in a different hand', () => {
+  const fields = parseChequeText({ text: A_DIFFERENT_HAND, engineConfidence: 1 });
+
+  it('puts the dropped letters back from the vocabulary an amount is drawn from', () => {
+    expect(fields.writtenAmount.value).toBe('الف دولار فقط لا غير');
+  });
+
+  it('and the figure vouches for the result', () => {
+    expect(fields.writtenAmount.confidence).toBeGreaterThanOrEqual(0.7);
+  });
+
+  it('drops the rule the bank prints after the label', () => {
+    // `مبلغ وقدره | الف …` — the separator follows the label here rather than
+    // preceding it, which the earlier cheque never showed.
+    expect(fields.writtenAmount.value).not.toContain('|');
+    expect(fields.writtenAmount.value).not.toContain('مبلغ');
+  });
+
+  it('reads the payee, whose line carries the same rule', () => {
+    expect(fields.payeeName.value).toBe('محمد محمود عوض مصريه');
+  });
+
+  it('gets the rest of the record', () => {
+    expect(fields.chequeNumber.value).toBe('20317287');
+    expect(fields.numericAmount.value).toBe('1000');
+    expect(fields.currency.value).toBe('USD');
+    expect(fields.accountNumber.value).toBe('3170411510');
+    expect(fields.drawerName.value).toBe('زايد ناجي عيسي نعسان');
+  });
+});
