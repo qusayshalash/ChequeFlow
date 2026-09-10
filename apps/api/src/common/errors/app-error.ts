@@ -1,8 +1,8 @@
-import { ApiErrorCode } from '@cheque-flow/shared-types';
+import { ApiErrorCode, type ApiErrorDetail } from '@cheque-flow/shared-types';
 
 export interface AppErrorOptions {
   /** Safe, structured context returned to the client. */
-  details?: Record<string, string | number | boolean | null>;
+  details?: Record<string, ApiErrorDetail>;
   fieldErrors?: Array<{ path: string; message: string }>;
   /** Internal cause, logged but never serialized to the client. */
   cause?: unknown;
@@ -33,7 +33,7 @@ const STATUS_BY_CODE: Readonly<Record<ApiErrorCode, number>> = {
  */
 export class AppError extends Error {
   readonly status: number;
-  readonly details?: Record<string, string | number | boolean | null>;
+  readonly details?: Record<string, ApiErrorDetail>;
   readonly fieldErrors?: Array<{ path: string; message: string }>;
 
   constructor(

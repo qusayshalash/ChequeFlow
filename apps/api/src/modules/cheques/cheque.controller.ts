@@ -436,13 +436,21 @@ export class ChequeController {
   @RequirePermissions(Permission.CHEQUE_REVIEW)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Confirm the reviewed data and verify the cheque' })
+  @ApiQuery({
+    name: 'allowDuplicate',
+    required: false,
+    description: 'Confirm anyway when the reviewed values match a cheque already on file',
+  })
   review(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
     @Body(zodBody(reviewChequeSchema)) body: ReviewChequeInput,
+    @Query('allowDuplicate') allowDuplicate: string | undefined,
     @Req() request: Request,
   ) {
-    return this.ocr.review(user, id, body, AuditService.contextFromRequest(request));
+    return this.ocr.review(user, id, body, AuditService.contextFromRequest(request), {
+      allowDuplicate: allowDuplicate === 'true',
+    });
   }
 
   // ── state machine actions ─────────────────────────────────────────────────

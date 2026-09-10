@@ -1,4 +1,9 @@
-import { ApiErrorCode, type ApiErrorBody, type ApiFieldError } from '@cheque-flow/shared-types';
+import {
+  ApiErrorCode,
+  type ApiErrorBody,
+  type ApiErrorDetail,
+  type ApiFieldError,
+} from '@cheque-flow/shared-types';
 
 /**
  * A failed API call, in a shape the UI can render directly.
@@ -12,7 +17,7 @@ export class ApiClientError extends Error {
   readonly status: number;
   readonly requestId: string | null;
   readonly fieldErrors: ApiFieldError[];
-  readonly details: Record<string, string | number | boolean | null>;
+  readonly details: Record<string, ApiErrorDetail>;
 
   constructor(init: {
     code: ApiErrorCode;
@@ -21,7 +26,7 @@ export class ApiClientError extends Error {
     status: number;
     requestId?: string | null;
     fieldErrors?: ApiFieldError[];
-    details?: Record<string, string | number | boolean | null>;
+    details?: Record<string, ApiErrorDetail>;
   }) {
     super(init.message);
     this.name = 'ApiClientError';

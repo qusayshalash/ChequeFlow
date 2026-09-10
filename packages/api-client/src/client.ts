@@ -356,8 +356,20 @@ export class ChequeFlowApiClient {
     return this.request<OcrSuggestionResponse | null>(`/cheques/${id}/ocr-suggestion`);
   }
 
-  reviewCheque(id: string, input: ReviewChequeInput) {
-    return this.request<ChequeDetailView>(`/cheques/${id}/review`, { method: 'POST', body: input });
+  /**
+   * Confirms what was read off a photograph.
+   *
+   * `allowDuplicate` is the reviewer's answer to "this matches a cheque you
+   * already have" — the same override the create endpoints take. Until the
+   * reviewer says so, confirming values that match a recorded cheque is
+   * refused rather than filed twice.
+   */
+  reviewCheque(id: string, input: ReviewChequeInput, allowDuplicate = false) {
+    return this.request<ChequeDetailView>(`/cheques/${id}/review`, {
+      method: 'POST',
+      body: input,
+      query: { allowDuplicate },
+    });
   }
 
   // ── lifecycle actions ─────────────────────────────────────────────────────

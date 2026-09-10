@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { ApiClientError, type OcrSuggestionResponse } from '@cheque-flow/api-client';
-import type { ChequeDetailView } from '@cheque-flow/shared-types';
+import type { ChequeDetailView, DuplicateChequeMatch } from '@cheque-flow/shared-types';
 import { colors } from '@cheque-flow/ui/tokens';
 
 import { useApi, useTranslator } from '@/components/providers';
@@ -39,6 +39,9 @@ export default function ReviewExtractedDataScreen() {
 
   const [values, setValues] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  // Set when the confirmed values match a cheque already on file. Not a
+  // failure: the answer is the reviewer's to give.
+  const [duplicates, setDuplicates] = useState<DuplicateChequeMatch[] | null>(null);
 
   const cheque = useQuery<ChequeDetailView>({
     queryKey: ['cheque', id],
@@ -63,24 +66,38 @@ export default function ReviewExtractedDataScreen() {
   }, [suggestion.data]);
 
   const confirm = useMutation({
-    mutationFn: () => {
+    mutationFn: (allowDuplicate: boolean) => {
       const confirmed: Record<string, string> = {};
       for (const { field, target } of FIELDS) {
         const value = values[field]?.trim();
         if (value) confirmed[target] = value;
       }
-      return api.reviewCheque(id, {
-        ...(suggestion.data ? { extractionId: suggestion.data.extractionId } : {}),
-        confirmed,
-        rejectedFields: [],
-        version: cheque.data?.version ?? 1,
-      });
+      return api.reviewCheque(
+        id,
+        {
+          ...(suggestion.data ? { extractionId: suggestion.data.extractionId } : {}),
+          confirmed,
+          rejectedFields: [],
+          version: cheque.data?.version ?? 1,
+        },
+        allowDuplicate,
+      );
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['cheque', id] });
+      void queryClient.invalidateQueries({ queryKey: ['cheques'] });
       router.replace(`/(app)/cheques/${id}`);
     },
     onError: (caught: unknown) => {
+      // The photograph was taken of a cheque that is already recorded. Ask
+      // rather than refuse: a re-issued cheque can legitimately repeat a
+      // number, and only the person holding it knows which this is.
+      if (caught instanceof ApiClientError && caught.code === 'DUPLICATE_CHEQUE') {
+        const details = caught.details as { duplicates?: DuplicateChequeMatch[] } | undefined;
+        setDuplicates(details?.duplicates ?? []);
+        setError(null);
+        return;
+      }
       setError(caught instanceof ApiClientError ? t(caught.messageKey) : t('errors.network'));
     },
   });
@@ -129,9 +146,35 @@ export default function ReviewExtractedDataScreen() {
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
+      {/* Same shape as the one on the manual entry screen, so the decision
+          looks the same wherever a duplicate turns up. */}
+      {duplicates ? (
+        <View style={styles.duplicateBox}>
+          <Text style={styles.duplicateTitle}>{t('cheque.duplicateWarning')}</Text>
+          {duplicates.map((match) => (
+            <Text key={match.chequeId} style={styles.duplicateRow}>
+              {match.chequeNumber} — {match.amount} {match.dueDate} — {t(`status.${match.status}`)}
+            </Text>
+          ))}
+          <Button
+            label={t('common.confirm')}
+            variant="danger"
+            onPress={() => {
+              setDuplicates(null);
+              confirm.mutate(true);
+            }}
+          />
+          <Button
+            label={t('common.cancel')}
+            variant="secondary"
+            onPress={() => setDuplicates(null)}
+          />
+        </View>
+      ) : null}
+
       <Button
         label={t('ocr.confirm')}
-        onPress={() => confirm.mutate()}
+        onPress={() => confirm.mutate(false)}
         loading={confirm.isPending}
         large
       />
@@ -159,4 +202,12 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   error: { color: colors.danger, fontSize: 14, textAlign: 'right' },
+  duplicateBox: {
+    backgroundColor: colors.warningBg,
+    borderRadius: radius.sm,
+    padding: space['3'],
+    gap: 4,
+  },
+  duplicateTitle: { fontSize: 15, fontWeight: '700', color: colors.warning, textAlign: 'right' },
+  duplicateRow: { fontSize: 14, color: colors.warning, textAlign: 'right' },
 });

@@ -15,7 +15,7 @@ import {
   type ChequeExtractionResult,
   type OcrProvider,
 } from '@cheque-flow/shared-types';
-import { Prisma, toMoney } from '@cheque-flow/database';
+import { Prisma, moneyToString, toMoney } from '@cheque-flow/database';
 import type { ReviewChequeInput } from '@cheque-flow/validation';
 
 import { AppError } from '../../common/errors/app-error';
@@ -24,8 +24,10 @@ import type { RequestUser } from '../../common/types/request-user';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditAction, AuditService, type AuditContext } from '../audit/audit.service';
 import { ChequeActionsService } from '../cheques/cheque-actions.service';
+import { DuplicateDetectorService } from '../cheques/duplicate-detector.service';
 import { StorageService } from '../storage/storage.service';
 import { toDateOnly } from '../cheques/cheque.service';
+import { toIsoDate } from '../cheques/cheque.mapper';
 import { OCR_PROVIDER } from './ocr.tokens';
 
 export interface OcrSuggestion {
@@ -55,6 +57,7 @@ export class OcrService {
     private readonly audit: AuditService,
     private readonly encryption: FieldEncryptionService,
     private readonly actions: ChequeActionsService,
+    private readonly duplicates: DuplicateDetectorService,
     private readonly storage: StorageService,
   ) {}
 
@@ -243,6 +246,7 @@ export class OcrService {
     chequeId: string,
     input: ReviewChequeInput,
     auditMeta: Partial<AuditContext> = {},
+    options: { allowDuplicate?: boolean } = {},
   ) {
     const cheque = await this.prisma.db.cheque.findFirst({
       where: { id: chequeId, organizationId: user.organizationId, deletedAt: null },
@@ -253,6 +257,35 @@ export class OcrService {
     }
 
     const confirmed = input.confirmed;
+
+    // This is where a photographed cheque is first comparable with the rest.
+    //
+    // The capture screen creates the record before anything has been read: a
+    // placeholder amount of 1.00 under a `TMP-` number, deliberately exempt
+    // from duplicate detection, because a photograph of a cheque already on
+    // file is a re-photograph and not a second cheque. The check was meant to
+    // run here instead, on the values the reviewer confirms — and did not.
+    //
+    // So photographing a recorded cheque a second time filed it again in
+    // silence. It happened: cheque 20000013 was photographed twice within two
+    // hours and stored twice, identical in number, amount and due date, with
+    // nothing shown to the person confirming the second one.
+    const key = {
+      chequeNumber: confirmed.chequeNumber ?? cheque.chequeNumber,
+      amount: confirmed.amount ?? moneyToString(cheque.amount),
+      dueDate: confirmed.dueDate ?? (toIsoDate(cheque.dueDate) ?? ''),
+      bankId: confirmed.bankId === undefined ? cheque.bankId : confirmed.bankId,
+    };
+    const duplicates = await this.duplicates.findByBusinessKey({
+      organizationId: user.organizationId,
+      bankId: key.bankId,
+      chequeNumber: key.chequeNumber,
+      amount: key.amount,
+      dueDate: key.dueDate,
+      // Its own row is not a match for itself.
+      excludeChequeId: chequeId,
+    });
+    DuplicateDetectorService.assertNoDuplicates(duplicates, options.allowDuplicate === true);
     await this.prisma.db.$transaction(async (tx) => {
       await tx.cheque.update({
         where: { id: chequeId },

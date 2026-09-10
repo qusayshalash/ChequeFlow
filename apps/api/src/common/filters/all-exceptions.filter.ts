@@ -9,7 +9,12 @@ import {
 import { ThrottlerException } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 
-import { ApiErrorCode, ChequeTransitionError, type ApiErrorBody } from '@cheque-flow/shared-types';
+import {
+  ApiErrorCode,
+  ChequeTransitionError,
+  type ApiErrorBody,
+  type ApiErrorDetail,
+} from '@cheque-flow/shared-types';
 import {
   isPrismaKnownError,
   PG_RECORD_NOT_FOUND,
@@ -23,7 +28,7 @@ interface NormalizedError {
   code: ApiErrorCode;
   message: string;
   fieldErrors?: Array<{ path: string; message: string }>;
-  details?: Record<string, string | number | boolean | null>;
+  details?: Record<string, ApiErrorDetail>;
   /** Message written to the server log; may contain internal detail. */
   logMessage: string;
 }

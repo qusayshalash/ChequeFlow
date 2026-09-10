@@ -42,6 +42,23 @@ export interface ApiFieldError {
  * The single error envelope returned by every endpoint. `message` is a safe,
  * translatable string; internal details never leave the server.
  */
+/**
+ * A value safe to put in an error's `details`.
+ *
+ * Anything JSON can carry, and nothing else — no Error, no ORM payload, no
+ * stack. It was flat scalars, which meant an error could say how many cheques
+ * it had matched but not which, and the panels built to list them had nothing
+ * to list. What may go in is still the caller's judgement; this only says what
+ * shape it must take to cross the wire.
+ */
+export type ApiErrorDetail =
+  | string
+  | number
+  | boolean
+  | null
+  | ApiErrorDetail[]
+  | { [key: string]: ApiErrorDetail };
+
 export interface ApiErrorBody {
   error: {
     code: ApiErrorCode;
@@ -52,7 +69,7 @@ export interface ApiErrorBody {
     timestamp: string;
     fieldErrors?: ApiFieldError[];
     /** Additional safe, structured context (never internal stack data). */
-    details?: Record<string, string | number | boolean | null>;
+    details?: Record<string, ApiErrorDetail>;
   };
 }
 

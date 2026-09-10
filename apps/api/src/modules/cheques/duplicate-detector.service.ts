@@ -99,6 +99,23 @@ export class DuplicateDetectorService {
         reason: first?.reason ?? 'BUSINESS_KEY',
         existingChequeId: first?.chequeId ?? null,
         matches: matches.length,
+        // The matches themselves, not just how many. Both apps render an
+        // "already recorded" panel from `details.duplicates` and were reading
+        // a key that was never sent, so the panel appeared with the warning
+        // and nothing under it — asking the reader to decide about cheques it
+        // would not name.
+        //
+        // Written out field by field rather than passed through, so what
+        // leaves the server is a decision rather than whatever the query
+        // happens to select next year.
+        duplicates: matches.map((match) => ({
+          chequeId: match.chequeId,
+          chequeNumber: match.chequeNumber,
+          amount: match.amount,
+          dueDate: match.dueDate,
+          status: match.status,
+          reason: match.reason,
+        })),
       },
     });
   }
