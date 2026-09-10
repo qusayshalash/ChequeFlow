@@ -7,6 +7,7 @@ import { SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 
 import { AppModule } from './app.module';
+import { isAllowedOrigin } from './common/cors';
 import { AppConfigService } from './config/app-config.service';
 import { OPENAPI_PATH, buildOpenApiDocument } from './openapi';
 
@@ -31,7 +32,11 @@ async function bootstrap(): Promise<void> {
   );
 
   app.enableCors({
-    origin: config.corsOrigins,
+    // Exactly `CORS_ORIGINS` in production; in development also any address on
+    // this machine or this private network, so testing the dashboard from a
+    // phone does not depend on a list nobody remembers to update.
+    origin: (origin, callback) =>
+      callback(null, isAllowedOrigin(origin, config.corsOrigins, config.isProduction)),
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],

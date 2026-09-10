@@ -7,7 +7,7 @@ import { createContext, useContext, useMemo, useRef, useState, type ReactNode } 
 import { ChequeFlowApiClient, ApiClientError } from '@cheque-flow/api-client';
 import { createTranslator, type Locale, type Translator } from '@cheque-flow/localization';
 
-import { API_URL } from '@/lib/config';
+import { apiUrl } from '@/lib/config';
 import { BrowserTokenStore } from '@/lib/token-store';
 
 interface AppContextValue {
@@ -59,7 +59,7 @@ export function Providers({ locale, children }: { locale: Locale; children: Reac
   const value = useMemo<AppContextValue>(
     () => ({
       api: new ChequeFlowApiClient({
-        baseUrl: API_URL,
+        baseUrl: apiUrl(),
         tokenStore: storeRef.current as BrowserTokenStore,
         onSessionExpired: () => {
           queryClient.clear();
