@@ -30,8 +30,42 @@ if ! command -v node >/dev/null 2>&1; then
   exit 1
 fi
 
+# The pid of a process listening on our port, whoever it belongs to.
+listener_pid() {
+  command -v lsof >/dev/null 2>&1 || return 1
+  lsof -t -nP -iTCP:"$STORAGE_PORT" -sTCP:LISTEN 2>/dev/null | head -1
+}
+
+# The pid of *our* stub, however it can be found, printed on stdout.
+#
+# The pid file alone was not enough. It does not survive a reboot, a `kill -9`
+# or a machine that was put to sleep with the stub running, while the server it
+# names carries on serving — and then `status` reported "not running" about a
+# process that was answering every upload, and `start` walked into the port and
+# died with an EADDRINUSE stack trace. The port is the thing that matters, so
+# ask it, and confirm what answers is the stub and not somebody else's server.
+stub_pid() {
+  local pid
+  if [ -f "$STORAGE_PID" ]; then
+    pid="$(cat "$STORAGE_PID")"
+    if kill -0 "$pid" 2>/dev/null; then
+      echo "$pid"
+      return 0
+    fi
+  fi
+
+  pid="$(listener_pid)" || return 1
+  [ -n "$pid" ] || return 1
+  ps -o command= -p "$pid" 2>/dev/null | grep -q 'storage-stub' || return 1
+
+  # Found by the port: put the pid file back, so the next command is cheap.
+  mkdir -p "$(dirname "$STORAGE_PID")"
+  echo "$pid" > "$STORAGE_PID"
+  echo "$pid"
+}
+
 running() {
-  [ -f "$STORAGE_PID" ] && kill -0 "$(cat "$STORAGE_PID")" 2>/dev/null
+  stub_pid >/dev/null 2>&1
 }
 
 case "${1:-status}" in
@@ -41,10 +75,17 @@ case "${1:-status}" in
       exit 0
     fi
 
-    # A stale pid file outlives a crash; a port already taken is somebody
-    # else's server and must not be assumed to be ours.
-    if curl -fsS -o /dev/null "http://127.0.0.1:$STORAGE_PORT/" 2>/dev/null; then
-      echo "Something is already listening on port $STORAGE_PORT. Not starting a second one." >&2
+    # A port already taken by something that is not the stub is somebody else's
+    # server and must not be assumed to be ours.
+    #
+    # This asked `curl -fsS`, which reports failure on any non-2xx reply — and
+    # the stub answers `/` with 400, so the check read its own server as an
+    # empty port and started a second one on top of it. What matters is whether
+    # the connection is accepted at all, not what it answers.
+    foreign="$(listener_pid || true)"
+    if [ -n "$foreign" ]; then
+      echo "Port $STORAGE_PORT is held by pid $foreign, which is not the stub:" >&2
+      ps -o command= -p "$foreign" >&2
       exit 1
     fi
 
@@ -64,8 +105,9 @@ case "${1:-status}" in
     ;;
 
   stop)
-    if running; then
-      kill "$(cat "$STORAGE_PID")"
+    pid="$(stub_pid || true)"
+    if [ -n "$pid" ]; then
+      kill "$pid"
       rm -f "$STORAGE_PID"
       echo "Stopped."
     else
@@ -75,10 +117,17 @@ case "${1:-status}" in
     ;;
 
   status)
-    if running; then
-      echo "Running on port $STORAGE_PORT (pid $(cat "$STORAGE_PID"))."
+    pid="$(stub_pid || true)"
+    if [ -n "$pid" ]; then
+      echo "Running on port $STORAGE_PORT (pid $pid)."
     else
-      echo "Not running. Start it with: bash scripts/storage.sh start"
+      foreign="$(listener_pid || true)"
+      if [ -n "$foreign" ]; then
+        echo "Not running, but port $STORAGE_PORT is held by pid $foreign:"
+        ps -o command= -p "$foreign"
+      else
+        echo "Not running. Start it with: bash scripts/storage.sh start"
+      fi
     fi
     ;;
 
