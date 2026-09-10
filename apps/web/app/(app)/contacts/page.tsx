@@ -178,7 +178,13 @@ export default function ContactsPage() {
                   ) : (
                     // One line per currency. A single figure would mean adding
                     // dollars to shekels, which has no honest answer.
-                    <span className="flex flex-col items-end gap-0.5">
+                    //
+                    // `items-start`, not `items-end`: the page is right-to-left,
+                    // so the end is the left edge and the figures hung there —
+                    // 70px away from the header that names them, with the empty
+                    // "settled" text of other rows sitting correctly under it.
+                    // The stack still aligns as a column, now under its heading.
+                    <span className="flex flex-col items-start gap-0.5">
                       {contact.balances.map((balance) => {
                         const owed = !balance.net.startsWith('-');
                         return (
