@@ -25,10 +25,7 @@ import { describe, expect, it } from 'vitest';
  * agree, so neither should be changed alone.
  */
 
-const SOURCE = readFileSync(
-  join(__dirname, '..', 'app', '(app)', 'cheques', 'page.tsx'),
-  'utf8',
-);
+const SOURCE = readFileSync(join(__dirname, '..', 'app', '(app)', 'cheques', 'page.tsx'), 'utf8');
 
 describe('cheques page sorting', () => {
   it('opens on the most recently added cheque', () => {

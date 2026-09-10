@@ -25,10 +25,7 @@ import { describe, expect, it } from 'vitest';
  * and the page does not scroll sideways at any width tested.
  */
 
-const SOURCE = readFileSync(
-  join(__dirname, '..', 'app', '(app)', 'cheques', 'page.tsx'),
-  'utf8',
-);
+const SOURCE = readFileSync(join(__dirname, '..', 'app', '(app)', 'cheques', 'page.tsx'), 'utf8');
 
 /** The opening tag of the element holding the filter controls. */
 function panelTag(): string {
@@ -47,7 +44,7 @@ describe('cheque filter panel layout', () => {
     // The stacked shape is what split them. Neither bound may carry a label
     // above it again.
     expect(SOURCE).not.toContain('flex min-w-44 flex-col');
-    const amountBox = SOURCE.slice(SOURCE.indexOf('aria-label={`${t(\'common.amount\')}'));
+    const amountBox = SOURCE.slice(SOURCE.indexOf("aria-label={`${t('common.amount')}"));
     // Both inputs inside the same box: the second bound appears before any
     // further element of the panel is opened.
     expect(amountBox.slice(0, amountBox.indexOf('</div>'))).toContain('amountMax');

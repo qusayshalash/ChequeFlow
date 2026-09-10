@@ -17,10 +17,7 @@ import { describe, expect, it } from 'vitest';
  * same reason a popover anchored `end-0` opened off the side of the page.
  */
 
-const SOURCE = readFileSync(
-  join(__dirname, '..', 'app', '(app)', 'contacts', 'page.tsx'),
-  'utf8',
-);
+const SOURCE = readFileSync(join(__dirname, '..', 'app', '(app)', 'contacts', 'page.tsx'), 'utf8');
 
 /** The class list on the element wrapping the per-currency figures. */
 function balanceStack(): string {

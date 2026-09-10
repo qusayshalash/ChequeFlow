@@ -58,6 +58,11 @@
   "backup": {
     "done": "Backup downloaded",
     "download": "Download a full copy",
+    "drive": "Upload to Google Drive",
+    "driveDenied": "Permission was not granted, so nothing was uploaded",
+    "driveDone": "Backup uploaded to Drive: {name}",
+    "driveFailed": "Could not upload to Drive",
+    "driveHint": "Uploaded from your browser with your own account. The system never sees your Drive, and reaches only the files it uploads itself.",
     "excluded": "It excludes passwords and cheque images; the images stay in object storage.",
     "hint": "A JSON file with all your records: cheques, their movements, contacts, branches and users.",
     "keepSafe": "Keep the file somewhere safe: it holds a complete financial record.",

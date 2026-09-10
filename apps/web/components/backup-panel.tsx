@@ -8,6 +8,13 @@ import { Button, SuccessBanner, inputClassName } from '@cheque-flow/ui';
 
 import { Panel } from '@/components/panel';
 import { useApi, useTranslator } from '@/components/providers';
+import {
+  DriveError,
+  backupFileName,
+  driveClientId,
+  requestDriveToken,
+  uploadToDrive,
+} from '@/lib/google-drive';
 
 /** Downloads a complete archive of the organization as a JSON file. */
 export function BackupPanel() {
@@ -23,7 +30,7 @@ export function BackupPanel() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `chequeflow-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      link.download = backupFileName();
       document.body.append(link);
       link.click();
       link.remove();
@@ -51,7 +58,7 @@ export function BackupPanel() {
         </p>
       ) : null}
 
-      <div className="mt-4">
+      <div className="mt-4 flex flex-wrap items-center gap-3">
         <Button
           loading={download.isPending}
           onClick={() => {
@@ -62,6 +69,12 @@ export function BackupPanel() {
         >
           {t('backup.download')}
         </Button>
+        <DriveButton
+          onBusy={() => {
+            setDone(false);
+            setError(null);
+          }}
+        />
       </div>
 
       <RestoreSection />
@@ -77,6 +90,75 @@ export function BackupPanel() {
  * be undone, and the append-only ledger means there is no second chance to
  * clear a wrong one out.
  */
+/**
+ * A second home for the archive, one click away.
+ *
+ * The upload runs in this page with the reader's own Google account: the
+ * server never holds a Google token, so there is no long-lived credential to
+ * protect or to leak. Shown only where an OAuth client is configured — a
+ * button that cannot work is worse than no button.
+ */
+function DriveButton({ onBusy }: { onBusy: () => void }) {
+  const api = useApi();
+  const t = useTranslator();
+  const [uploaded, setUploaded] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const clientId = driveClientId();
+
+  const upload = useMutation({
+    mutationFn: async () => {
+      // The consent window must open from the click, so the token is asked for
+      // before the export rather than after it.
+      const token = await requestDriveToken(clientId!);
+      const json = await api.exportBackup();
+      return uploadToDrive(token, json, backupFileName());
+    },
+    onSuccess: (file) => setUploaded(file.name),
+    onError: (caught: unknown) => {
+      // Closing the consent window is an answer, not a failure.
+      if (caught instanceof DriveError && caught.reason === 'cancelled') return;
+      if (caught instanceof DriveError) {
+        setError(t(caught.reason === 'denied' ? 'backup.driveDenied' : 'backup.driveFailed'));
+        return;
+      }
+      setError(caught instanceof ApiClientError ? t(caught.messageKey) : t('backup.driveFailed'));
+    },
+  });
+
+  if (!clientId) return null;
+
+  return (
+    <>
+      <Button
+        variant="secondary"
+        loading={upload.isPending}
+        onClick={() => {
+          onBusy();
+          setUploaded(null);
+          setError(null);
+          upload.mutate();
+        }}
+      >
+        {t('backup.drive')}
+      </Button>
+
+      <p className="basis-full text-sm text-slate-500">{t('backup.driveHint')}</p>
+
+      {uploaded ? (
+        <div className="basis-full">
+          <SuccessBanner message={t('backup.driveDone', { name: uploaded })} />
+        </div>
+      ) : null}
+      {error ? (
+        <p role="alert" className="basis-full text-sm text-red-600">
+          {error}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
 function RestoreSection() {
   const api = useApi();
   const t = useTranslator();
