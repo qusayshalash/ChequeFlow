@@ -104,6 +104,35 @@ export class ChequeActionsService {
     payload: ChequeActionPayload,
     auditMeta: Partial<AuditContext> = {},
   ): Promise<ChequeDetailView> {
+    const updated = await this.prisma.db.$transaction(async (tx) => {
+      await this.executeWithin(tx, user, chequeId, action, payload, auditMeta);
+      return tx.cheque.findUniqueOrThrow({ where: { id: chequeId }, include: chequeDetailInclude });
+    });
+
+    return this.settle(updated, user);
+  }
+
+  /**
+   * Checks an action and applies it, inside a transaction the caller owns.
+   *
+   * Every check that can refuse the action runs here, so nothing a caller
+   * wrote alongside it survives a refusal. OCR review is why this is public:
+   * it writes the reviewer's confirmed number, amount and due date and then
+   * moves the cheque out of PENDING_REVIEW. Those were two separate writes —
+   * the fields committed first, and the transition ran afterwards on its own.
+   * A refused transition therefore left the cheque carrying values it had
+   * never been reviewed into, marked `ocrStatus: REVIEWED`, in its old status.
+   * Measured on a real record: the confirmed number and 9500.00 were stored
+   * while the request answered 409 and the cheque stayed DRAFT.
+   */
+  async executeWithin(
+    tx: Prisma.TransactionClient,
+    user: RequestUser,
+    chequeId: string,
+    action: ChequeAction,
+    payload: ChequeActionPayload,
+    auditMeta: Partial<AuditContext> = {},
+  ): Promise<void> {
     // 1. Is the caller allowed to do this at all?
     //
     // First, and before the cheque is even read. The permission an action needs
@@ -117,7 +146,7 @@ export class ChequeActionsService {
       throw AppError.forbidden(`Action ${action} requires ${required}`, { required });
     }
 
-    const cheque = await this.prisma.db.cheque.findFirst({
+    const cheque = await tx.cheque.findFirst({
       where: { id: chequeId, organizationId: user.organizationId, deletedAt: null },
     });
     if (!cheque) throw AppError.notFound('Cheque', chequeId);
@@ -141,15 +170,21 @@ export class ChequeActionsService {
       throw AppError.versionConflict(payload.version, cheque.version);
     }
 
-    await this.assertReferencesInTenant(user.organizationId, payload);
+    await this.assertReferencesInTenant(user.organizationId, payload, tx);
 
-    const updated = await this.prisma.db.$transaction(async (tx) => {
-      await this.applyWithin(tx, user, cheque, transition, payload, auditMeta);
-      return tx.cheque.findUniqueOrThrow({ where: { id: chequeId }, include: chequeDetailInclude });
-    });
+    await this.applyWithin(tx, user, cheque, transition, payload, auditMeta);
+  }
 
-    // Reminder scheduling is a side effect: a failure here must not roll back
-    // a completed custody change.
+  /**
+   * What happens once the write is committed: side effects, then the view.
+   *
+   * Reminder scheduling is deliberately outside the transaction — a failure to
+   * schedule must not roll back a completed custody change.
+   */
+  async settle(
+    updated: Prisma.ChequeGetPayload<{ include: typeof chequeDetailInclude }>,
+    user: RequestUser,
+  ): Promise<ChequeDetailView> {
     try {
       await this.reminders.syncForCheque(updated.id);
     } catch (error) {
@@ -409,15 +444,22 @@ export class ChequeActionsService {
     return changes;
   }
 
+  /**
+   * Every id in the payload belongs to the caller's organization.
+   *
+   * Reads through the caller's transaction when there is one, so it sees the
+   * same snapshot as the write it is guarding.
+   */
   private async assertReferencesInTenant(
     organizationId: string,
     payload: ChequeActionPayload,
+    client: Prisma.TransactionClient | PrismaService['db'] = this.prisma.db,
   ): Promise<void> {
     const contactIds = [payload.fromContactId, payload.toContactId].filter(
       (id): id is string => typeof id === 'string',
     );
     for (const id of contactIds) {
-      const contact = await this.prisma.db.contact.findFirst({
+      const contact = await client.contact.findFirst({
         where: { id, organizationId },
         select: { id: true },
       });
@@ -425,7 +467,7 @@ export class ChequeActionsService {
     }
 
     if (payload.toLocationId) {
-      const location = await this.prisma.db.location.findFirst({
+      const location = await client.location.findFirst({
         where: { id: payload.toLocationId, organizationId },
         select: { id: true },
       });
@@ -435,7 +477,7 @@ export class ChequeActionsService {
     for (const userId of [payload.toUserId, payload.approvedBy].filter(
       (id): id is string => typeof id === 'string',
     )) {
-      const member = await this.prisma.db.user.findFirst({
+      const member = await client.user.findFirst({
         where: { id: userId, organizationId },
         select: { id: true },
       });

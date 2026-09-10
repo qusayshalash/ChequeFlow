@@ -27,7 +27,7 @@ import { ChequeActionsService } from '../cheques/cheque-actions.service';
 import { DuplicateDetectorService } from '../cheques/duplicate-detector.service';
 import { StorageService } from '../storage/storage.service';
 import { toDateOnly } from '../cheques/cheque.service';
-import { toIsoDate } from '../cheques/cheque.mapper';
+import { chequeDetailInclude, toIsoDate } from '../cheques/cheque.mapper';
 import { OCR_PROVIDER } from './ocr.tokens';
 
 export interface OcrSuggestion {
@@ -286,7 +286,18 @@ export class OcrService {
       excludeChequeId: chequeId,
     });
     DuplicateDetectorService.assertNoDuplicates(duplicates, options.allowDuplicate === true);
-    await this.prisma.db.$transaction(async (tx) => {
+
+    // One transaction for both halves.
+    //
+    // The confirmed values used to be written here and the status change run
+    // afterwards, on its own. So a transition the state machine refused — a
+    // cheque no longer in PENDING_REVIEW, a stale version, a caller without
+    // the permission — left the cheque carrying values it had never been
+    // reviewed into, flagged `ocrStatus: REVIEWED`, still in its old status.
+    // Measured on a real record: the confirmed number and 9500.00 were stored
+    // while the request answered 409 and the cheque stayed DRAFT. A review
+    // either happens or it does not.
+    const updated = await this.prisma.db.$transaction(async (tx) => {
       await tx.cheque.update({
         where: { id: chequeId },
         data: {
@@ -334,15 +345,25 @@ export class OcrService {
         ipAddress: auditMeta.ipAddress ?? null,
         deviceInfo: auditMeta.deviceInfo ?? null,
       });
+
+      // The status change goes through the state machine like any other — and
+      // through this same transaction, so a refusal takes the confirmed values
+      // down with it instead of leaving them behind.
+      await this.actions.executeWithin(
+        tx,
+        user,
+        chequeId,
+        ChequeAction.REVIEW,
+        { notes: input.notes },
+        auditMeta,
+      );
+
+      return tx.cheque.findUniqueOrThrow({
+        where: { id: chequeId },
+        include: chequeDetailInclude,
+      });
     });
 
-    // The status change itself goes through the state machine like any other.
-    return this.actions.execute(
-      user,
-      chequeId,
-      ChequeAction.REVIEW,
-      { notes: input.notes },
-      auditMeta,
-    );
+    return this.actions.settle(updated, user);
   }
 }

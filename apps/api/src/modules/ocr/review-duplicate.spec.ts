@@ -51,19 +51,32 @@ describe('confirming a reviewed cheque', () => {
       },
     } as unknown as DuplicateDetectorService;
 
+    // The transaction the review opens, so the test can tell whether the
+    // status change was made to join it.
+    const tx = {
+      cheque: {
+        update: () => Promise.resolve(stored),
+        findUniqueOrThrow: () => Promise.resolve({ ...stored, reviewed: true }),
+      },
+      ocrExtraction: { updateMany: () => Promise.resolve({ count: 0 }) },
+    };
+
     const prisma = {
       db: {
         cheque: { findFirst: () => Promise.resolve(stored) },
-        $transaction: async (run: (tx: unknown) => Promise<unknown>) =>
-          run({
-            cheque: { update: () => Promise.resolve(stored) },
-            ocrExtraction: { updateMany: () => Promise.resolve({ count: 0 }) },
-          }),
+        $transaction: async (run: (client: unknown) => Promise<unknown>) => run(tx),
       },
     };
 
     const audit = { recordWithin: () => Promise.resolve(undefined) };
-    const actions = { execute: () => Promise.resolve({ id: 'cheque-1', reviewed: true }) };
+    const transitionedWith: unknown[] = [];
+    const actions = {
+      executeWithin: (client: unknown) => {
+        transitionedWith.push(client);
+        return Promise.resolve(undefined);
+      },
+      settle: (row: unknown) => Promise.resolve(row),
+    };
 
     const service = new OcrService(
       {} as never,
@@ -75,7 +88,7 @@ describe('confirming a reviewed cheque', () => {
       {} as never,
     );
 
-    return { service, asked };
+    return { service, asked, tx, transitionedWith };
   }
 
   it('checks the values the reviewer confirmed, not the placeholder', async () => {
@@ -130,6 +143,16 @@ describe('confirming a reviewed cheque', () => {
     // A warning panel with nothing in it asks the reader to decide about a
     // cheque it will not name.
     expect(details.duplicates?.[0]?.chequeNumber).toBe('20000013');
+  });
+
+  it('makes the status change part of the same transaction', async () => {
+    // Two writes meant a refused transition left the confirmed values behind:
+    // a cheque carrying a number and amount it had never been reviewed into,
+    // flagged as reviewed, in its old status.
+    const { service, tx, transitionedWith } = build([]);
+    await service.review(user, 'cheque-1', input);
+
+    expect(transitionedWith).toEqual([tx]);
   });
 
   it('files it anyway once the reviewer says so', async () => {
