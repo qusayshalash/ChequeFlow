@@ -10,7 +10,16 @@ import { colors } from '@cheque-flow/ui/tokens';
 
 import { FormScreen } from '@/components/form-screen';
 import { useApi, useApp, useTranslator } from '@/components/providers';
-import { Banner, Button, DateField, ErrorView, Field, Picker, Section } from '@/components/ui';
+import {
+  Banner,
+  Button,
+  DateField,
+  ErrorView,
+  Field,
+  MoreFields,
+  Picker,
+  Section,
+} from '@/components/ui';
 import { addDaysIso, todayIso } from '@/lib/dates';
 import { fieldErrorsFrom, validateForm, type FieldErrors } from '@/lib/form';
 import { fontFamily, space } from '@/theme';
@@ -25,6 +34,24 @@ const CURRENCIES = ['ILS', 'USD', 'JOD', 'EUR'];
  * validated with the API's own schema, so the phone and the server agree on
  * what a valid cheque is.
  */
+/**
+ * The fields behind the disclosure.
+ *
+ * Named here rather than counted at the call site: a field added to the group
+ * without being added to this list would validate silently behind a closed
+ * panel, and the form would refuse to save with nothing on screen to fix.
+ */
+const EXTRA_FIELDS = [
+  'amountInWords',
+  'issueDate',
+  'drawerName',
+  'originalPayeeName',
+  'bankNameRaw',
+  'accountNumber',
+  'referenceNumber',
+  'notes',
+] as const;
+
 export default function NewChequeScreen() {
   const api = useApi();
   const t = useTranslator();
@@ -137,6 +164,7 @@ export default function NewChequeScreen() {
     >
       {!online ? <Banner text={t('common.offline')} /> : null}
 
+      {/* What a cheque is: the six things every one of them has. */}
       <Section title={t('cheque.identity')}>
         <Picker
           label={t('cheque.direction')}
@@ -168,12 +196,6 @@ export default function NewChequeScreen() {
           ltr
           hint={amount && currency ? money(amount, currency) : undefined}
         />
-        <Field
-          label={t('cheque.amountInWords')}
-          value={amountInWords}
-          onChangeText={setAmountInWords}
-          error={error('amountInWords')}
-        />
         <Picker
           label={t('cheque.currency')}
           required
@@ -182,9 +204,10 @@ export default function NewChequeScreen() {
           onChange={setCurrency}
           error={error('currency')}
         />
-
         {/* Left blank for a cheque already in the books' currency — the server
-            converts those at 1 without being asked. */}
+            converts those at 1 without being asked. Kept in the open because
+            it is filled on every cheque in the book, unlike most of what moved
+            behind the disclosure below. */}
         <Field
           label={t('cheque.exchangeRate')}
           hint={t('cheque.exchangeRateHint')}
@@ -193,16 +216,6 @@ export default function NewChequeScreen() {
           error={error('exchangeRate')}
           keyboardType="numeric"
           ltr
-        />
-      </Section>
-
-      <Section title={t('cheque.dates')}>
-        <DateField
-          label={t('cheque.issueDate')}
-          value={issueDate}
-          onChange={setIssueDate}
-          error={error('issueDate')}
-          shortcuts={[{ label: t('common.today'), value: today }]}
         />
         <DateField
           label={t('cheque.dueDate')}
@@ -219,19 +232,9 @@ export default function NewChequeScreen() {
         />
       </Section>
 
-      <Section title={t('cheque.parties')}>
-        <Field
-          label={t('cheque.drawerName')}
-          value={drawerName}
-          onChangeText={setDrawerName}
-          error={error('drawerName')}
-        />
-        <Field
-          label={t('cheque.originalPayee')}
-          value={payeeName}
-          onChangeText={setPayeeName}
-          error={error('originalPayeeName')}
-        />
+      {/* Who it came from and where it is kept: filled on most cheques here,
+          so they stay in the open. */}
+      <Section title={t('cheque.custody')}>
         <Picker
           label={t('cheque.originalSource')}
           options={(contacts.data?.data ?? []).map((contact) => ({
@@ -243,15 +246,56 @@ export default function NewChequeScreen() {
           emptyLabel={t('contact.empty')}
           error={error('originalSourceId')}
         />
-      </Section>
-
-      <Section title={t('cheque.bank')}>
         <Picker
           label={t('cheque.bank')}
           options={(banks.data ?? []).map((bank) => ({ value: bank.id, label: bank.name }))}
           value={bankId}
           onChange={(next) => setBankId(next === bankId ? null : next)}
           error={error('bankId')}
+        />
+        <Picker
+          label={t('cheque.currentLocation')}
+          options={(locations.data ?? []).map((location) => ({
+            value: location.id,
+            label: location.name,
+          }))}
+          value={locationId}
+          onChange={(next) => setLocationId(next === locationId ? null : next)}
+          error={error('currentLocationId')}
+        />
+      </Section>
+
+      {/* The eight the book has hardly ever carried. Opened by hand — or on
+          its own, when something inside it failed to validate. */}
+      <MoreFields
+        label={t('common.moreDetails')}
+        count={8}
+        forceOpen={EXTRA_FIELDS.some((field) => Boolean(error(field)))}
+      >
+        <Field
+          label={t('cheque.amountInWords')}
+          value={amountInWords}
+          onChangeText={setAmountInWords}
+          error={error('amountInWords')}
+        />
+        <DateField
+          label={t('cheque.issueDate')}
+          value={issueDate}
+          onChange={setIssueDate}
+          error={error('issueDate')}
+          shortcuts={[{ label: t('common.today'), value: today }]}
+        />
+        <Field
+          label={t('cheque.drawerName')}
+          value={drawerName}
+          onChangeText={setDrawerName}
+          error={error('drawerName')}
+        />
+        <Field
+          label={t('cheque.originalPayee')}
+          value={payeeName}
+          onChangeText={setPayeeName}
+          error={error('originalPayeeName')}
         />
         <Field
           label={`${t('cheque.bank')} (${t('common.optionalField')})`}
@@ -267,19 +311,6 @@ export default function NewChequeScreen() {
           keyboardType="numeric"
           ltr
         />
-      </Section>
-
-      <Section title={t('cheque.custody')}>
-        <Picker
-          label={t('cheque.currentLocation')}
-          options={(locations.data ?? []).map((location) => ({
-            value: location.id,
-            label: location.name,
-          }))}
-          value={locationId}
-          onChange={(next) => setLocationId(next === locationId ? null : next)}
-          error={error('currentLocationId')}
-        />
         <Field
           label={t('cheque.referenceNumber')}
           value={reference}
@@ -293,7 +324,7 @@ export default function NewChequeScreen() {
           multiline
           error={error('notes')}
         />
-      </Section>
+      </MoreFields>
 
       {duplicates ? (
         <View style={styles.duplicateBox}>

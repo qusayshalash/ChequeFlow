@@ -1,4 +1,4 @@
-import type { ReactNode, RefObject } from 'react';
+import { useState, type ReactNode, type RefObject } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -13,9 +13,25 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { STATUS_TONES, TONE_COLORS, colors } from '@cheque-flow/ui/tokens';
 
-import { IconAlert, IconCheck, IconClock } from '@/components/icons';
+import {
+  IconAlert,
+  IconCheck,
+  IconChevronDown,
+  IconChevronUp,
+  IconClock,
+} from '@/components/icons';
 import { maskDateInput } from '@/lib/dates';
-import { TAP, accent, elevation, radius, sheetElevation, space, surface, text, type } from '@/theme';
+import {
+  TAP,
+  accent,
+  elevation,
+  radius,
+  sheetElevation,
+  space,
+  surface,
+  text,
+  type,
+} from '@/theme';
 
 /**
  * The app's interface primitives.
@@ -89,6 +105,137 @@ export function InfoRow({
     <View style={styles.infoRow}>
       <Text style={styles.infoLabel}>{label}</Text>
       <Text style={[styles.infoValue, ltr && styles.ltr]}>{value}</Text>
+    </View>
+  );
+}
+
+/** One fact about a record: what it is called, and what it says. */
+export interface Fact {
+  label: string;
+  /** `null` when the record does not carry this one. */
+  value: string | null;
+  /** Latin text — a cheque number, an account, a currency code. */
+  ltr?: boolean;
+}
+
+/**
+ * The facts a record actually carries, and a count of the ones it does not.
+ *
+ * A cheque detail screen used to print every field whether or not it held
+ * anything, so most of it was em-dashes: counted across the 37 cheques in one
+ * real book, the branch, the reference number, the recipient, the account
+ * number and the purpose were empty on every single one, and nine or ten of
+ * the twenty-three rows read "—" on a typical cheque. A dash does not say
+ * "not recorded"; it takes up the place where something recorded would be,
+ * and the eye has to sort the blanks from the facts on every visit.
+ *
+ * So an empty row is not drawn. What is missing is not hidden either — the
+ * footer says how many and opens them, because "there is no reference number"
+ * and "nobody has entered the reference number" are different things, and the
+ * person checking a cheque against a bank is the one who needs to know which.
+ */
+export function FactSection({
+  title,
+  facts,
+  missingLabel,
+  children,
+}: {
+  title: string;
+  facts: readonly Fact[];
+  /** Names the count, e.g. "4 fields not recorded". Takes `{count}`. */
+  missingLabel: (count: number) => string;
+  children?: ReactNode;
+}) {
+  const [showEmpty, setShowEmpty] = useState(false);
+
+  const known = facts.filter((fact) => fact.value !== null && fact.value !== '');
+  const empty = facts.filter((fact) => fact.value === null || fact.value === '');
+
+  // A section with nothing in it and nothing missing is not a section.
+  if (known.length === 0 && empty.length === 0 && !children) return null;
+
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      <View style={styles.card}>
+        {known.map((fact) => (
+          <InfoRow key={fact.label} label={fact.label} value={fact.value!} ltr={fact.ltr} />
+        ))}
+
+        {showEmpty
+          ? empty.map((fact) => (
+              <InfoRow key={fact.label} label={fact.label} value="—" ltr={fact.ltr} />
+            ))
+          : null}
+
+        {children}
+
+        {empty.length > 0 ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ expanded: showEmpty }}
+            accessibilityLabel={missingLabel(empty.length)}
+            onPress={() => setShowEmpty((open) => !open)}
+            style={({ pressed }) => [styles.missingRow, pressed && styles.missingRowDown]}
+            hitSlop={6}
+          >
+            {showEmpty ? (
+              <IconChevronUp size={14} color={text.faint} />
+            ) : (
+              <IconChevronDown size={14} color={text.faint} />
+            )}
+            <Text style={styles.missingText}>{missingLabel(empty.length)}</Text>
+          </Pressable>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+/**
+ * Fields that most cheques do not have, folded away until they are wanted.
+ *
+ * The form asked for eighteen things. Counted across the 37 cheques in one
+ * real book, five of them — the reference number, the account number, the
+ * purpose, the payee and the notes — had never once been filled in, and the
+ * issue date had been filled in once. A form that asks eighteen questions to
+ * record six makes entering a cheque look like paperwork.
+ *
+ * `forceOpen` exists because a hidden field can still fail validation, and an
+ * error nobody can see is a save that fails for no visible reason.
+ */
+export function MoreFields({
+  label,
+  count,
+  forceOpen = false,
+  children,
+}: {
+  /** Names the group and its size, e.g. "More details (8)". */
+  label: string;
+  count: number;
+  forceOpen?: boolean;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const shown = open || forceOpen;
+
+  return (
+    <View style={styles.section}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: shown }}
+        onPress={() => setOpen((current) => !current)}
+        style={({ pressed }) => [styles.moreToggle, pressed && styles.missingRowDown]}
+      >
+        {shown ? (
+          <IconChevronUp size={16} color={accent.base} />
+        ) : (
+          <IconChevronDown size={16} color={accent.base} />
+        )}
+        <Text style={styles.moreLabel}>{`${label} (${count})`}</Text>
+      </Pressable>
+
+      {shown ? <View style={styles.card}>{children}</View> : null}
     </View>
   );
 }
@@ -605,6 +752,28 @@ const styles = StyleSheet.create({
   body: { ...type.body, color: text.primary, textAlign: 'right' },
   muted: { color: text.secondary },
   ltr: { writingDirection: 'ltr', textAlign: 'left' },
+
+  missingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: space['2'],
+    minHeight: TAP,
+    marginTop: space['1'],
+    borderTopWidth: 1,
+    borderTopColor: surface.line,
+    paddingTop: space['2'],
+  },
+  missingRowDown: { opacity: 0.6 },
+  moreToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: space['2'],
+    minHeight: TAP,
+  },
+  moreLabel: { ...type.label, color: accent.base, textAlign: 'right' },
+  missingText: { ...type.caption, color: text.faint, textAlign: 'right' },
 
   infoRow: { gap: 2, paddingVertical: space['1'] },
   infoLabel: { ...type.caption, color: text.secondary, textAlign: 'right' },

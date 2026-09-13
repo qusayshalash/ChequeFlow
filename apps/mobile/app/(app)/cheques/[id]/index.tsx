@@ -15,9 +15,8 @@ import {
   Button,
   Card,
   ErrorView,
-  InfoRow,
+  FactSection,
   LoadingView,
-  Section,
   StatusPill,
 } from '@/components/ui';
 import { elevation, fontFamily, radius, space, surface, text, type } from '@/theme';
@@ -130,66 +129,75 @@ export default function ChequeDetailScreen() {
           It used to be three rows buried among fifteen. */}
       <ChequeJourney cheque={cheque} />
 
-      {/* Six groups in the web's order, each short enough to read at a glance
-          rather than the long stacked lists this screen used to carry —
-          "which bank" and "where is it kept" are different questions and were
-          eleven rows apart. */}
-      <Section title={t('cheque.infoGroup')}>
-        <InfoRow label={t('cheque.number')} value={cheque.chequeNumber} ltr />
-        <InfoRow label={t('common.amount')} value={money(cheque.amount, cheque.currency)} />
-        <InfoRow label={t('cheque.currency')} value={cheque.currency} ltr />
-        <InfoRow label={t('cheque.direction')} value={t(`direction.${cheque.direction}`)} />
-        <InfoRow label={t('cheque.referenceNumber')} value={cheque.referenceNumber ?? '—'} />
-        {cheque.amountInWords ? (
-          <InfoRow label={t('cheque.amountInWords')} value={cheque.amountInWords} />
-        ) : null}
-      </Section>
+      {/* Only what the cheque carries. Every field used to be printed whether
+          or not it held anything, so a typical cheque showed nine or ten rows
+          of "—" among twenty-three — the eye had to sort the blanks from the
+          facts on every visit. What is missing is still reachable: each group
+          says how many fields are empty and opens them, because "there is no
+          reference number" and "nobody entered one" are different answers. */}
+      <FactSection
+        title={t('cheque.infoGroup')}
+        missingLabel={(count) => t('common.notRecorded', { count })}
+        facts={[
+          { label: t('cheque.number'), value: cheque.chequeNumber, ltr: true },
+          { label: t('common.amount'), value: money(cheque.amount, cheque.currency) },
+          { label: t('cheque.currency'), value: cheque.currency, ltr: true },
+          { label: t('cheque.direction'), value: t(`direction.${cheque.direction}`) },
+          { label: t('cheque.amountInWords'), value: cheque.amountInWords },
+          { label: t('cheque.referenceNumber'), value: cheque.referenceNumber },
+        ]}
+      />
 
-      <Section title={t('cheque.parties')}>
-        <InfoRow label={t('cheque.drawerName')} value={cheque.drawerName ?? '—'} />
-        <InfoRow label={t('cheque.originalPayee')} value={cheque.originalPayeeName ?? '—'} />
-        <InfoRow label={t('cheque.originalSource')} value={cheque.originalSourceName ?? '—'} />
-        <InfoRow label={t('cheque.currentRecipient')} value={cheque.currentRecipientName ?? '—'} />
-      </Section>
+      <FactSection
+        title={t('cheque.parties')}
+        missingLabel={(count) => t('common.notRecorded', { count })}
+        facts={[
+          { label: t('cheque.drawerName'), value: cheque.drawerName },
+          { label: t('cheque.originalSource'), value: cheque.originalSourceName },
+          { label: t('cheque.originalPayee'), value: cheque.originalPayeeName },
+          { label: t('cheque.currentRecipient'), value: cheque.currentRecipientName },
+        ]}
+      />
 
-      <Section title={t('cheque.bankGroup')}>
-        <InfoRow label={t('cheque.bank')} value={cheque.bankName ?? '—'} />
-        <InfoRow label={t('cheque.bankBranch')} value={cheque.bankBranchRaw ?? '—'} />
-        {/* Only ever the masked form: the full account number never leaves the
-            server, so it cannot leak from a phone that is lost or shared. */}
-        <InfoRow label={t('cheque.accountNumber')} value={cheque.accountNumberMasked ?? '—'} ltr />
-      </Section>
+      <FactSection
+        title={t('cheque.bankGroup')}
+        missingLabel={(count) => t('common.notRecorded', { count })}
+        facts={[
+          { label: t('cheque.bank'), value: cheque.bankName },
+          { label: t('cheque.bankBranch'), value: cheque.bankBranchRaw },
+          // Only ever the masked form: the full account number never leaves
+          // the server, so it cannot leak from a phone that is lost or shared.
+          { label: t('cheque.accountNumber'), value: cheque.accountNumberMasked, ltr: true },
+          { label: t('cheque.currentLocation'), value: cheque.currentLocationName },
+          { label: t('cheque.branch'), value: cheque.branchName },
+        ]}
+      />
 
-      <Section title={t('cheque.dates')}>
-        <InfoRow label={t('cheque.dueDate')} value={date(cheque.dueDate)} />
-        <InfoRow
-          label={t('cheque.issueDate')}
-          value={cheque.issueDate ? date(cheque.issueDate) : '—'}
-        />
-        <InfoRow
-          label={t('cheque.receivedDate')}
-          value={cheque.receivedDate ? date(cheque.receivedDate) : '—'}
-        />
-        <InfoRow label={t('common.createdAt')} value={dateTime(cheque.createdAt)} />
-        <InfoRow label={t('common.updatedAt')} value={dateTime(cheque.updatedAt)} />
-        <InfoRow
-          label={t('cheque.reviewedBy')}
-          value={cheque.reviewedAt ? dateTime(cheque.reviewedAt) : t('cheque.notYet')}
-        />
-      </Section>
+      <FactSection
+        title={t('cheque.dates')}
+        missingLabel={(count) => t('common.notRecorded', { count })}
+        facts={[
+          { label: t('cheque.dueDate'), value: date(cheque.dueDate) },
+          { label: t('cheque.issueDate'), value: cheque.issueDate ? date(cheque.issueDate) : null },
+          {
+            label: t('cheque.receivedDate'),
+            value: cheque.receivedDate ? date(cheque.receivedDate) : null,
+          },
+          { label: t('common.createdAt'), value: dateTime(cheque.createdAt) },
+          {
+            label: t('cheque.reviewedBy'),
+            value: cheque.reviewedAt ? dateTime(cheque.reviewedAt) : null,
+          },
+        ]}
+      />
 
-      <Section title={t('cheque.locationGroup')}>
-        <InfoRow label={t('cheque.currentLocation')} value={cheque.currentLocationName ?? '—'} />
-        <InfoRow label={t('cheque.branch')} value={cheque.branchName ?? '—'} />
-        <InfoRow label={t('cheque.status')} value={t(`status.${cheque.status}`)} />
-      </Section>
-
-      {cheque.notes || cheque.purpose ? (
-        <Section title={t('cheque.extra')}>
-          {cheque.purpose ? <InfoRow label={t('cheque.purpose')} value={cheque.purpose} /> : null}
-          {cheque.notes ? <Body>{cheque.notes}</Body> : null}
-        </Section>
-      ) : null}
+      <FactSection
+        title={t('cheque.extra')}
+        missingLabel={(count) => t('common.notRecorded', { count })}
+        facts={[{ label: t('cheque.purpose'), value: cheque.purpose }]}
+      >
+        {cheque.notes ? <Body>{cheque.notes}</Body> : null}
+      </FactSection>
 
       {/* Actions available right now, given the status and the user's role. */}
       {primary.map((action) => (
