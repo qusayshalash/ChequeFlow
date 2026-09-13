@@ -19,7 +19,7 @@ import {
   Sheet,
 } from '@/components/ui';
 import { fieldErrorsFrom, validateForm, type FieldErrors } from '@/lib/form';
-import { TAP, accent, elevation, radius, space, surface, text, type } from '@/theme';
+import { TAP, accent, elevation, fontFamily, radius, space, surface, text, type } from '@/theme';
 
 /**
  * Members of the organization and what they may do.
@@ -233,8 +233,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   header: { flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  name: { fontSize: 16, fontWeight: '700', color: text.primary, textAlign: 'right' },
-  meta: { fontSize: 13, color: text.secondary, textAlign: 'right' },
+  name: { fontFamily: fontFamily.bold, fontSize: 16, color: text.primary, textAlign: 'right' },
+  meta: { fontFamily: fontFamily.regular, fontSize: 13, color: text.secondary, textAlign: 'right' },
   statusToggle: { alignSelf: 'flex-start', minHeight: TAP, justifyContent: 'center' },
-  statusToggleText: { fontSize: 14, color: accent.base, fontWeight: '600' },
+  statusToggleText: { fontFamily: fontFamily.semibold, fontSize: 14, color: accent.base },
 });

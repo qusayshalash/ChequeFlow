@@ -11,7 +11,7 @@ import { Body, Button, Card, Heading, Screen } from '@/components/ui';
 import { checkCaptureQuality } from '@/lib/image-quality';
 import { uploadCapturedCheque } from '@/lib/cheque-upload';
 import { saveDraft } from '@/lib/draft-store';
-import { radius, space, surface, text } from '@/theme';
+import { fontFamily, radius, space, surface, text } from '@/theme';
 
 type Side = 'FRONT' | 'BACK';
 
@@ -150,7 +150,9 @@ export default function CaptureScreen() {
                   // An empty dashed box reads as something missing. Only the
                   // front is needed, so the back's placeholder says so.
                   <View style={[styles.thumb, styles.thumbEmpty]}>
-                    {key === 'BACK' ? <Text style={styles.optional}>{t('capture.optional')}</Text> : null}
+                    {key === 'BACK' ? (
+                      <Text style={styles.optional}>{t('capture.optional')}</Text>
+                    ) : null}
                   </View>
                 )}
                 {shot ? (
@@ -193,7 +195,12 @@ const styles = StyleSheet.create({
   camera: { flex: 1 },
   thumbs: { flexDirection: 'row', gap: space['2'] },
   thumbBox: { flex: 1, gap: space['1'] },
-  thumbLabel: { fontSize: 13, color: text.secondary, textAlign: 'right' },
+  thumbLabel: {
+    fontFamily: fontFamily.regular,
+    fontSize: 13,
+    color: text.secondary,
+    textAlign: 'right',
+  },
   thumb: {
     width: '100%',
     height: 90,
@@ -207,8 +214,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  optional: { fontSize: 12, color: text.faint },
-  hint: { fontSize: 13, color: text.secondary, textAlign: 'right', lineHeight: 19 },
-  warning: { color: colors.warning, fontSize: 14, textAlign: 'right' },
-  error: { color: colors.danger, fontSize: 14, textAlign: 'right' },
+  optional: { fontFamily: fontFamily.regular, fontSize: 12, color: text.faint },
+  hint: {
+    fontFamily: fontFamily.regular,
+    fontSize: 13,
+    color: text.secondary,
+    textAlign: 'right',
+    lineHeight: 19,
+  },
+  warning: {
+    color: colors.warning,
+    fontFamily: fontFamily.regular,
+    fontSize: 14,
+    textAlign: 'right',
+  },
+  error: { color: colors.danger, fontFamily: fontFamily.regular, fontSize: 14, textAlign: 'right' },
 });

@@ -25,7 +25,17 @@ import {
   Sheet,
   StatusPill,
 } from '@/components/ui';
-import { accent, elevation, numeric, radius, space, surface, text, type } from '@/theme';
+import {
+  accent,
+  elevation,
+  fontFamily,
+  numeric,
+  radius,
+  space,
+  surface,
+  text,
+  type,
+} from '@/theme';
 
 /**
  * One contact's account statement.
@@ -313,9 +323,14 @@ const styles = StyleSheet.create({
     gap: space['3'],
   },
   headerText: { flex: 1, gap: 4, alignItems: 'flex-end' },
-  meta: { fontSize: 13, color: text.secondary, textAlign: 'right' },
+  meta: { fontFamily: fontFamily.regular, fontSize: 13, color: text.secondary, textAlign: 'right' },
   overdue: { color: colors.danger, fontWeight: '700' },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: text.primary, textAlign: 'right' },
+  sectionTitle: {
+    fontFamily: fontFamily.bold,
+    fontSize: 16,
+    color: text.primary,
+    textAlign: 'right',
+  },
 
   net: {
     flexDirection: 'row',
@@ -346,7 +361,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     ...elevation[2],
   },
-  reachLabel: { fontSize: 13, color: text.primary },
+  reachLabel: { fontFamily: fontFamily.regular, fontSize: 13, color: text.primary },
   chequeRow: {
     gap: 4,
     paddingVertical: space['2'],
@@ -354,6 +369,11 @@ const styles = StyleSheet.create({
     borderTopColor: surface.line,
   },
   chequeHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  chequeNumber: { fontSize: 15, fontWeight: '700', color: text.primary, writingDirection: 'ltr' },
+  chequeNumber: {
+    fontFamily: fontFamily.bold,
+    fontSize: 15,
+    color: text.primary,
+    writingDirection: 'ltr',
+  },
   chequeMeta: { flexDirection: 'row', justifyContent: 'space-between', gap: space['2'] },
 });

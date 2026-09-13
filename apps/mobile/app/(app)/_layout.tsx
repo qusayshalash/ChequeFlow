@@ -17,7 +17,7 @@ import {
 } from '@/components/icons';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { LoadingView } from '@/components/ui';
-import { pageGradient } from '@/theme';
+import { fontFamily, pageGradient } from '@/theme';
 
 /**
  * Draws a tab's icon in the tint the navigator asks for.
@@ -85,8 +85,8 @@ export default function AppLayout() {
           },
           tabBarItemStyle: { paddingVertical: 2 },
           tabBarLabelStyle: {
+            fontFamily: fontFamily.semibold,
             fontSize: 12,
-            fontWeight: '600',
             // Arabic ascenders and descenders are taller than Latin ones; the
             // default line height clips them on Android.
             lineHeight: 16,

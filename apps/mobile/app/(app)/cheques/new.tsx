@@ -13,7 +13,7 @@ import { useApi, useApp, useTranslator } from '@/components/providers';
 import { Banner, Button, DateField, ErrorView, Field, Picker, Section } from '@/components/ui';
 import { addDaysIso, todayIso } from '@/lib/dates';
 import { fieldErrorsFrom, validateForm, type FieldErrors } from '@/lib/form';
-import { space } from '@/theme';
+import { fontFamily, space } from '@/theme';
 
 const CURRENCIES = ['ILS', 'USD', 'JOD', 'EUR'];
 
@@ -331,6 +331,16 @@ const styles = StyleSheet.create({
     padding: space['4'],
     gap: space['2'],
   },
-  duplicateTitle: { fontSize: 15, fontWeight: '700', color: colors.warning, textAlign: 'right' },
-  duplicateRow: { fontSize: 14, color: colors.warning, textAlign: 'right' },
+  duplicateTitle: {
+    fontFamily: fontFamily.bold,
+    fontSize: 15,
+    color: colors.warning,
+    textAlign: 'right',
+  },
+  duplicateRow: {
+    fontFamily: fontFamily.regular,
+    fontSize: 14,
+    color: colors.warning,
+    textAlign: 'right',
+  },
 });

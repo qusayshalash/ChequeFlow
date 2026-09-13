@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 import { MIN_TOUCH_TARGET } from '@cheque-flow/ui/tokens';
 
 import { useApp } from '@/components/providers';
-import { accent, space, surface, text } from '@/theme';
+import { accent, fontFamily, space, surface, text } from '@/theme';
 
 /**
  * Back control for the stack headers.
@@ -56,5 +56,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: space['2'],
   },
-  chevron: { fontSize: 34, lineHeight: 38, color: accent.base, fontWeight: '300' },
+  chevron: { fontFamily: fontFamily.regular, fontSize: 34, lineHeight: 38, color: accent.base },
 });

@@ -44,6 +44,30 @@ export const space = {
 } as const;
 
 /**
+ * The app's typeface: IBM Plex Sans Arabic.
+ *
+ * Everything was set in the platform default before — SF Arabic on iOS, and on
+ * Android whatever Noto fallback that phone happens to ship. A ledger that
+ * renders in a different face on every device does not look like a product,
+ * and the system face is the one thing no design decision can distinguish.
+ *
+ * Plex Arabic is drawn for interfaces rather than for documents: open counters
+ * that survive at 12pt, and Latin figures in the same family as the Arabic, so
+ * `9,000.00` beside «تسعة آلاف» is one typeface rather than two.
+ *
+ * React Native does not synthesise weights reliably on Android — asking for
+ * `fontWeight: '600'` on a family that has no semibold file gives you regular,
+ * silently. So each weight names its own file, and `fontWeight` is dropped
+ * from the scale entirely: the family carries it.
+ */
+export const fontFamily = {
+  regular: 'IBMPlexSansArabic_400Regular',
+  medium: 'IBMPlexSansArabic_500Medium',
+  semibold: 'IBMPlexSansArabic_600SemiBold',
+  bold: 'IBMPlexSansArabic_700Bold',
+} as const;
+
+/**
  * Type scale.
  *
  * `lineHeight` is generous because Arabic ascenders and descenders are taller
@@ -54,14 +78,14 @@ export const type: Record<
   'display' | 'title' | 'heading' | 'body' | 'bodyStrong' | 'callout' | 'label' | 'caption',
   TextStyle
 > = {
-  display: { fontSize: 30, lineHeight: 42, fontWeight: '700' },
-  title: { fontSize: 21, lineHeight: 32, fontWeight: '700' },
-  heading: { fontSize: 17, lineHeight: 26, fontWeight: '700' },
-  body: { fontSize: 16, lineHeight: 26, fontWeight: '400' },
-  bodyStrong: { fontSize: 16, lineHeight: 26, fontWeight: '600' },
-  callout: { fontSize: 14, lineHeight: 22, fontWeight: '400' },
-  label: { fontSize: 13, lineHeight: 20, fontWeight: '600' },
-  caption: { fontSize: 12, lineHeight: 18, fontWeight: '500' },
+  display: { fontSize: 30, lineHeight: 42, fontFamily: fontFamily.bold },
+  title: { fontSize: 21, lineHeight: 32, fontFamily: fontFamily.bold },
+  heading: { fontSize: 17, lineHeight: 26, fontFamily: fontFamily.semibold },
+  body: { fontSize: 16, lineHeight: 26, fontFamily: fontFamily.regular },
+  bodyStrong: { fontSize: 16, lineHeight: 26, fontFamily: fontFamily.semibold },
+  callout: { fontSize: 14, lineHeight: 22, fontFamily: fontFamily.regular },
+  label: { fontSize: 13, lineHeight: 20, fontFamily: fontFamily.medium },
+  caption: { fontSize: 12, lineHeight: 18, fontFamily: fontFamily.medium },
 };
 
 /**

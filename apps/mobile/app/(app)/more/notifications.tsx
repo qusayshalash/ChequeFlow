@@ -7,7 +7,7 @@ import { colors } from '@cheque-flow/ui/tokens';
 
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { Badge, Button, EmptyView, ErrorView, LoadingView } from '@/components/ui';
-import { TAP, elevation, radius, space, surface, text } from '@/theme';
+import { TAP, elevation, fontFamily, radius, space, surface, text } from '@/theme';
 
 /** Snooze options, in minutes. */
 const SNOOZE = [
@@ -130,10 +130,15 @@ const styles = StyleSheet.create({
   },
   rowDue: { borderColor: colors.warning, borderStartWidth: 4 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  number: { fontSize: 16, fontWeight: '700', color: text.primary, writingDirection: 'ltr' },
-  amount: { fontSize: 16, color: text.primary, textAlign: 'right' },
-  meta: { fontSize: 13, color: text.secondary, textAlign: 'right' },
-  note: { fontSize: 14, color: text.primary, textAlign: 'right' },
+  number: {
+    fontFamily: fontFamily.bold,
+    fontSize: 16,
+    color: text.primary,
+    writingDirection: 'ltr',
+  },
+  amount: { fontFamily: fontFamily.regular, fontSize: 16, color: text.primary, textAlign: 'right' },
+  meta: { fontFamily: fontFamily.regular, fontSize: 13, color: text.secondary, textAlign: 'right' },
+  note: { fontFamily: fontFamily.regular, fontSize: 14, color: text.primary, textAlign: 'right' },
   actions: { flexDirection: 'row', gap: space['2'], flexWrap: 'wrap' },
   snoozeChip: {
     minHeight: TAP,
@@ -143,5 +148,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: surface.line,
   },
-  snoozeText: { fontSize: 14, color: text.primary },
+  snoozeText: { fontFamily: fontFamily.regular, fontSize: 14, color: text.primary },
 });

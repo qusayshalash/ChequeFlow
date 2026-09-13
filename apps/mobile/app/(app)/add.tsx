@@ -5,7 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { IconCamera, IconCheque, IconContacts, IconEdit, type IconProps } from '@/components/icons';
 import { useTranslator } from '@/components/providers';
 import { Body, Heading } from '@/components/ui';
-import { accent, elevation, radius, space, surface, text } from '@/theme';
+import { accent, elevation, fontFamily, radius, space, surface, text } from '@/theme';
 
 /**
  * The two ways a cheque enters the system.
@@ -107,6 +107,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  label: { fontSize: 18, fontWeight: '700', color: text.primary, textAlign: 'center' },
-  hint: { fontSize: 13, color: text.secondary, textAlign: 'center' },
+  label: { fontFamily: fontFamily.bold, fontSize: 18, color: text.primary, textAlign: 'center' },
+  hint: {
+    fontFamily: fontFamily.regular,
+    fontSize: 13,
+    color: text.secondary,
+    textAlign: 'center',
+  },
 });

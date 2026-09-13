@@ -6,21 +6,31 @@
     "orientation": "portrait",
     "scheme": "chequeflow",
     "userInterfaceStyle": "light",
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.chequeflow.app",
       "infoPlist": {
         "NSCameraUsageDescription": "يستخدم التطبيق الكاميرا لتصوير الشيكات وحفظ صورها في سجل الشركة.",
         "NSFaceIDUsageDescription": "لفتح التطبيق بسرعة وأمان باستخدام البصمة أو التعرف على الوجه."
-      }
+      },
+      "buildNumber": "1"
     },
     "android": {
       "package": "com.chequeflow.app",
       "adaptiveIcon": {
-        "backgroundColor": "#0F5C4E"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#087F6D"
       },
-      "permissions": ["CAMERA", "USE_BIOMETRIC", "USE_FINGERPRINT"]
+      "permissions": [
+        "CAMERA",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT"
+      ],
+      "versionCode": 1
     },
     "plugins": [
       "expo-router",
@@ -35,6 +45,15 @@
         {
           "faceIDPermission": "لفتح التطبيق باستخدام التعرف على الوجه."
         }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 220,
+          "resizeMode": "contain",
+          "backgroundColor": "#087F6D"
+        }
       ]
     ],
     "experiments": {
@@ -42,6 +61,7 @@
     },
     "extra": {
       "router": {}
-    }
+    },
+    "icon": "./assets/icon.png"
   }
 }

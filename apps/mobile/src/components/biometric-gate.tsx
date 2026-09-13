@@ -7,7 +7,7 @@ import { colors } from '@cheque-flow/ui/tokens';
 import { IconLock } from '@/components/icons';
 import { useApp, useTranslator } from '@/components/providers';
 import { Button, LoadingView } from '@/components/ui';
-import { accent, radius, space, surface, text } from '@/theme';
+import { accent, fontFamily, radius, space, surface, text } from '@/theme';
 
 /**
  * Holds the app closed until the device owner proves who they are.
@@ -96,6 +96,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: { fontSize: 20, fontWeight: '700', color: text.primary, textAlign: 'center' },
-  error: { fontSize: 14, color: colors.danger, textAlign: 'center' },
+  title: { fontFamily: fontFamily.bold, fontSize: 20, color: text.primary, textAlign: 'center' },
+  error: {
+    fontFamily: fontFamily.regular,
+    fontSize: 14,
+    color: colors.danger,
+    textAlign: 'center',
+  },
 });

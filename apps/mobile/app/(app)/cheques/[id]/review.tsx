@@ -9,7 +9,7 @@ import { colors } from '@cheque-flow/ui/tokens';
 
 import { useApi, useTranslator } from '@/components/providers';
 import { Body, Button, Card, Heading, LoadingView } from '@/components/ui';
-import { radius, space, surface, text } from '@/theme';
+import { fontFamily, radius, space, surface, text } from '@/theme';
 
 const FIELDS = [
   { field: 'chequeNumber', target: 'chequeNumber', labelKey: 'cheque.number' },
@@ -185,29 +185,45 @@ export default function ReviewExtractedDataScreen() {
 const styles = StyleSheet.create({
   container: { padding: space['4'], gap: space['4'], backgroundColor: 'transparent' },
   notice: { backgroundColor: colors.warningBg, borderRadius: radius.sm, padding: space['2'] },
-  noticeText: { color: colors.warning, fontSize: 14, textAlign: 'right' },
+  noticeText: {
+    color: colors.warning,
+    fontFamily: fontFamily.regular,
+    fontSize: 14,
+    textAlign: 'right',
+  },
   fieldBox: { gap: 4, marginBottom: space['2'] },
   fieldHeader: { flexDirection: 'row', justifyContent: 'space-between' },
-  label: { fontSize: 14, color: text.secondary },
-  warn: { fontSize: 12, color: colors.warning },
-  hint: { fontSize: 12, color: text.secondary, textAlign: 'right' },
+  label: { fontFamily: fontFamily.regular, fontSize: 14, color: text.secondary },
+  warn: { fontFamily: fontFamily.regular, fontSize: 12, color: colors.warning },
+  hint: { fontFamily: fontFamily.regular, fontSize: 12, color: text.secondary, textAlign: 'right' },
   input: {
     minHeight: 48,
     borderWidth: 1,
     borderColor: surface.line,
     borderRadius: radius.sm,
     paddingHorizontal: space['2'],
+    fontFamily: fontFamily.regular,
     fontSize: 16,
     backgroundColor: surface.card,
     textAlign: 'right',
   },
-  error: { color: colors.danger, fontSize: 14, textAlign: 'right' },
+  error: { color: colors.danger, fontFamily: fontFamily.regular, fontSize: 14, textAlign: 'right' },
   duplicateBox: {
     backgroundColor: colors.warningBg,
     borderRadius: radius.sm,
     padding: space['3'],
     gap: 4,
   },
-  duplicateTitle: { fontSize: 15, fontWeight: '700', color: colors.warning, textAlign: 'right' },
-  duplicateRow: { fontSize: 14, color: colors.warning, textAlign: 'right' },
+  duplicateTitle: {
+    fontFamily: fontFamily.bold,
+    fontSize: 15,
+    color: colors.warning,
+    textAlign: 'right',
+  },
+  duplicateRow: {
+    fontFamily: fontFamily.regular,
+    fontSize: 14,
+    color: colors.warning,
+    textAlign: 'right',
+  },
 });

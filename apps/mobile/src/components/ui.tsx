@@ -15,17 +15,7 @@ import { STATUS_TONES, TONE_COLORS, colors } from '@cheque-flow/ui/tokens';
 
 import { IconAlert, IconCheck, IconClock } from '@/components/icons';
 import { maskDateInput } from '@/lib/dates';
-import {
-  TAP,
-  accent,
-  elevation,
-  radius,
-  sheetElevation,
-  space,
-  surface,
-  text,
-  type,
-} from '@/theme';
+import { TAP, accent, elevation, radius, sheetElevation, space, surface, text, type } from '@/theme';
 
 /**
  * The app's interface primitives.

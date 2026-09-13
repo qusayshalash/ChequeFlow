@@ -30,11 +30,11 @@ describe('the capture screen', () => {
   });
 
   it('says so in the empty slot too', () => {
-    // The label is conditional on the side, so both halves have to be on the
-    // same line — `[^}]*` would have stopped at the `}` of `style={…}`.
-    const slot = SCREEN.split('\n').find((line) => line.includes("key === 'BACK'"));
-    expect(slot, "no BACK-only branch in the placeholder").toBeDefined();
-    expect(slot).toContain("capture.optional");
+    // Whitespace-tolerant: this asserted on a single line, and a formatting
+    // pass that wrapped the same JSX across four lines failed it while the
+    // screen was unchanged. What matters is that the BACK branch — and only
+    // it — carries the label, however the source happens to be wrapped.
+    expect(SCREEN).toMatch(/key === 'BACK'[\s\S]{0,160}capture\.optional/);
   });
 
   it('and tells you the front is enough, once the front is taken', () => {

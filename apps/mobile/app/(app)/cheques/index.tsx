@@ -29,7 +29,7 @@ import {
   Sheet,
   StatusPill,
 } from '@/components/ui';
-import { TAP, accent, elevation, radius, space, surface, text, type } from '@/theme';
+import { TAP, accent, elevation, fontFamily, radius, space, surface, text, type } from '@/theme';
 
 /**
  * The list tabs.
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  filterCountText: { color: text.onBrand, fontSize: 11, fontWeight: '700' },
+  filterCountText: { color: text.onBrand, fontFamily: fontFamily.bold, fontSize: 11 },
 
   list: { gap: space['3'], paddingBottom: space['16'] },
 
@@ -579,5 +579,4 @@ const styles = StyleSheet.create({
     backgroundColor: surface.card,
   },
   clearText: { ...type.label, color: text.secondary },
-
 });

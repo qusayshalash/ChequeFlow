@@ -26,7 +26,7 @@ import {
   Section,
 } from '@/components/ui';
 import { todayIso } from '@/lib/dates';
-import { radius, space, surface, text } from '@/theme';
+import { fontFamily, radius, space, surface, text } from '@/theme';
 
 const CURRENCIES = COMMON_CURRENCIES;
 
@@ -434,8 +434,8 @@ const styles = StyleSheet.create({
   },
   rowDuplicate: { borderColor: colors.warning, backgroundColor: colors.warningBg },
   rowHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  rowIndex: { fontSize: 13, fontWeight: '700', color: text.secondary },
-  removeGlyph: { fontSize: 16, color: colors.danger },
+  rowIndex: { fontFamily: fontFamily.bold, fontSize: 13, color: text.secondary },
+  removeGlyph: { fontFamily: fontFamily.regular, fontSize: 16, color: colors.danger },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -444,14 +444,24 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: surface.line,
   },
-  totalLabel: { fontSize: 14, color: text.secondary },
-  totalValue: { fontSize: 17, fontWeight: '700', color: text.primary },
+  totalLabel: { fontFamily: fontFamily.regular, fontSize: 14, color: text.secondary },
+  totalValue: { fontFamily: fontFamily.bold, fontSize: 17, color: text.primary },
   duplicateBox: {
     backgroundColor: colors.warningBg,
     borderRadius: radius.md,
     padding: space['4'],
     gap: space['2'],
   },
-  duplicateTitle: { fontSize: 15, fontWeight: '700', color: colors.warning, textAlign: 'right' },
-  duplicateRow: { fontSize: 14, color: colors.warning, textAlign: 'right' },
+  duplicateTitle: {
+    fontFamily: fontFamily.bold,
+    fontSize: 15,
+    color: colors.warning,
+    textAlign: 'right',
+  },
+  duplicateRow: {
+    fontFamily: fontFamily.regular,
+    fontSize: 14,
+    color: colors.warning,
+    textAlign: 'right',
+  },
 });

@@ -10,7 +10,7 @@ import { useApi, useApp, useTranslator } from '@/components/providers';
 import { Banner, Body, Button, InfoRow, Picker, Section } from '@/components/ui';
 import { clearDrafts, listDrafts, type CaptureDraft } from '@/lib/draft-store';
 import { syncDrafts } from '@/lib/draft-sync';
-import { accent, elevation, radius, space, surface, text, type } from '@/theme';
+import { accent, elevation, fontFamily, radius, space, surface, text, type } from '@/theme';
 
 export default function SettingsScreen() {
   const api = useApi();
@@ -251,5 +251,5 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     paddingBottom: space['16'],
   },
-  meta: { fontSize: 13, color: text.secondary, textAlign: 'right' },
+  meta: { fontFamily: fontFamily.regular, fontSize: 13, color: text.secondary, textAlign: 'right' },
 });

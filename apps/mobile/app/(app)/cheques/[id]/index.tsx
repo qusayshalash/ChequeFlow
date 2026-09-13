@@ -20,7 +20,7 @@ import {
   Section,
   StatusPill,
 } from '@/components/ui';
-import { elevation, radius, space, surface, text, type } from '@/theme';
+import { elevation, fontFamily, radius, space, surface, text, type } from '@/theme';
 
 /**
  * Actions that get their own button on the detail screen.
@@ -379,6 +379,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     backgroundColor: surface.sunken,
   },
-  imagePlaceholder: { fontSize: 12, color: colors.textMuted },
-  imageCaption: { fontSize: 12, color: colors.textMuted, textAlign: 'center', paddingTop: 4 },
+  imagePlaceholder: { fontFamily: fontFamily.regular, fontSize: 12, color: colors.textMuted },
+  imageCaption: {
+    fontFamily: fontFamily.regular,
+    fontSize: 12,
+    color: colors.textMuted,
+    textAlign: 'center',
+    paddingTop: 4,
+  },
 });
