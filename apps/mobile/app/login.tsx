@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import {
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -23,24 +24,33 @@ import {
   IconCheck,
   IconChevronDown,
   IconChevronEnd,
-  IconCheque,
-  IconClock,
   IconEye,
   IconEyeOff,
   IconLock,
-  IconShield,
   IconUser,
 } from '@/components/icons';
 import { useApi, useApp, useTranslator } from '@/components/providers';
+// The app's own icon — the same file the phone's home screen shows.
+import appIcon from '../assets/icon.png';
 import { TAP, accent, radius, space, surface, text, type } from '@/theme';
 
 /**
  * Signing in.
  *
- * Built to the reference design: a mint gradient behind a floating card, the
- * mark and wordmark above it, and three reassurance pillars beneath.
+ * A mint gradient, the app's own icon, and the two fields. Nothing else.
  *
- * Three things the reference shows are deliberately absent, because this
+ * It carried a tagline, a welcome line with a second line under it explaining
+ * the welcome, a placeholder in each field repeating its label, three
+ * reassurance pillars with a title and a hint each, and a copyright notice —
+ * a dozen strings to read past on the way to two inputs. None of it helped
+ * anybody sign in, and the pillars' claims ("secure and trusted", "fast
+ * experience") are the kind of copy that makes a real product look less
+ * certain of itself, not more.
+ *
+ * What is left is what the screen is for: who you are, what you type, and one
+ * button. The icon does the introducing.
+ *
+ * Three things a reference design shows are deliberately absent, because this
  * system has nothing behind them and a dead control on the sign-in screen is
  * worse than a missing one — it is where a locked-out person goes for help:
  *
@@ -149,17 +159,19 @@ export default function LoginScreen() {
           ) : null}
 
           <View style={styles.brand}>
-            <View style={styles.mark}>
-              <IconCheque size={38} color={text.onBrand} />
-            </View>
+            {/* A glyph in a teal square stood here, which made the sign-in
+                screen the one place the product did not look like itself. */}
+            <Image
+              source={appIcon}
+              style={styles.mark}
+              accessibilityIgnoresInvertColors
+              accessible={false}
+            />
             <Text style={styles.wordmark}>{t('common.appName')}</Text>
-            <Text style={styles.tagline}>{t('auth.tagline')}</Text>
-            <View style={styles.brandRule} />
           </View>
 
           <View style={styles.card}>
             <Text style={styles.welcome}>{t('auth.welcome')}</Text>
-            <Text style={styles.welcomeHint}>{t('auth.welcomeHint')}</Text>
 
             <View style={styles.fields}>
               <View style={styles.field}>
@@ -169,8 +181,6 @@ export default function LoginScreen() {
                     style={styles.input}
                     value={email}
                     onChangeText={setEmail}
-                    placeholder={t('auth.usernamePlaceholder')}
-                    placeholderTextColor={text.faint}
                     autoCapitalize="none"
                     autoCorrect={false}
                     // A plain keyboard: the field accepts a user name as well
@@ -214,8 +224,6 @@ export default function LoginScreen() {
                     style={styles.input}
                     value={password}
                     onChangeText={setPassword}
-                    placeholder={t('auth.passwordPlaceholder')}
-                    placeholderTextColor={text.faint}
                     secureTextEntry={!revealed}
                     textContentType="password"
                     autoComplete="current-password"
@@ -256,30 +264,6 @@ export default function LoginScreen() {
               <View style={styles.submitSpacer} />
             </Pressable>
           </View>
-
-          {/* Static reassurance, as in the reference. Nothing here claims a
-              feature the app does not have. */}
-          <View style={styles.pillars}>
-            <Pillar
-              Icon={IconShield}
-              title={t('auth.pillarSecureTitle')}
-              hint={t('auth.pillarSecureHint')}
-            />
-            <View style={styles.pillarRule} />
-            <Pillar
-              Icon={IconClock}
-              title={t('auth.pillarEasyTitle')}
-              hint={t('auth.pillarEasyHint')}
-            />
-            <View style={styles.pillarRule} />
-            <Pillar
-              Icon={IconCheck}
-              title={t('auth.pillarFastTitle')}
-              hint={t('auth.pillarFastHint')}
-            />
-          </View>
-
-          <Text style={styles.rights}>{t('auth.rights')}</Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </LinearGradient>
@@ -292,28 +276,6 @@ function IconGlobeMark() {
     <View style={styles.globe}>
       <View style={styles.globeRing} />
       <View style={styles.globeBar} />
-    </View>
-  );
-}
-
-function Pillar({
-  Icon,
-  title,
-  hint,
-}: {
-  Icon: (props: { size?: number; color?: string }) => React.ReactElement;
-  title: string;
-  hint: string;
-}) {
-  return (
-    <View style={styles.pillar}>
-      <Icon size={22} color={accent.base} />
-      <Text style={styles.pillarTitle} numberOfLines={1}>
-        {title}
-      </Text>
-      <Text style={styles.pillarHint} numberOfLines={1}>
-        {hint}
-      </Text>
     </View>
   );
 }
@@ -391,27 +353,18 @@ const styles = StyleSheet.create({
 
   brand: { alignItems: 'center', gap: space['2'], marginTop: space['2'] },
   mark: {
-    width: 88,
-    height: 88,
-    borderRadius: 24,
-    backgroundColor: accent.dark,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 92,
+    height: 92,
+    // iOS masks an app icon to a squircle; this is the closest a plain corner
+    // radius gets, and it keeps the mark reading as the app's own icon.
+    borderRadius: 22,
     shadowColor: '#0B1F1A',
-    shadowOpacity: 0.22,
-    shadowRadius: 18,
+    shadowOpacity: 0.18,
+    shadowRadius: 20,
     shadowOffset: { width: 0, height: 10 },
     elevation: 8,
   },
   wordmark: { ...type.display, color: accent.dark, marginTop: space['2'] },
-  tagline: { ...type.callout, color: text.secondary, textAlign: 'center' },
-  brandRule: {
-    width: 56,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: accent.base,
-    marginTop: space['1'],
-  },
 
   card: {
     backgroundColor: '#FFFFFF',
@@ -424,10 +377,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 12 },
     elevation: 4,
   },
-  welcome: { ...type.title, fontSize: 26, color: text.primary, textAlign: 'center' },
-  welcomeHint: {
-    ...type.callout,
-    color: text.secondary,
+  welcome: {
+    ...type.title,
+    fontSize: 24,
+    color: text.primary,
     textAlign: 'center',
     marginBottom: space['2'],
   },
@@ -496,19 +449,4 @@ const styles = StyleSheet.create({
   submitOff: { opacity: 0.6 },
   submitText: { ...type.title, fontSize: 19, color: text.onBrand },
   submitSpacer: { width: 20 },
-
-  pillars: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginTop: space['2'],
-    paddingTop: space['4'],
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(11,31,26,0.08)',
-  },
-  pillar: { flex: 1, alignItems: 'center', gap: 3 },
-  pillarRule: { width: 1, height: 40, backgroundColor: 'rgba(11,31,26,0.10)' },
-  pillarTitle: { ...type.label, color: text.primary, textAlign: 'center' },
-  pillarHint: { ...type.caption, fontSize: 11, color: text.secondary, textAlign: 'center' },
-
-  rights: { ...type.caption, color: text.faint, textAlign: 'center', marginTop: space['2'] },
 });
