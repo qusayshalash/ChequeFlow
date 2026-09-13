@@ -7,7 +7,7 @@ import { ApiClientError } from '@cheque-flow/api-client';
 import { colors } from '@cheque-flow/ui/tokens';
 
 import { useApi, useTranslator } from '@/components/providers';
-import { Body, Button, Card, Heading, Screen } from '@/components/ui';
+import { Body, Button, Card, Heading, Screen, ScreenHeader } from '@/components/ui';
 import { checkCaptureQuality } from '@/lib/image-quality';
 import { uploadCapturedCheque } from '@/lib/cheque-upload';
 import { saveDraft } from '@/lib/draft-store';
@@ -52,8 +52,7 @@ export default function CaptureScreen() {
   if (!permission.granted) {
     return (
       <Screen>
-        <Heading>{t('capture.title')}</Heading>
-        <Body muted>{t('capture.permissionDenied')}</Body>
+        <ScreenHeader title={t('capture.title')} subtitle={t('capture.permissionDenied')} />
         <Button label={t('common.confirm')} onPress={() => void requestPermission()} large />
       </Screen>
     );

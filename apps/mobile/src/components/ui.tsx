@@ -58,6 +58,44 @@ export function Screen({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * The title of a screen, and what the screen is for.
+ *
+ * One role, drawn three ways before this: the dashboard set its own 21pt
+ * style with a subtitle under it, four other screens used `Heading` — the
+ * 17pt style that also titles the card sections *inside* them — and the
+ * spacing above each was whatever that screen happened to use. A screen title
+ * that is the same size as the section titles below it flattens the page, and
+ * moving between two screens whose titles sit at different heights reads as
+ * two apps.
+ *
+ * Only for screens the navigator gives no header of its own: the tab roots
+ * and the camera. A screen inside a stack already has its title in the bar,
+ * and printing it again in the body says it twice.
+ */
+export function ScreenHeader({
+  title,
+  subtitle,
+  action,
+}: {
+  title: string;
+  subtitle?: string;
+  /** A control belonging to the whole screen, at the far end of the title. */
+  action?: ReactNode;
+}) {
+  return (
+    <View style={styles.screenHeader}>
+      <View style={styles.screenHeaderText}>
+        <Text style={styles.screenTitle} accessibilityRole="header">
+          {title}
+        </Text>
+        {subtitle ? <Text style={styles.screenSubtitle}>{subtitle}</Text> : null}
+      </View>
+      {action}
+    </View>
+  );
+}
+
 export function Card({ children }: { children: ReactNode }) {
   return <View style={styles.card}>{children}</View>;
 }
@@ -733,6 +771,17 @@ export function Sheet({
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   screen: { flex: 1, padding: space['4'], gap: space['4'] },
+
+  screenHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: space['3'],
+    marginBottom: space['1'],
+  },
+  screenHeaderText: { flex: 1, gap: 2 },
+  screenTitle: { ...type.title, color: text.primary, textAlign: 'right' },
+  screenSubtitle: { ...type.callout, color: text.secondary, textAlign: 'right' },
 
   section: { gap: space['2'] },
   sectionTitle: { ...type.label, color: text.secondary, textAlign: 'right' },

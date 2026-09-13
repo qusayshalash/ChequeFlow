@@ -22,7 +22,7 @@ import {
 } from '@/components/icons';
 import { BankMark } from '@/components/marks';
 import { useApi, useApp, useTranslator } from '@/components/providers';
-import { Banner, ErrorView, LoadingView, StatusPill } from '@/components/ui';
+import { Banner, ErrorView, LoadingView, ScreenHeader, StatusPill } from '@/components/ui';
 import { TAP, accent, elevation, radius, space, surface, text, type } from '@/theme';
 
 /** How far ahead the upcoming list looks. */
@@ -123,8 +123,7 @@ export default function DashboardScreen() {
         />
       }
     >
-      <Text style={styles.pageTitle}>{t('dashboard.title')}</Text>
-      <Text style={styles.pageSubtitle}>{t('dashboard.subtitle')}</Text>
+      <ScreenHeader title={t('dashboard.title')} subtitle={t('dashboard.subtitle')} />
 
       {!online ? (
         <Banner
@@ -362,15 +361,6 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: 'transparent' },
   container: { padding: space['4'], paddingBottom: space['10'], gap: space['3'] },
   pressed: { backgroundColor: surface.sunken },
-
-  pageTitle: { ...type.title, color: text.primary, textAlign: 'right' },
-  pageSubtitle: {
-    ...type.callout,
-    color: text.secondary,
-    textAlign: 'right',
-    marginTop: -space['2'],
-    marginBottom: space['1'],
-  },
 
   statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space['2'] },
 

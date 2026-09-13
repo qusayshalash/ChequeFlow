@@ -8,7 +8,7 @@ import type { ChequeDetailView, DuplicateChequeMatch } from '@cheque-flow/shared
 import { colors } from '@cheque-flow/ui/tokens';
 
 import { useApi, useTranslator } from '@/components/providers';
-import { Body, Button, Card, Heading, LoadingView } from '@/components/ui';
+import { Body, Button, Card, LoadingView } from '@/components/ui';
 import { fontFamily, radius, space, surface, text } from '@/theme';
 
 const FIELDS = [
@@ -110,7 +110,8 @@ export default function ReviewExtractedDataScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Heading>{t('ocr.reviewTitle')}</Heading>
+      {/* The stack header above already says "review"; printing it again here
+          said it twice on a screen whose job is to be read quickly. */}
       <Body muted>{t('ocr.reviewSubtitle')}</Body>
 
       <View style={styles.notice}>

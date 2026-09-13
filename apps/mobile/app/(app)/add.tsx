@@ -4,7 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { IconCamera, IconCheque, IconContacts, IconEdit, type IconProps } from '@/components/icons';
 import { useTranslator } from '@/components/providers';
-import { Body, Heading } from '@/components/ui';
+import { Body, ScreenHeader } from '@/components/ui';
 import { accent, elevation, fontFamily, radius, space, surface, text } from '@/theme';
 
 /**
@@ -24,7 +24,7 @@ export default function AddScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Heading>{t('common.add')}</Heading>
+      <ScreenHeader title={t('common.add')} />
 
       <Choice
         Icon={IconCamera}
