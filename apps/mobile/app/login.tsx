@@ -17,7 +17,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ApiClientError } from '@cheque-flow/api-client';
 import { LOCALES, LOCALE_LABELS } from '@cheque-flow/localization';
-import { colors } from '@cheque-flow/ui/tokens';
 
 import {
   IconAlert,
@@ -32,7 +31,8 @@ import {
 import { useApi, useApp, useTranslator } from '@/components/providers';
 // The app's own icon — the same file the phone's home screen shows.
 import appIcon from '../assets/icon.png';
-import { TAP, accent, radius, space, surface, text, type } from '@/theme';
+import { useStyles, useTheme } from '@/theme-context';
+import { TAP, radius, space, type, type Palette } from '@/theme';
 
 /**
  * Signing in.
@@ -68,6 +68,8 @@ import { TAP, accent, radius, space, surface, text, type } from '@/theme';
  * form cannot reach that screen to change it.
  */
 export default function LoginScreen() {
+  const c = useTheme();
+  const styles = useStyles(makeStyles);
   const api = useApi();
   const t = useTranslator();
   const { locale, setLocale } = useApp();
@@ -99,11 +101,7 @@ export default function LoginScreen() {
   }
 
   return (
-    <LinearGradient
-      colors={['#EAF3F0', '#F4F8F7', '#E6F0EC']}
-      locations={[0, 0.45, 1]}
-      style={styles.fill}
-    >
+    <LinearGradient colors={[...c.pageGradient]} locations={[0, 0.45, 1]} style={styles.fill}>
       {/* Two soft washes standing in for the reference's photograph. There is
           no licensed picture of a chequebook in this repository, and a stock
           image is not something to invent — the gradient carries the same
@@ -132,7 +130,7 @@ export default function LoginScreen() {
               onPress={() => setLangOpen((open) => !open)}
               style={({ pressed }) => [styles.langPill, pressed && styles.pressed]}
             >
-              <IconChevronDown size={15} color={text.secondary} />
+              <IconChevronDown size={15} color={c.text.secondary} />
               <Text style={styles.langText}>{LOCALE_LABELS[locale]}</Text>
               <IconGlobeMark />
             </Pressable>
@@ -151,7 +149,7 @@ export default function LoginScreen() {
                   }}
                   style={({ pressed }) => [styles.langOption, pressed && styles.pressed]}
                 >
-                  {value === locale ? <IconCheck size={16} color={accent.base} /> : null}
+                  {value === locale ? <IconCheck size={16} color={c.accent.base} /> : null}
                   <Text style={styles.langOptionText}>{LOCALE_LABELS[value]}</Text>
                 </Pressable>
               ))}
@@ -194,7 +192,7 @@ export default function LoginScreen() {
                     accessibilityLabel={t('auth.usernameHint')}
                   />
                   <View style={styles.inputIcon}>
-                    <IconUser size={19} color={accent.dark} />
+                    <IconUser size={19} color={c.accent.dark} />
                   </View>
                 </View>
               </View>
@@ -214,9 +212,9 @@ export default function LoginScreen() {
                     hitSlop={8}
                   >
                     {revealed ? (
-                      <IconEyeOff size={19} color={text.secondary} />
+                      <IconEyeOff size={19} color={c.text.secondary} />
                     ) : (
-                      <IconEye size={19} color={text.secondary} />
+                      <IconEye size={19} color={c.text.secondary} />
                     )}
                   </Pressable>
                   <TextInput
@@ -232,7 +230,7 @@ export default function LoginScreen() {
                     accessibilityLabel={t('auth.password')}
                   />
                   <View style={styles.inputIcon}>
-                    <IconLock size={19} color={accent.dark} />
+                    <IconLock size={19} color={c.accent.dark} />
                   </View>
                 </View>
               </View>
@@ -240,7 +238,7 @@ export default function LoginScreen() {
 
             {error ? (
               <View style={styles.errorBox} accessibilityRole="alert">
-                <IconAlert size={17} color={colors.danger} />
+                <IconAlert size={17} color={c.semantic.danger} />
                 <Text style={styles.error}>{error}</Text>
               </View>
             ) : null}
@@ -257,7 +255,7 @@ export default function LoginScreen() {
                 pending && styles.submitOff,
               ]}
             >
-              <IconChevronEnd size={20} color={text.onBrand} />
+              <IconChevronEnd size={20} color={c.text.onBrand} />
               <Text style={styles.submitText}>
                 {pending ? t('common.loading') : t('auth.submit')}
               </Text>
@@ -272,6 +270,7 @@ export default function LoginScreen() {
 
 /** The globe in the language pill, drawn from two rings rather than an icon. */
 function IconGlobeMark() {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.globe}>
       <View style={styles.globeRing} />
@@ -280,173 +279,174 @@ function IconGlobeMark() {
   );
 }
 
-const styles = StyleSheet.create({
-  fill: { flex: 1 },
-  pressed: { opacity: 0.7 },
-  content: { paddingHorizontal: space['5'], gap: space['4'] },
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    fill: { flex: 1 },
+    pressed: { opacity: 0.7 },
+    content: { paddingHorizontal: space['5'], gap: space['4'] },
 
-  washTop: {
-    position: 'absolute',
-    top: -140,
-    left: -80,
-    width: 380,
-    height: 380,
-    borderRadius: 190,
-    backgroundColor: '#FFFFFF',
-    opacity: 0.55,
-  },
-  washBottom: {
-    position: 'absolute',
-    bottom: -180,
-    right: -110,
-    width: 420,
-    height: 420,
-    borderRadius: 210,
-    backgroundColor: '#D7E9E2',
-    opacity: 0.5,
-  },
+    washTop: {
+      position: 'absolute',
+      top: -140,
+      left: -80,
+      width: 380,
+      height: 380,
+      borderRadius: 190,
+      backgroundColor: c.surface.card,
+      opacity: c.dark ? 0.22 : 0.55,
+    },
+    washBottom: {
+      position: 'absolute',
+      bottom: -180,
+      right: -110,
+      width: 420,
+      height: 420,
+      borderRadius: 210,
+      backgroundColor: c.accent.wash,
+      opacity: c.dark ? 0.35 : 0.5,
+    },
 
-  langRow: { alignItems: 'flex-start' },
-  langPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['2'],
-    minHeight: TAP,
-    paddingHorizontal: space['4'],
-    borderRadius: radius.pill,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: surface.line,
-  },
-  langText: { ...type.label, color: text.primary },
-  globe: { width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
-  globeRing: {
-    position: 'absolute',
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 1.6,
-    borderColor: text.secondary,
-  },
-  globeBar: { width: 18, height: 1.6, backgroundColor: text.secondary },
+    langRow: { alignItems: 'flex-start' },
+    langPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space['2'],
+      minHeight: TAP,
+      paddingHorizontal: space['4'],
+      borderRadius: radius.pill,
+      backgroundColor: c.surface.card,
+      borderWidth: 1,
+      borderColor: c.surface.line,
+    },
+    langText: { ...type.label, color: c.text.primary },
+    globe: { width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
+    globeRing: {
+      position: 'absolute',
+      width: 18,
+      height: 18,
+      borderRadius: 9,
+      borderWidth: 1.6,
+      borderColor: c.text.secondary,
+    },
+    globeBar: { width: 18, height: 1.6, backgroundColor: c.text.secondary },
 
-  langMenu: {
-    alignSelf: 'flex-start',
-    marginTop: -space['2'],
-    borderRadius: radius.md,
-    backgroundColor: surface.card,
-    borderWidth: 1,
-    borderColor: surface.line,
-    padding: space['1'],
-    minWidth: 160,
-  },
-  langOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: space['2'],
-    minHeight: TAP,
-    paddingHorizontal: space['3'],
-    borderRadius: radius.sm,
-  },
-  langOptionText: { ...type.body, color: text.primary },
+    langMenu: {
+      alignSelf: 'flex-start',
+      marginTop: -space['2'],
+      borderRadius: radius.md,
+      backgroundColor: c.surface.card,
+      borderWidth: 1,
+      borderColor: c.surface.line,
+      padding: space['1'],
+      minWidth: 160,
+    },
+    langOption: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      gap: space['2'],
+      minHeight: TAP,
+      paddingHorizontal: space['3'],
+      borderRadius: radius.sm,
+    },
+    langOptionText: { ...type.body, color: c.text.primary },
 
-  brand: { alignItems: 'center', gap: space['2'], marginTop: space['2'] },
-  mark: {
-    width: 92,
-    height: 92,
-    // iOS masks an app icon to a squircle; this is the closest a plain corner
-    // radius gets, and it keeps the mark reading as the app's own icon.
-    borderRadius: 22,
-    shadowColor: '#0B1F1A',
-    shadowOpacity: 0.18,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 8,
-  },
-  wordmark: { ...type.display, color: accent.dark, marginTop: space['2'] },
+    brand: { alignItems: 'center', gap: space['2'], marginTop: space['2'] },
+    mark: {
+      width: 92,
+      height: 92,
+      // iOS masks an app icon to a squircle; this is the closest a plain corner
+      // radius gets, and it keeps the mark reading as the app's own icon.
+      borderRadius: 22,
+      shadowColor: '#0B1F1A',
+      shadowOpacity: 0.18,
+      shadowRadius: 20,
+      shadowOffset: { width: 0, height: 10 },
+      elevation: 8,
+    },
+    wordmark: { ...type.display, color: c.accent.dark, marginTop: space['2'] },
 
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 28,
-    padding: space['5'],
-    gap: space['2'],
-    shadowColor: '#0B1F1A',
-    shadowOpacity: 0.07,
-    shadowRadius: 28,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 4,
-  },
-  welcome: {
-    ...type.title,
-    fontSize: 24,
-    color: text.primary,
-    textAlign: 'center',
-    marginBottom: space['2'],
-  },
+    card: {
+      backgroundColor: c.surface.card,
+      borderRadius: 28,
+      padding: space['5'],
+      gap: space['2'],
+      shadowColor: '#0B1F1A',
+      shadowOpacity: 0.07,
+      shadowRadius: 28,
+      shadowOffset: { width: 0, height: 12 },
+      elevation: 4,
+    },
+    welcome: {
+      ...type.title,
+      fontSize: 24,
+      color: c.text.primary,
+      textAlign: 'center',
+      marginBottom: space['2'],
+    },
 
-  fields: {
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: surface.line,
-    paddingVertical: space['1'],
-  },
-  field: { paddingHorizontal: space['3'], paddingVertical: space['2'], gap: space['1'] },
-  label: { ...type.label, color: text.primary, textAlign: 'right' },
-  divider: { height: 1, backgroundColor: surface.line, marginHorizontal: space['3'] },
+    fields: {
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: c.surface.line,
+      paddingVertical: space['1'],
+    },
+    field: { paddingHorizontal: space['3'], paddingVertical: space['2'], gap: space['1'] },
+    label: { ...type.label, color: c.text.primary, textAlign: 'right' },
+    divider: { height: 1, backgroundColor: c.surface.line, marginHorizontal: space['3'] },
 
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['2'],
-    minHeight: TAP + 4,
-  },
-  inputRowError: { borderRadius: radius.md, borderWidth: 1, borderColor: colors.danger },
-  inputIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: radius.md,
-    backgroundColor: accent.wash,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  input: {
-    flex: 1,
-    ...type.body,
-    color: text.primary,
-    textAlign: 'right',
-    paddingHorizontal: space['2'],
-  },
-  reveal: { width: TAP, height: TAP, alignItems: 'center', justifyContent: 'center' },
+    inputRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space['2'],
+      minHeight: TAP + 4,
+    },
+    inputRowError: { borderRadius: radius.md, borderWidth: 1, borderColor: c.semantic.danger },
+    inputIcon: {
+      width: 42,
+      height: 42,
+      borderRadius: radius.md,
+      backgroundColor: c.accent.wash,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    input: {
+      flex: 1,
+      ...type.body,
+      color: c.text.primary,
+      textAlign: 'right',
+      paddingHorizontal: space['2'],
+    },
+    reveal: { width: TAP, height: TAP, alignItems: 'center', justifyContent: 'center' },
 
-  errorBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['2'],
-    backgroundColor: '#FBE2E6',
-    borderRadius: radius.md,
-    padding: space['3'],
-    marginTop: space['2'],
-  },
-  error: { ...type.callout, color: colors.danger, flex: 1, textAlign: 'right' },
+    errorBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space['2'],
+      backgroundColor: c.semantic.dangerBg,
+      borderRadius: radius.md,
+      padding: space['3'],
+      marginTop: space['2'],
+    },
+    error: { ...type.callout, color: c.semantic.danger, flex: 1, textAlign: 'right' },
 
-  submit: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 58,
-    borderRadius: radius.lg,
-    backgroundColor: accent.dark,
-    paddingHorizontal: space['5'],
-    marginTop: space['4'],
-    shadowColor: '#0B1F1A',
-    shadowOpacity: 0.18,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 5,
-  },
-  submitDown: { opacity: 0.85 },
-  submitOff: { opacity: 0.6 },
-  submitText: { ...type.title, fontSize: 19, color: text.onBrand },
-  submitSpacer: { width: 20 },
-});
+    submit: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      minHeight: 58,
+      borderRadius: radius.lg,
+      backgroundColor: c.accent.dark,
+      paddingHorizontal: space['5'],
+      marginTop: space['4'],
+      shadowColor: '#0B1F1A',
+      shadowOpacity: 0.18,
+      shadowRadius: 14,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 5,
+    },
+    submitDown: { opacity: 0.85 },
+    submitOff: { opacity: 0.6 },
+    submitText: { ...type.title, fontSize: 19, color: c.text.onBrand },
+    submitSpacer: { width: 20 },
+  });

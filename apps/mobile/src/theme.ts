@@ -1,6 +1,6 @@
 import { Platform, type TextStyle } from 'react-native';
 
-import { colors as brand } from '@cheque-flow/ui/tokens';
+import { DARK_COLORS, colors as brand } from '@cheque-flow/ui/tokens';
 
 /**
  * The phone app's design system.
@@ -126,13 +126,112 @@ export const radius = {
  * Lines have not gone. A hairline still separates rows inside a card; the
  * shadow separates the card from the page. Two jobs, two tools.
  */
-export const surface = {
-  page: '#F2F6F5',
-  card: brand.surface,
-  sunken: '#EFF2F1',
-  line: '#E4E8E7',
-  lineStrong: '#CFD6D4',
-} as const;
+
+/**
+ * The app in the dark.
+ *
+ * Not an inversion. Inverting a light palette gives pure black under white
+ * text, which on an OLED phone smears on every scroll, and a brand colour that
+ * was chosen against white turns muddy against black. So the dark set is
+ * chosen on its own terms and measured on its own grounds:
+ *
+ *  - The ground is a very dark green-grey rather than black, and each surface
+ *    above it is *lighter* than the one below. Depth reads by lightness in the
+ *    dark, where a shadow is invisible — which is why the elevation scale is
+ *    almost inert here and the surfaces do that work instead.
+ *  - The brand teal is lifted well above its light-mode value. `#087F6D` on a
+ *    dark ground is a smudge; the lifted tone carries the same hue at a
+ *    contrast a reader can use.
+ *  - Every foreground is checked against the surface it actually lands on, not
+ *    against the page. `theme.contrast.test.ts` holds both sets to the same
+ *    4.5:1 floor, so dark mode cannot be the one that quietly fails.
+ *
+ * Status colours come from the shared tokens, which the web also uses; the
+ * dark set lives beside them there rather than here, so a status keeps its
+ * meaning across both halves of the product.
+ */
+export interface Palette {
+  surface: { page: string; card: string; sunken: string; line: string; lineStrong: string };
+  text: { primary: string; secondary: string; faint: string; onBrand: string };
+  accent: { base: string; dark: string; wash: string };
+  /** The three stops behind every screen. */
+  pageGradient: readonly [string, string, string];
+  /** What a colour means: danger, warning, success, information. */
+  semantic: {
+    danger: string;
+    dangerBg: string;
+    warning: string;
+    warningBg: string;
+    success: string;
+    successBg: string;
+    info: string;
+    infoBg: string;
+  };
+  /** True when this is the dark set — for a status bar, a keyboard, an image. */
+  dark: boolean;
+}
+
+export const lightPalette: Palette = {
+  surface: {
+    page: '#F2F6F5',
+    card: brand.surface,
+    sunken: '#EFF2F1',
+    line: '#E4E8E7',
+    lineStrong: '#CFD6D4',
+  },
+  text: {
+    primary: brand.text,
+    secondary: brand.textMuted,
+    faint: '#5F6C68',
+    onBrand: '#FFFFFF',
+  },
+  accent: { base: brand.brand, dark: brand.brandDark, wash: brand.brandLight },
+  pageGradient: ['#EAF3F0', '#F4F8F7', '#E6F0EC'],
+  semantic: {
+    danger: brand.danger,
+    dangerBg: brand.dangerBg,
+    warning: brand.warning,
+    warningBg: brand.warningBg,
+    success: brand.success,
+    successBg: brand.successBg,
+    info: brand.info,
+    infoBg: brand.infoBg,
+  },
+  dark: false,
+};
+
+export const darkPalette: Palette = {
+  surface: {
+    // Lighter as it comes forward: a card is not a shadow away from the page
+    // in the dark, it is a shade nearer.
+    page: '#0C1513',
+    card: '#16211E',
+    sunken: '#111B19',
+    line: '#243430',
+    lineStrong: '#33453F',
+  },
+  text: {
+    primary: '#E8EFEC',
+    secondary: '#A7B8B2',
+    faint: '#849690',
+    onBrand: '#04211C',
+  },
+  accent: { base: '#4FBFA5', dark: '#6FD3B9', wash: '#14322B' },
+  pageGradient: ['#0E1A17', '#0C1513', '#0A1211'],
+  // Shared with the web's own dark set, so a bounced cheque is one red across
+  // both halves of the product.
+  semantic: DARK_COLORS,
+  dark: true,
+};
+
+/**
+ * The light palette, still exported under its old names.
+ *
+ * Every screen reads these at module load, inside `StyleSheet.create`, which
+ * runs once. They are the light set and stay it; a screen that has been moved
+ * to `useStyles` takes its colours from the palette in context instead.
+ */
+export const surface = lightPalette.surface;
 
 /**
  * The soft mint field the sign-in screen introduced, now the app's ground.
@@ -140,29 +239,11 @@ export const surface = {
  * Three stops rather than two: a flat two-stop ramp bands visibly on an OLED
  * phone at this low contrast.
  */
-export const pageGradient = ['#EAF3F0', '#F4F8F7', '#E6F0EC'] as const;
+export const pageGradient = lightPalette.pageGradient;
 
-export const text = {
-  primary: brand.text,
-  secondary: brand.textMuted,
-  /**
-   * For a value that is absent rather than zero, and for captions.
-   *
-   * `#8B9995` looked right and measured 2.96:1 on white — under the 4.5 floor
-   * for text, and it carries real sentences here ("not yet", a due distance,
-   * an amount's caption). Darkened until it passes on *both* grounds it lands
-   * on: 5.48:1 on a card, 4.71:1 on the darkest stop of the page gradient.
-   * One value for both, because a caption does not know which it is on.
-   */
-  faint: '#5F6C68',
-  onBrand: '#FFFFFF',
-} as const;
+export const text = lightPalette.text;
 
-export const accent = {
-  base: brand.brand,
-  dark: brand.brandDark,
-  wash: brand.brandLight,
-} as const;
+export const accent = lightPalette.accent;
 
 /**
  * Four levels, from the skill's Dimensional Layering scale.

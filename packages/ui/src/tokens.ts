@@ -91,3 +91,35 @@ export const TONE_COLORS: Readonly<Record<StatusTone, { bg: string; fg: string }
   warning: { bg: colors.warningBg, fg: colors.warning },
   danger: { bg: colors.dangerBg, fg: colors.danger },
 };
+
+/**
+ * The same five meanings, on a dark ground.
+ *
+ * Here rather than in the phone app's theme so that a status keeps its meaning
+ * across both halves of the product — a bounced cheque should not be one red
+ * in the dashboard and another on the phone.
+ *
+ * The foregrounds are lifted and the grounds are deep, muted versions of the
+ * same hue: the light values inverted would put a mid-red on near-black at
+ * about 3:1, under the floor for the text they carry. Every pair here is
+ * measured against its own background by this package's own test.
+ */
+export const DARK_TONE_COLORS: Readonly<Record<StatusTone, { bg: string; fg: string }>> = {
+  neutral: { bg: '#1B2724', fg: '#A9BAB4' },
+  info: { bg: '#132A3D', fg: '#7FBDEC' },
+  success: { bg: '#0F2A22', fg: '#68C79D' },
+  warning: { bg: '#2E2513', fg: '#DDB160' },
+  danger: { bg: '#33191C', fg: '#EE9098' },
+};
+
+/** The semantic colours, on a dark ground. */
+export const DARK_COLORS = {
+  danger: '#EE9098',
+  dangerBg: '#33191C',
+  warning: '#DDB160',
+  warningBg: '#2E2513',
+  success: '#68C79D',
+  successBg: '#0F2A22',
+  info: '#7FBDEC',
+  infoBg: '#132A3D',
+} as const;

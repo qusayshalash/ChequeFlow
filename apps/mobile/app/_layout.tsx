@@ -13,6 +13,7 @@ import { I18nManager } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Providers } from '@/components/providers';
+import { ThemeProvider } from '@/theme-context';
 
 // Held until the typeface is in memory. Without this the first frame paints in
 // the system face and every line re-flows a moment later — the app's first
@@ -53,14 +54,18 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <Providers>
-        <StatusBar style="dark" />
-        <Stack screenOptions={{ headerTitleAlign: 'center' }}>
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="login" options={{ headerShown: false }} />
-          <Stack.Screen name="(app)" options={{ headerShown: false }} />
-        </Stack>
-      </Providers>
+      <ThemeProvider>
+        <Providers>
+          {/* `auto` rather than a fixed tint: the bar sits on the app's own
+            ground, which is now light or dark by the phone's setting. */}
+          <StatusBar style="auto" />
+          <Stack screenOptions={{ headerTitleAlign: 'center' }}>
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="login" options={{ headerShown: false }} />
+            <Stack.Screen name="(app)" options={{ headerShown: false }} />
+          </Stack>
+        </Providers>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

@@ -19,7 +19,8 @@ import {
   Sheet,
 } from '@/components/ui';
 import { fieldErrorsFrom, validateForm, type FieldErrors } from '@/lib/form';
-import { TAP, accent, elevation, fontFamily, radius, space, surface, text, type } from '@/theme';
+import { useStyles } from '@/theme-context';
+import { TAP, elevation, fontFamily, radius, space, type, type Palette } from '@/theme';
 
 /**
  * Members of the organization and what they may do.
@@ -29,6 +30,7 @@ import { TAP, accent, elevation, fontFamily, radius, space, surface, text, type 
  * that history pointing at nobody.
  */
 export default function UsersScreen() {
+  const styles = useStyles(makeStyles);
   const api = useApi();
   const t = useTranslator();
   const { dateTime } = useApp();
@@ -207,34 +209,45 @@ export default function UsersScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  rowTop: { flexDirection: 'row', alignItems: 'center', gap: space['3'] },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.pill,
-    backgroundColor: accent.wash,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  initial: { ...type.bodyStrong, color: accent.dark },
-  container: {
-    flex: 1,
-    backgroundColor: 'transparent',
-    padding: space['4'],
-    gap: space['2'],
-  },
-  list: { gap: space['2'], paddingBottom: space['4'] },
-  row: {
-    backgroundColor: surface.card,
-    borderRadius: radius.xl,
-    ...elevation[2],
-    padding: space['4'],
-    gap: 4,
-  },
-  header: { flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  name: { fontFamily: fontFamily.bold, fontSize: 16, color: text.primary, textAlign: 'right' },
-  meta: { fontFamily: fontFamily.regular, fontSize: 13, color: text.secondary, textAlign: 'right' },
-  statusToggle: { alignSelf: 'flex-start', minHeight: TAP, justifyContent: 'center' },
-  statusToggleText: { fontFamily: fontFamily.semibold, fontSize: 14, color: accent.base },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    rowTop: { flexDirection: 'row', alignItems: 'center', gap: space['3'] },
+    avatar: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.pill,
+      backgroundColor: c.accent.wash,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    initial: { ...type.bodyStrong, color: c.accent.dark },
+    container: {
+      flex: 1,
+      backgroundColor: 'transparent',
+      padding: space['4'],
+      gap: space['2'],
+    },
+    list: { gap: space['2'], paddingBottom: space['4'] },
+    row: {
+      backgroundColor: c.surface.card,
+      borderRadius: radius.xl,
+      ...elevation[2],
+      padding: space['4'],
+      gap: 4,
+    },
+    header: {
+      flex: 1,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    name: { fontFamily: fontFamily.bold, fontSize: 16, color: c.text.primary, textAlign: 'right' },
+    meta: {
+      fontFamily: fontFamily.regular,
+      fontSize: 13,
+      color: c.text.secondary,
+      textAlign: 'right',
+    },
+    statusToggle: { alignSelf: 'flex-start', minHeight: TAP, justifyContent: 'center' },
+    statusToggleText: { fontFamily: fontFamily.semibold, fontSize: 14, color: c.accent.base },
+  });

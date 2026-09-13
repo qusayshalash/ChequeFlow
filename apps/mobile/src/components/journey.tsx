@@ -4,7 +4,8 @@ import type { ChequeDetailView } from '@cheque-flow/shared-types';
 
 import { IconCheck } from '@/components/icons';
 import { useTranslator } from '@/components/providers';
-import { accent, elevation, radius, space, surface, text, type } from '@/theme';
+import { useStyles, useTheme } from '@/theme-context';
+import { elevation, radius, space, type, type Palette } from '@/theme';
 
 /**
  * Where the cheque came from, where it is, and where it went.
@@ -19,6 +20,8 @@ import { accent, elevation, radius, space, surface, text, type } from '@/theme';
  * rather than three unrelated rows.
  */
 export function ChequeJourney({ cheque }: { cheque: ChequeDetailView }) {
+  const c = useTheme();
+  const styles = useStyles(makeStyles);
   const t = useTranslator();
 
   const steps = [
@@ -61,7 +64,7 @@ export function ChequeJourney({ cheque }: { cheque: ChequeDetailView }) {
                 ]}
               >
                 {done ? (
-                  <IconCheck size={13} color={text.onBrand} />
+                  <IconCheck size={13} color={c.text.onBrand} />
                 ) : (
                   <Text style={styles.markerNumber}>{index + 1}</Text>
                 )}
@@ -82,42 +85,43 @@ export function ChequeJourney({ cheque }: { cheque: ChequeDetailView }) {
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: surface.card,
-    borderRadius: radius.xl,
-    ...elevation[2],
-    padding: space['4'],
-  },
-  title: { ...type.heading, color: text.primary, marginBottom: space['3'], textAlign: 'right' },
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: c.surface.card,
+      borderRadius: radius.xl,
+      ...elevation[2],
+      padding: space['4'],
+    },
+    title: { ...type.heading, color: c.text.primary, marginBottom: space['3'], textAlign: 'right' },
 
-  step: { flexDirection: 'row', gap: space['3'] },
-  rail: { alignItems: 'center' },
-  marker: {
-    width: 26,
-    height: 26,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: surface.lineStrong,
-    borderStyle: 'dashed',
-    backgroundColor: surface.card,
-  },
-  markerDone: {
-    backgroundColor: accent.base,
-    borderColor: accent.base,
-    borderStyle: 'solid',
-  },
-  markerCurrent: { backgroundColor: accent.dark, borderColor: accent.dark },
-  markerNumber: { ...type.caption, color: text.faint },
-  line: { flex: 1, width: 2, backgroundColor: surface.line, marginVertical: 2 },
-  lineDone: { backgroundColor: accent.wash },
+    step: { flexDirection: 'row', gap: space['3'] },
+    rail: { alignItems: 'center' },
+    marker: {
+      width: 26,
+      height: 26,
+      borderRadius: radius.pill,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: c.surface.lineStrong,
+      borderStyle: 'dashed',
+      backgroundColor: c.surface.card,
+    },
+    markerDone: {
+      backgroundColor: c.accent.base,
+      borderColor: c.accent.base,
+      borderStyle: 'solid',
+    },
+    markerCurrent: { backgroundColor: c.accent.dark, borderColor: c.accent.dark },
+    markerNumber: { ...type.caption, color: c.text.faint },
+    line: { flex: 1, width: 2, backgroundColor: c.surface.line, marginVertical: 2 },
+    lineDone: { backgroundColor: c.accent.wash },
 
-  body: { flex: 1, alignItems: 'flex-end' },
-  bodySpaced: { paddingBottom: space['4'] },
-  label: { ...type.caption, color: text.secondary },
-  labelCurrent: { color: accent.dark, fontWeight: '700' },
-  value: { ...type.bodyStrong, color: text.primary, textAlign: 'right' },
-  valueEmpty: { ...type.body, color: text.faint },
-});
+    body: { flex: 1, alignItems: 'flex-end' },
+    bodySpaced: { paddingBottom: space['4'] },
+    label: { ...type.caption, color: c.text.secondary },
+    labelCurrent: { color: c.accent.dark, fontWeight: '700' },
+    value: { ...type.bodyStrong, color: c.text.primary, textAlign: 'right' },
+    valueEmpty: { ...type.body, color: c.text.faint },
+  });

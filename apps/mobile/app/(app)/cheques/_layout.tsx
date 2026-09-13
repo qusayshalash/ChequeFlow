@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router';
 
+import { useTheme } from '@/theme-context';
 import { useTranslator } from '@/components/providers';
 import { stackScreenOptions } from '@/components/stack-header';
 
@@ -7,7 +8,7 @@ export default function ChequesLayout() {
   const t = useTranslator();
 
   return (
-    <Stack screenOptions={stackScreenOptions()}>
+    <Stack screenOptions={stackScreenOptions(useTheme())}>
       <Stack.Screen name="index" options={{ title: t('cheque.listTitle') }} />
       <Stack.Screen name="new" options={{ title: t('cheque.newTitle') }} />
       <Stack.Screen name="batch" options={{ title: t('cheque.batchTitle') }} />

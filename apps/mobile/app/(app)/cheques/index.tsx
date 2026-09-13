@@ -11,7 +11,6 @@ import {
   type ChequeSummaryView,
   type Paginated,
 } from '@cheque-flow/shared-types';
-import { colors } from '@cheque-flow/ui/tokens';
 
 import { IconAlert, IconArrowIn, IconArrowOut, IconFilter } from '@/components/icons';
 import { BulkBar } from '@/components/bulk-bar';
@@ -30,7 +29,8 @@ import {
   Sheet,
   StatusPill,
 } from '@/components/ui';
-import { TAP, accent, elevation, fontFamily, radius, space, surface, text, type } from '@/theme';
+import { useStyles, useTheme } from '@/theme-context';
+import { TAP, elevation, fontFamily, radius, space, type, type Palette } from '@/theme';
 
 /**
  * The list tabs.
@@ -66,6 +66,8 @@ function tabQuery(tab: Tab, today: string): Record<string, unknown> {
 }
 
 export default function ChequeListScreen() {
+  const c = useTheme();
+  const styles = useStyles(makeStyles);
   const api = useApi();
   const t = useTranslator();
   const { money, date, dueDistance } = useApp();
@@ -236,7 +238,7 @@ export default function ChequeListScreen() {
         <TextInput
           style={styles.search}
           placeholder={t('common.search')}
-          placeholderTextColor={colors.textMuted}
+          placeholderTextColor={c.text.secondary}
           value={search}
           onChangeText={setSearch}
           accessibilityLabel={t('common.search')}
@@ -247,7 +249,7 @@ export default function ChequeListScreen() {
           onPress={() => setFiltersOpen(true)}
           style={styles.filterButton}
         >
-          <IconFilter size={20} color={text.primary} />
+          <IconFilter size={20} color={c.text.primary} />
           {activeFilterCount > 0 ? (
             <View style={styles.filterCount}>
               <Text style={styles.filterCountText}>{activeFilterCount}</Text>
@@ -348,16 +350,16 @@ export default function ChequeListScreen() {
                 <View style={styles.rowBottom}>
                   <View style={styles.numberGroup}>
                     {item.direction === 'OUTGOING' ? (
-                      <IconArrowOut size={14} color={text.faint} />
+                      <IconArrowOut size={14} color={c.text.faint} />
                     ) : (
-                      <IconArrowIn size={14} color={text.faint} />
+                      <IconArrowIn size={14} color={c.text.faint} />
                     )}
                     <Text style={styles.number}>{item.chequeNumber}</Text>
                   </View>
                   {/* Two lines, as on the web: the date is the fact, the
                       distance is what decides whether to act this morning. */}
                   <View style={styles.dueGroup}>
-                    {item.isOverdue ? <IconAlert size={14} color={colors.danger} /> : null}
+                    {item.isOverdue ? <IconAlert size={14} color={c.semantic.danger} /> : null}
                     <View style={styles.dueText}>
                       <Text style={[styles.due, item.isOverdue && styles.dueLate]}>
                         {date(item.dueDate)}
@@ -476,106 +478,107 @@ export default function ChequeListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'transparent', padding: space['4'], gap: space['3'] },
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: 'transparent', padding: space['4'], gap: space['3'] },
 
-  searchRow: { flexDirection: 'row', gap: space['2'], alignItems: 'center' },
-  search: {
-    flex: 1,
-    minHeight: TAP,
-    borderWidth: 1,
-    borderColor: surface.lineStrong,
-    borderRadius: radius.md,
-    backgroundColor: surface.card,
-    paddingHorizontal: space['4'],
-    ...type.body,
-    color: text.primary,
-    textAlign: 'right',
-  },
-  filterButton: {
-    minWidth: TAP,
-    minHeight: TAP,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: surface.lineStrong,
-    backgroundColor: surface.card,
-  },
-  filterCount: {
-    position: 'absolute',
-    top: 2,
-    right: 2,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: accent.base,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  filterCountText: { color: text.onBrand, fontFamily: fontFamily.bold, fontSize: 11 },
+    searchRow: { flexDirection: 'row', gap: space['2'], alignItems: 'center' },
+    search: {
+      flex: 1,
+      minHeight: TAP,
+      borderWidth: 1,
+      borderColor: c.surface.lineStrong,
+      borderRadius: radius.md,
+      backgroundColor: c.surface.card,
+      paddingHorizontal: space['4'],
+      ...type.body,
+      color: c.text.primary,
+      textAlign: 'right',
+    },
+    filterButton: {
+      minWidth: TAP,
+      minHeight: TAP,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: c.surface.lineStrong,
+      backgroundColor: c.surface.card,
+    },
+    filterCount: {
+      position: 'absolute',
+      top: 2,
+      right: 2,
+      minWidth: 18,
+      height: 18,
+      borderRadius: 9,
+      backgroundColor: c.accent.base,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    filterCountText: { color: c.text.onBrand, fontFamily: fontFamily.bold, fontSize: 11 },
 
-  list: { gap: space['3'], paddingBottom: space['16'] },
+    list: { gap: space['3'], paddingBottom: space['16'] },
 
-  /**
-   * A row, not a card of stacked labels.
-   *
-   * The amount leads because it is what people scan for, the party names the
-   * cheque, and the number and date sit underneath as reference. The old row
-   * opened with the cheque number — the one field nobody searches a list by.
-   */
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: surface.card,
-    borderRadius: radius.xl,
-    ...elevation[2],
-    overflow: 'hidden',
-    minHeight: 92,
-  },
-  rowDown: { backgroundColor: surface.sunken },
-  rowSelected: { borderWidth: 2, borderColor: accent.base },
-  overdueEdge: { width: 4, backgroundColor: colors.danger },
-  rowBody: { flex: 1, paddingVertical: space['3'], paddingEnd: space['4'], gap: space['1'] },
-  rowMark: { marginStart: space['4'], marginEnd: space['3'] },
+    /**
+     * A row, not a card of stacked labels.
+     *
+     * The amount leads because it is what people scan for, the party names the
+     * cheque, and the number and date sit underneath as reference. The old row
+     * opened with the cheque number — the one field nobody searches a list by.
+     */
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.surface.card,
+      borderRadius: radius.xl,
+      ...elevation[2],
+      overflow: 'hidden',
+      minHeight: 92,
+    },
+    rowDown: { backgroundColor: c.surface.sunken },
+    rowSelected: { borderWidth: 2, borderColor: c.accent.base },
+    overdueEdge: { width: 4, backgroundColor: c.semantic.danger },
+    rowBody: { flex: 1, paddingVertical: space['3'], paddingEnd: space['4'], gap: space['1'] },
+    rowMark: { marginStart: space['4'], marginEnd: space['3'] },
 
-  rowTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: space['2'],
-  },
-  amount: { ...type.title, color: text.primary, flexShrink: 1, fontVariant: ['tabular-nums'] },
-  party: { ...type.callout, color: text.secondary, textAlign: 'right' },
+    rowTop: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: space['2'],
+    },
+    amount: { ...type.title, color: c.text.primary, flexShrink: 1, fontVariant: ['tabular-nums'] },
+    party: { ...type.callout, color: c.text.secondary, textAlign: 'right' },
 
-  rowBottom: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: space['2'],
-    marginTop: space['1'],
-  },
-  numberGroup: { flexDirection: 'row', alignItems: 'center', gap: space['1'] },
-  number: {
-    ...type.caption,
-    color: text.faint,
-    writingDirection: 'ltr',
-    fontVariant: ['tabular-nums'],
-  },
-  dueGroup: { flexDirection: 'row', alignItems: 'center', gap: space['1'] },
-  dueText: { alignItems: 'flex-start' },
-  dueDistance: { ...type.caption, fontSize: 11, color: text.faint },
-  due: { ...type.caption, color: text.secondary },
-  dueLate: { color: colors.danger, fontWeight: '700' },
+    rowBottom: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: space['2'],
+      marginTop: space['1'],
+    },
+    numberGroup: { flexDirection: 'row', alignItems: 'center', gap: space['1'] },
+    number: {
+      ...type.caption,
+      color: c.text.faint,
+      writingDirection: 'ltr',
+      fontVariant: ['tabular-nums'],
+    },
+    dueGroup: { flexDirection: 'row', alignItems: 'center', gap: space['1'] },
+    dueText: { alignItems: 'flex-start' },
+    dueDistance: { ...type.caption, fontSize: 11, color: c.text.faint },
+    due: { ...type.caption, color: c.text.secondary },
+    dueLate: { color: c.semantic.danger, fontWeight: '700' },
 
-  clearRow: {
-    minHeight: TAP,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: surface.line,
-    backgroundColor: surface.card,
-  },
-  clearText: { ...type.label, color: text.secondary },
-});
+    clearRow: {
+      minHeight: TAP,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: c.surface.line,
+      backgroundColor: c.surface.card,
+    },
+    clearText: { ...type.label, color: c.text.secondary },
+  });

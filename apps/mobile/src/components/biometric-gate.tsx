@@ -2,12 +2,11 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { AppState, StyleSheet, Text, View } from 'react-native';
 
-import { colors } from '@cheque-flow/ui/tokens';
-
 import { IconLock } from '@/components/icons';
 import { useApp, useTranslator } from '@/components/providers';
 import { Button, LoadingView } from '@/components/ui';
-import { accent, fontFamily, radius, space, surface, text } from '@/theme';
+import { useStyles, useTheme } from '@/theme-context';
+import { fontFamily, radius, space, type Palette } from '@/theme';
 
 /**
  * Holds the app closed until the device owner proves who they are.
@@ -22,6 +21,8 @@ import { accent, fontFamily, radius, space, surface, text } from '@/theme';
  * the unlocked phone, not someone attacking the server.
  */
 export function BiometricGate({ children }: { children: ReactNode }) {
+  const c = useTheme();
+  const styles = useStyles(makeStyles);
   const { biometricLock } = useApp();
   const t = useTranslator();
 
@@ -70,7 +71,7 @@ export function BiometricGate({ children }: { children: ReactNode }) {
   return (
     <View style={styles.locked}>
       <View style={styles.lockMark}>
-        <IconLock size={26} color={accent.base} />
+        <IconLock size={26} color={c.accent.base} />
       </View>
       <Text style={styles.title}>{t('auth.locked')}</Text>
       {failed ? <Text style={styles.error}>{t('auth.unlockFailed')}</Text> : null}
@@ -79,28 +80,34 @@ export function BiometricGate({ children }: { children: ReactNode }) {
   );
 }
 
-const styles = StyleSheet.create({
-  locked: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: space['4'],
-    padding: space['8'],
-    backgroundColor: surface.page,
-  },
-  lockMark: {
-    width: 64,
-    height: 64,
-    borderRadius: radius.pill,
-    backgroundColor: accent.wash,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: { fontFamily: fontFamily.bold, fontSize: 20, color: text.primary, textAlign: 'center' },
-  error: {
-    fontFamily: fontFamily.regular,
-    fontSize: 14,
-    color: colors.danger,
-    textAlign: 'center',
-  },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    locked: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: space['4'],
+      padding: space['8'],
+      backgroundColor: c.surface.page,
+    },
+    lockMark: {
+      width: 64,
+      height: 64,
+      borderRadius: radius.pill,
+      backgroundColor: c.accent.wash,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    title: {
+      fontFamily: fontFamily.bold,
+      fontSize: 20,
+      color: c.text.primary,
+      textAlign: 'center',
+    },
+    error: {
+      fontFamily: fontFamily.regular,
+      fontSize: 14,
+      color: c.semantic.danger,
+      textAlign: 'center',
+    },
+  });

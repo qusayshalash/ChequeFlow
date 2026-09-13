@@ -11,7 +11,6 @@ import {
   type SerialChequeRow,
 } from '@cheque-flow/shared-types';
 import { COMMON_CURRENCIES, createChequeBatchSchema } from '@cheque-flow/validation';
-import { colors } from '@cheque-flow/ui/tokens';
 
 import { FormScreen } from '@/components/form-screen';
 import { useApi, useApp, useTranslator } from '@/components/providers';
@@ -27,7 +26,8 @@ import {
   Section,
 } from '@/components/ui';
 import { todayIso } from '@/lib/dates';
-import { fontFamily, radius, space, surface, text } from '@/theme';
+import { useStyles } from '@/theme-context';
+import { fontFamily, radius, space, type Palette } from '@/theme';
 
 const CURRENCIES = COMMON_CURRENCIES;
 
@@ -61,6 +61,7 @@ function sumAmounts(rows: readonly Row[]): string {
  * left to type is the amount.
  */
 export default function ChequeBatchScreen() {
+  const styles = useStyles(makeStyles);
   const api = useApi();
   const t = useTranslator();
   const { money, online } = useApp();
@@ -424,45 +425,46 @@ export default function ChequeBatchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    borderWidth: 1,
-    borderColor: surface.line,
-    borderRadius: radius.md,
-    padding: space['2'],
-    gap: 4,
-    backgroundColor: surface.card,
-  },
-  rowDuplicate: { borderColor: colors.warning, backgroundColor: colors.warningBg },
-  rowHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  rowIndex: { fontFamily: fontFamily.bold, fontSize: 13, color: text.secondary },
-  removeGlyph: { fontFamily: fontFamily.regular, fontSize: 16, color: colors.danger },
-  totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: space['2'],
-    borderTopWidth: 1,
-    borderTopColor: surface.line,
-  },
-  totalLabel: { fontFamily: fontFamily.regular, fontSize: 14, color: text.secondary },
-  totalValue: { fontFamily: fontFamily.bold, fontSize: 17, color: text.primary },
-  duplicateBox: {
-    backgroundColor: colors.warningBg,
-    borderRadius: radius.md,
-    padding: space['4'],
-    gap: space['2'],
-  },
-  duplicateTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: 15,
-    color: colors.warning,
-    textAlign: 'right',
-  },
-  duplicateRow: {
-    fontFamily: fontFamily.regular,
-    fontSize: 14,
-    color: colors.warning,
-    textAlign: 'right',
-  },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    row: {
+      borderWidth: 1,
+      borderColor: c.surface.line,
+      borderRadius: radius.md,
+      padding: space['2'],
+      gap: 4,
+      backgroundColor: c.surface.card,
+    },
+    rowDuplicate: { borderColor: c.semantic.warning, backgroundColor: c.semantic.warningBg },
+    rowHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    rowIndex: { fontFamily: fontFamily.bold, fontSize: 13, color: c.text.secondary },
+    removeGlyph: { fontFamily: fontFamily.regular, fontSize: 16, color: c.semantic.danger },
+    totalRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingTop: space['2'],
+      borderTopWidth: 1,
+      borderTopColor: c.surface.line,
+    },
+    totalLabel: { fontFamily: fontFamily.regular, fontSize: 14, color: c.text.secondary },
+    totalValue: { fontFamily: fontFamily.bold, fontSize: 17, color: c.text.primary },
+    duplicateBox: {
+      backgroundColor: c.semantic.warningBg,
+      borderRadius: radius.md,
+      padding: space['4'],
+      gap: space['2'],
+    },
+    duplicateTitle: {
+      fontFamily: fontFamily.bold,
+      fontSize: 15,
+      color: c.semantic.warning,
+      textAlign: 'right',
+    },
+    duplicateRow: {
+      fontFamily: fontFamily.regular,
+      fontSize: 14,
+      color: c.semantic.warning,
+      textAlign: 'right',
+    },
+  });

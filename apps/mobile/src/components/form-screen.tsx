@@ -3,7 +3,8 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui';
-import { space, surface } from '@/theme';
+import { useStyles } from '@/theme-context';
+import { space, type Palette } from '@/theme';
 
 /**
  * The frame every form in the app sits in.
@@ -37,6 +38,7 @@ export function FormScreen({
   secondaryLabel?: string;
   onSecondary?: () => void;
 }) {
+  const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
 
   return (
@@ -74,23 +76,24 @@ export function FormScreen({
   );
 }
 
-const styles = StyleSheet.create({
-  fill: { flex: 1, backgroundColor: surface.page },
-  content: {
-    padding: space['4'],
-    gap: space['4'],
-    // Room for the docked bar, so the last field is never trapped under it.
-    paddingBottom: space['16'],
-  },
-  bar: {
-    flexDirection: 'row',
-    gap: space['3'],
-    paddingHorizontal: space['4'],
-    paddingTop: space['3'],
-    backgroundColor: surface.card,
-    borderTopWidth: 1,
-    borderTopColor: surface.line,
-  },
-  secondary: { flex: 1 },
-  primary: { flex: 2 },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    fill: { flex: 1, backgroundColor: c.surface.page },
+    content: {
+      padding: space['4'],
+      gap: space['4'],
+      // Room for the docked bar, so the last field is never trapped under it.
+      paddingBottom: space['16'],
+    },
+    bar: {
+      flexDirection: 'row',
+      gap: space['3'],
+      paddingHorizontal: space['4'],
+      paddingTop: space['3'],
+      backgroundColor: c.surface.card,
+      borderTopWidth: 1,
+      borderTopColor: c.surface.line,
+    },
+    secondary: { flex: 1 },
+    primary: { flex: 2 },
+  });

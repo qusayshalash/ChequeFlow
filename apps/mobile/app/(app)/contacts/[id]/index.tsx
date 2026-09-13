@@ -1,3 +1,4 @@
+import { useStyles, useTheme } from '@/theme-context';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -5,7 +6,6 @@ import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'r
 
 import { ApiClientError } from '@cheque-flow/api-client';
 import type { ContactStatementView } from '@cheque-flow/shared-types';
-import { colors } from '@cheque-flow/ui/tokens';
 
 import { IconMessage, IconPhone } from '@/components/icons';
 import { ContactAvatar } from '@/components/marks';
@@ -26,17 +26,7 @@ import {
   Sheet,
   StatusPill,
 } from '@/components/ui';
-import {
-  accent,
-  elevation,
-  fontFamily,
-  numeric,
-  radius,
-  space,
-  surface,
-  text,
-  type,
-} from '@/theme';
+import { elevation, fontFamily, numeric, radius, space, type, type Palette } from '@/theme';
 
 /**
  * One contact's account statement.
@@ -46,6 +36,8 @@ import {
  * followed by the cheques themselves.
  */
 export default function ContactStatementScreen() {
+  const c = useTheme();
+  const styles = useStyles(makeStyles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const api = useApi();
   const t = useTranslator();
@@ -143,7 +135,7 @@ export default function ContactStatementScreen() {
             style={styles.reachButton}
             onPress={() => void reach('tel')}
           >
-            <IconPhone size={22} color={accent.base} />
+            <IconPhone size={22} color={c.accent.base} />
             <Text style={styles.reachLabel}>{t('common.call')}</Text>
           </Pressable>
           <Pressable
@@ -151,7 +143,7 @@ export default function ContactStatementScreen() {
             style={styles.reachButton}
             onPress={() => void reach('whatsapp')}
           >
-            <IconMessage size={22} color={accent.base} />
+            <IconMessage size={22} color={c.accent.base} />
             <Text style={styles.reachLabel}>{t('common.whatsapp')}</Text>
           </Pressable>
         </View>
@@ -307,74 +299,80 @@ export default function ContactStatementScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    padding: space['4'],
-    gap: space['4'],
-    backgroundColor: 'transparent',
-    paddingBottom: space['16'],
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: surface.card,
-    borderRadius: radius.xl,
-    ...elevation[2],
-    padding: space['4'],
-    gap: space['3'],
-  },
-  headerText: { flex: 1, gap: 4, alignItems: 'flex-end' },
-  meta: { fontFamily: fontFamily.regular, fontSize: 13, color: text.secondary, textAlign: 'right' },
-  overdue: { color: colors.danger, fontWeight: '700' },
-  sectionTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: 16,
-    color: text.primary,
-    textAlign: 'right',
-  },
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    container: {
+      padding: space['4'],
+      gap: space['4'],
+      backgroundColor: 'transparent',
+      paddingBottom: space['16'],
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.surface.card,
+      borderRadius: radius.xl,
+      ...elevation[2],
+      padding: space['4'],
+      gap: space['3'],
+    },
+    headerText: { flex: 1, gap: 4, alignItems: 'flex-end' },
+    meta: {
+      fontFamily: fontFamily.regular,
+      fontSize: 13,
+      color: c.text.secondary,
+      textAlign: 'right',
+    },
+    overdue: { color: c.semantic.danger, fontWeight: '700' },
+    sectionTitle: {
+      fontFamily: fontFamily.bold,
+      fontSize: 16,
+      color: c.text.primary,
+      textAlign: 'right',
+    },
 
-  net: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['3'],
-    backgroundColor: surface.sunken,
-    borderRadius: radius.md,
-    paddingHorizontal: space['3'],
-    paddingVertical: space['2'],
-  },
-  netText: { flex: 1, alignItems: 'flex-end' },
-  netLabel: { ...type.label, color: text.primary },
-  netSense: { ...type.caption, color: text.faint },
-  // Same three colours as the balance column in the list, so a contact does
-  // not change sign between the two screens.
-  netValue: { ...type.title, ...numeric, writingDirection: 'ltr' },
-  netOwed: { color: '#12805C' },
-  netOwing: { color: colors.danger },
-  netSettled: { color: text.faint },
-  reachRow: { flexDirection: 'row', gap: space['2'] },
-  reachButton: {
-    flex: 1,
-    minHeight: 64,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-    backgroundColor: surface.card,
-    borderRadius: radius.xl,
-    ...elevation[2],
-  },
-  reachLabel: { fontFamily: fontFamily.regular, fontSize: 13, color: text.primary },
-  chequeRow: {
-    gap: 4,
-    paddingVertical: space['2'],
-    borderTopWidth: 1,
-    borderTopColor: surface.line,
-  },
-  chequeHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  chequeNumber: {
-    fontFamily: fontFamily.bold,
-    fontSize: 15,
-    color: text.primary,
-    writingDirection: 'ltr',
-  },
-  chequeMeta: { flexDirection: 'row', justifyContent: 'space-between', gap: space['2'] },
-});
+    net: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space['3'],
+      backgroundColor: c.surface.sunken,
+      borderRadius: radius.md,
+      paddingHorizontal: space['3'],
+      paddingVertical: space['2'],
+    },
+    netText: { flex: 1, alignItems: 'flex-end' },
+    netLabel: { ...type.label, color: c.text.primary },
+    netSense: { ...type.caption, color: c.text.faint },
+    // Same three colours as the balance column in the list, so a contact does
+    // not change sign between the two screens.
+    netValue: { ...type.title, ...numeric, writingDirection: 'ltr' },
+    netOwed: { color: c.semantic.success },
+    netOwing: { color: c.semantic.danger },
+    netSettled: { color: c.text.faint },
+    reachRow: { flexDirection: 'row', gap: space['2'] },
+    reachButton: {
+      flex: 1,
+      minHeight: 64,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 2,
+      backgroundColor: c.surface.card,
+      borderRadius: radius.xl,
+      ...elevation[2],
+    },
+    reachLabel: { fontFamily: fontFamily.regular, fontSize: 13, color: c.text.primary },
+    chequeRow: {
+      gap: 4,
+      paddingVertical: space['2'],
+      borderTopWidth: 1,
+      borderTopColor: c.surface.line,
+    },
+    chequeHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    chequeNumber: {
+      fontFamily: fontFamily.bold,
+      fontSize: 15,
+      color: c.text.primary,
+      writingDirection: 'ltr',
+    },
+    chequeMeta: { flexDirection: 'row', justifyContent: 'space-between', gap: space['2'] },
+  });

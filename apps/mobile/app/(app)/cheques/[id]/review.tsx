@@ -5,12 +5,12 @@ import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { ApiClientError, type OcrSuggestionResponse } from '@cheque-flow/api-client';
 import type { ChequeDetailView, DuplicateChequeMatch } from '@cheque-flow/shared-types';
-import { colors } from '@cheque-flow/ui/tokens';
 
 import * as haptics from '@/lib/haptics';
 import { useApi, useTranslator } from '@/components/providers';
 import { Body, Button, Card, LoadingView } from '@/components/ui';
-import { fontFamily, radius, space, surface, text } from '@/theme';
+import { useStyles } from '@/theme-context';
+import { fontFamily, radius, space, type Palette } from '@/theme';
 
 const FIELDS = [
   { field: 'chequeNumber', target: 'chequeNumber', labelKey: 'cheque.number' },
@@ -32,6 +32,7 @@ const FIELDS = [
  * low-confidence fields are marked so they get a second look.
  */
 export default function ReviewExtractedDataScreen() {
+  const styles = useStyles(makeStyles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const api = useApi();
   const t = useTranslator();
@@ -187,48 +188,59 @@ export default function ReviewExtractedDataScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { padding: space['4'], gap: space['4'], backgroundColor: 'transparent' },
-  notice: { backgroundColor: colors.warningBg, borderRadius: radius.sm, padding: space['2'] },
-  noticeText: {
-    color: colors.warning,
-    fontFamily: fontFamily.regular,
-    fontSize: 14,
-    textAlign: 'right',
-  },
-  fieldBox: { gap: 4, marginBottom: space['2'] },
-  fieldHeader: { flexDirection: 'row', justifyContent: 'space-between' },
-  label: { fontFamily: fontFamily.regular, fontSize: 14, color: text.secondary },
-  warn: { fontFamily: fontFamily.regular, fontSize: 12, color: colors.warning },
-  hint: { fontFamily: fontFamily.regular, fontSize: 12, color: text.secondary, textAlign: 'right' },
-  input: {
-    minHeight: 48,
-    borderWidth: 1,
-    borderColor: surface.line,
-    borderRadius: radius.sm,
-    paddingHorizontal: space['2'],
-    fontFamily: fontFamily.regular,
-    fontSize: 16,
-    backgroundColor: surface.card,
-    textAlign: 'right',
-  },
-  error: { color: colors.danger, fontFamily: fontFamily.regular, fontSize: 14, textAlign: 'right' },
-  duplicateBox: {
-    backgroundColor: colors.warningBg,
-    borderRadius: radius.sm,
-    padding: space['3'],
-    gap: 4,
-  },
-  duplicateTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: 15,
-    color: colors.warning,
-    textAlign: 'right',
-  },
-  duplicateRow: {
-    fontFamily: fontFamily.regular,
-    fontSize: 14,
-    color: colors.warning,
-    textAlign: 'right',
-  },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    container: { padding: space['4'], gap: space['4'], backgroundColor: 'transparent' },
+    notice: { backgroundColor: c.semantic.warningBg, borderRadius: radius.sm, padding: space['2'] },
+    noticeText: {
+      color: c.semantic.warning,
+      fontFamily: fontFamily.regular,
+      fontSize: 14,
+      textAlign: 'right',
+    },
+    fieldBox: { gap: 4, marginBottom: space['2'] },
+    fieldHeader: { flexDirection: 'row', justifyContent: 'space-between' },
+    label: { fontFamily: fontFamily.regular, fontSize: 14, color: c.text.secondary },
+    warn: { fontFamily: fontFamily.regular, fontSize: 12, color: c.semantic.warning },
+    hint: {
+      fontFamily: fontFamily.regular,
+      fontSize: 12,
+      color: c.text.secondary,
+      textAlign: 'right',
+    },
+    input: {
+      minHeight: 48,
+      borderWidth: 1,
+      borderColor: c.surface.line,
+      borderRadius: radius.sm,
+      paddingHorizontal: space['2'],
+      fontFamily: fontFamily.regular,
+      fontSize: 16,
+      backgroundColor: c.surface.card,
+      textAlign: 'right',
+    },
+    error: {
+      color: c.semantic.danger,
+      fontFamily: fontFamily.regular,
+      fontSize: 14,
+      textAlign: 'right',
+    },
+    duplicateBox: {
+      backgroundColor: c.semantic.warningBg,
+      borderRadius: radius.sm,
+      padding: space['3'],
+      gap: 4,
+    },
+    duplicateTitle: {
+      fontFamily: fontFamily.bold,
+      fontSize: 15,
+      color: c.semantic.warning,
+      textAlign: 'right',
+    },
+    duplicateRow: {
+      fontFamily: fontFamily.regular,
+      fontSize: 14,
+      color: c.semantic.warning,
+      textAlign: 'right',
+    },
+  });

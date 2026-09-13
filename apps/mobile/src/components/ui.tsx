@@ -1,3 +1,4 @@
+import { useStyles, useTheme } from '@/theme-context';
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import {
   ActivityIndicator,
@@ -14,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import type { StyleProp, TextStyle } from 'react-native';
 
-import { STATUS_TONES, TONE_COLORS, colors } from '@cheque-flow/ui/tokens';
+import { DARK_TONE_COLORS, STATUS_TONES, TONE_COLORS } from '@cheque-flow/ui/tokens';
 
 import {
   IconAlert,
@@ -24,18 +25,7 @@ import {
   IconClock,
 } from '@/components/icons';
 import { maskDateInput } from '@/lib/dates';
-import {
-  TAP,
-  accent,
-  elevation,
-  motion,
-  radius,
-  sheetElevation,
-  space,
-  surface,
-  text,
-  type,
-} from '@/theme';
+import { TAP, elevation, motion, radius, sheetElevation, space, type, type Palette } from '@/theme';
 
 /**
  * The app's interface primitives.
@@ -55,6 +45,7 @@ import {
  */
 
 export function Screen({ children }: { children: ReactNode }) {
+  const styles = useStyles(makeStyles);
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       {children}
@@ -87,6 +78,7 @@ export function ScreenHeader({
   /** A control belonging to the whole screen, at the far end of the title. */
   action?: ReactNode;
 }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.screenHeader}>
       <View style={styles.screenHeaderText}>
@@ -101,10 +93,12 @@ export function ScreenHeader({
 }
 
 export function Card({ children }: { children: ReactNode }) {
+  const styles = useStyles(makeStyles);
   return <View style={styles.card}>{children}</View>;
 }
 
 export function Heading({ children }: { children: ReactNode }) {
+  const styles = useStyles(makeStyles);
   return <Text style={styles.heading}>{children}</Text>;
 }
 
@@ -132,6 +126,7 @@ export function Amount({ children, style }: { children: ReactNode; style?: Style
 }
 
 export function Body({ children, muted }: { children: ReactNode; muted?: boolean }) {
+  const styles = useStyles(makeStyles);
   return <Text style={[styles.body, muted === true && styles.muted]}>{children}</Text>;
 }
 
@@ -142,6 +137,7 @@ export function Body({ children, muted }: { children: ReactNode; muted?: boolean
  * vertical space than a header row, and the card stays a single quiet surface.
  */
 export function Section({ title, children }: { title: string; children: ReactNode }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -166,6 +162,7 @@ export function InfoRow({
   value: string;
   ltr?: boolean;
 }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.infoRow}>
       <Text style={styles.infoLabel}>{label}</Text>
@@ -251,6 +248,8 @@ export function FactSection({
   missingLabel: (count: number) => string;
   children?: ReactNode;
 }) {
+  const c = useTheme();
+  const styles = useStyles(makeStyles);
   const [showEmpty, setShowEmpty] = useState(false);
 
   const known = facts.filter((fact) => fact.value !== null && fact.value !== '');
@@ -287,9 +286,9 @@ export function FactSection({
             hitSlop={6}
           >
             {showEmpty ? (
-              <IconChevronUp size={14} color={text.faint} />
+              <IconChevronUp size={14} color={c.text.faint} />
             ) : (
-              <IconChevronDown size={14} color={text.faint} />
+              <IconChevronDown size={14} color={c.text.faint} />
             )}
             <Text style={styles.missingText}>{missingLabel(empty.length)}</Text>
           </Pressable>
@@ -323,6 +322,8 @@ export function MoreFields({
   forceOpen?: boolean;
   children: ReactNode;
 }) {
+  const c = useTheme();
+  const styles = useStyles(makeStyles);
   const [open, setOpen] = useState(false);
   const shown = open || forceOpen;
 
@@ -335,9 +336,9 @@ export function MoreFields({
         style={({ pressed }) => [styles.moreToggle, pressed && styles.missingRowDown]}
       >
         {shown ? (
-          <IconChevronUp size={16} color={accent.base} />
+          <IconChevronUp size={16} color={c.accent.base} />
         ) : (
-          <IconChevronDown size={16} color={accent.base} />
+          <IconChevronDown size={16} color={c.accent.base} />
         )}
         <Text style={styles.moreLabel}>{`${label} (${count})`}</Text>
       </Pressable>
@@ -368,6 +369,8 @@ export function Button({
   loading = false,
   large = false,
 }: ButtonProps) {
+  const c = useTheme();
+  const styles = useStyles(makeStyles);
   const busy = disabled || loading;
 
   return (
@@ -378,7 +381,7 @@ export function Button({
       disabled={busy}
       onPress={onPress}
       android_ripple={{
-        color: variant === 'secondary' ? surface.sunken : 'rgba(255,255,255,0.18)',
+        color: variant === 'secondary' ? c.surface.sunken : 'rgba(255,255,255,0.18)',
       }}
       style={({ pressed }) => [
         styles.button,
@@ -395,7 +398,7 @@ export function Button({
       {loading ? (
         <ActivityIndicator
           size="small"
-          color={variant === 'secondary' ? accent.base : text.onBrand}
+          color={variant === 'secondary' ? c.accent.base : c.text.onBrand}
         />
       ) : (
         <Text
@@ -417,8 +420,10 @@ export function Button({
  * separate the reds from the greens.
  */
 export function StatusPill({ status, label }: { status: string; label: string }) {
+  const c = useTheme();
+  const styles = useStyles(makeStyles);
   const tone = STATUS_TONES[status] ?? 'neutral';
-  const palette = TONE_COLORS[tone];
+  const palette = (c.dark ? DARK_TONE_COLORS : TONE_COLORS)[tone];
 
   return (
     <View style={[styles.pill, { backgroundColor: palette.bg }]}>
@@ -431,7 +436,9 @@ export function StatusPill({ status, label }: { status: string; label: string })
 }
 
 export function Badge({ label, tone = 'danger' }: { label: string; tone?: 'danger' | 'info' }) {
-  const palette = TONE_COLORS[tone];
+  const c = useTheme();
+  const styles = useStyles(makeStyles);
+  const palette = (c.dark ? DARK_TONE_COLORS : TONE_COLORS)[tone];
   return (
     <View style={[styles.badge, { backgroundColor: palette.bg }]}>
       {tone === 'danger' ? <IconClock size={13} color={palette.fg} /> : null}
@@ -447,6 +454,7 @@ export function Badge({ label, tone = 'danger' }: { label: string; tone?: 'dange
  * when the content lands, and the wait looks like progress rather than a stall.
  */
 export function LoadingView({ label }: { label: string }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.skeletonWrap} accessibilityRole="progressbar" accessibilityLabel={label}>
       {[0, 1, 2].map((row) => (
@@ -471,10 +479,12 @@ export function EmptyView({
   actionLabel?: string;
   onAction?: () => void;
 }) {
+  const c = useTheme();
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.centered}>
       <View style={styles.emptyMark}>
-        <IconCheck size={26} color={accent.base} />
+        <IconCheck size={26} color={c.accent.base} />
       </View>
       <Text style={styles.emptyTitle}>{label}</Text>
       {hint ? <Text style={styles.emptyHint}>{hint}</Text> : null}
@@ -494,10 +504,12 @@ export function ErrorView({
   onRetry?: () => void;
   retryLabel?: string;
 }) {
+  const c = useTheme();
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.errorBox} accessibilityRole="alert">
       <View style={styles.errorHead}>
-        <IconAlert size={18} color={colors.danger} />
+        <IconAlert size={18} color={c.semantic.danger} />
         <Text style={styles.errorText}>{label}</Text>
       </View>
       {onRetry && retryLabel ? (
@@ -519,7 +531,9 @@ export function Banner({
   actionLabel?: string;
   onAction?: () => void;
 }) {
-  const palette = TONE_COLORS[tone];
+  const c = useTheme();
+  const styles = useStyles(makeStyles);
+  const palette = (c.dark ? DARK_TONE_COLORS : TONE_COLORS)[tone];
   return (
     <View style={[styles.banner, { backgroundColor: palette.bg, borderColor: palette.fg }]}>
       <IconAlert size={17} color={palette.fg} />
@@ -574,6 +588,8 @@ export function Field({
   returnKeyType?: 'next' | 'done';
   onSubmitEditing?: () => void;
 }) {
+  const c = useTheme();
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>
@@ -590,7 +606,7 @@ export function Field({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={text.faint}
+        placeholderTextColor={c.text.faint}
         keyboardType={keyboardType}
         multiline={multiline}
         autoCapitalize={autoCapitalize}
@@ -632,6 +648,8 @@ export function DateField({
   required?: boolean;
   shortcuts?: Array<{ label: string; value: string }>;
 }) {
+  const c = useTheme();
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>
@@ -643,7 +661,7 @@ export function DateField({
         value={value}
         onChangeText={(next) => onChange(maskDateInput(next))}
         placeholder="YYYY-MM-DD"
-        placeholderTextColor={text.faint}
+        placeholderTextColor={c.text.faint}
         keyboardType="numeric"
         accessibilityLabel={label}
       />
@@ -673,12 +691,14 @@ export function Chip({
   selected?: boolean;
   onPress: () => void;
 }) {
+  const c = useTheme();
+  const styles = useStyles(makeStyles);
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected }}
       onPress={onPress}
-      android_ripple={{ color: surface.sunken, borderless: false }}
+      android_ripple={{ color: c.surface.sunken, borderless: false }}
       style={({ pressed }) => [
         styles.chip,
         selected && styles.chipSelected,
@@ -723,6 +743,7 @@ export function Picker({
   required?: boolean;
   emptyLabel?: string;
 }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>
@@ -763,6 +784,7 @@ export function SegmentedTabs({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.tabsTrack}>
       <ScrollView
@@ -822,6 +844,7 @@ export function Sheet({
   onClose: () => void;
   children: ReactNode;
 }) {
+  const styles = useStyles(makeStyles);
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       {/* The scrim is what tells you the sheet is dismissible, so it is dark
@@ -841,258 +864,259 @@ export function Sheet({
   );
 }
 
-const styles = StyleSheet.create({
-  fill: { flex: 1 },
-  screen: { flex: 1, padding: space['4'], gap: space['4'] },
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    fill: { flex: 1 },
+    screen: { flex: 1, padding: space['4'], gap: space['4'] },
 
-  screenHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: space['3'],
-    marginBottom: space['1'],
-  },
-  screenHeaderText: { flex: 1, gap: 2 },
-  screenTitle: { ...type.title, color: text.primary, textAlign: 'right' },
-  screenSubtitle: { ...type.callout, color: text.secondary, textAlign: 'right' },
+    screenHeader: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: space['3'],
+      marginBottom: space['1'],
+    },
+    screenHeaderText: { flex: 1, gap: 2 },
+    screenTitle: { ...type.title, color: c.text.primary, textAlign: 'right' },
+    screenSubtitle: { ...type.callout, color: c.text.secondary, textAlign: 'right' },
 
-  section: { gap: space['2'] },
-  sectionTitle: { ...type.label, color: text.secondary, textAlign: 'right' },
+    section: { gap: space['2'] },
+    sectionTitle: { ...type.label, color: c.text.secondary, textAlign: 'right' },
 
-  card: {
-    backgroundColor: surface.card,
-    borderRadius: radius.xl,
-    padding: space['4'],
-    gap: space['3'],
-    // Elevation instead of an outline. The hairline is still used inside a
-    // card to separate its rows; it is the card-against-page job that the
-    // shadow has taken over.
-    ...elevation[2],
-  },
+    card: {
+      backgroundColor: c.surface.card,
+      borderRadius: radius.xl,
+      padding: space['4'],
+      gap: space['3'],
+      // Elevation instead of an outline. The hairline is still used inside a
+      // card to separate its rows; it is the card-against-page job that the
+      // shadow has taken over.
+      ...elevation[2],
+    },
 
-  heading: { ...type.title, color: text.primary, textAlign: 'right' },
-  body: { ...type.body, color: text.primary, textAlign: 'right' },
-  muted: { color: text.secondary },
-  ltr: { writingDirection: 'ltr', textAlign: 'left' },
+    heading: { ...type.title, color: c.text.primary, textAlign: 'right' },
+    body: { ...type.body, color: c.text.primary, textAlign: 'right' },
+    muted: { color: c.text.secondary },
+    ltr: { writingDirection: 'ltr', textAlign: 'left' },
 
-  missingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: space['2'],
-    minHeight: TAP,
-    marginTop: space['1'],
-    borderTopWidth: 1,
-    borderTopColor: surface.line,
-    paddingTop: space['2'],
-  },
-  missingRowDown: { opacity: 0.6 },
-  moreToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: space['2'],
-    minHeight: TAP,
-  },
-  moreLabel: { ...type.label, color: accent.base, textAlign: 'right' },
-  missingText: { ...type.caption, color: text.faint, textAlign: 'right' },
+    missingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      gap: space['2'],
+      minHeight: TAP,
+      marginTop: space['1'],
+      borderTopWidth: 1,
+      borderTopColor: c.surface.line,
+      paddingTop: space['2'],
+    },
+    missingRowDown: { opacity: 0.6 },
+    moreToggle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      gap: space['2'],
+      minHeight: TAP,
+    },
+    moreLabel: { ...type.label, color: c.accent.base, textAlign: 'right' },
+    missingText: { ...type.caption, color: c.text.faint, textAlign: 'right' },
 
-  infoRow: { gap: 2, paddingVertical: space['1'] },
-  infoLabel: { ...type.caption, color: text.secondary, textAlign: 'right' },
-  infoValue: { ...type.bodyStrong, color: text.primary, textAlign: 'right' },
+    infoRow: { gap: 2, paddingVertical: space['1'] },
+    infoLabel: { ...type.caption, color: c.text.secondary, textAlign: 'right' },
+    infoValue: { ...type.bodyStrong, color: c.text.primary, textAlign: 'right' },
 
-  button: {
-    minHeight: TAP,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: space['5'],
-    overflow: 'hidden',
-  },
-  buttonLarge: { minHeight: 54 },
-  buttonPrimary: { backgroundColor: accent.base },
-  buttonDanger: { backgroundColor: colors.danger },
-  buttonSecondary: { backgroundColor: surface.card, borderColor: surface.lineStrong },
-  buttonDown: { backgroundColor: accent.dark },
-  buttonSecondaryDown: { backgroundColor: surface.sunken },
-  buttonDisabled: { opacity: 0.45 },
-  buttonText: { ...type.bodyStrong, color: text.onBrand },
-  buttonTextSecondary: { color: text.primary },
+    button: {
+      minHeight: TAP,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: 'transparent',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: space['5'],
+      overflow: 'hidden',
+    },
+    buttonLarge: { minHeight: 54 },
+    buttonPrimary: { backgroundColor: c.accent.base },
+    buttonDanger: { backgroundColor: c.semantic.danger },
+    buttonSecondary: { backgroundColor: c.surface.card, borderColor: c.surface.lineStrong },
+    buttonDown: { backgroundColor: c.accent.dark },
+    buttonSecondaryDown: { backgroundColor: c.surface.sunken },
+    buttonDisabled: { opacity: 0.45 },
+    buttonText: { ...type.bodyStrong, color: c.text.onBrand },
+    buttonTextSecondary: { color: c.text.primary },
 
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    alignSelf: 'flex-start',
-    borderRadius: radius.pill,
-    paddingHorizontal: space['3'],
-    paddingVertical: 5,
-  },
-  pillDot: { width: 6, height: 6, borderRadius: 3 },
-  pillText: { ...type.caption },
+    pill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      alignSelf: 'flex-start',
+      borderRadius: radius.pill,
+      paddingHorizontal: space['3'],
+      paddingVertical: 5,
+    },
+    pillDot: { width: 6, height: 6, borderRadius: 3 },
+    pillText: { ...type.caption },
 
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    alignSelf: 'flex-start',
-    borderRadius: radius.sm,
-    paddingHorizontal: space['2'],
-    paddingVertical: 3,
-  },
-  badgeText: { ...type.caption },
+    badge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      alignSelf: 'flex-start',
+      borderRadius: radius.sm,
+      paddingHorizontal: space['2'],
+      paddingVertical: 3,
+    },
+    badgeText: { ...type.caption },
 
-  skeletonWrap: { gap: space['3'] },
-  skeletonCard: {
-    backgroundColor: surface.card,
-    // Matches the real card exactly. A placeholder with a different corner or
-    // no shadow makes the screen jump the moment the data lands, which is the
-    // one thing a skeleton exists to prevent.
-    borderRadius: radius.xl,
-    ...elevation[2],
-    padding: space['4'],
-    gap: space['2'],
-  },
-  skeletonBar: { height: 12, borderRadius: 6, backgroundColor: surface.sunken },
+    skeletonWrap: { gap: space['3'] },
+    skeletonCard: {
+      backgroundColor: c.surface.card,
+      // Matches the real card exactly. A placeholder with a different corner or
+      // no shadow makes the screen jump the moment the data lands, which is the
+      // one thing a skeleton exists to prevent.
+      borderRadius: radius.xl,
+      ...elevation[2],
+      padding: space['4'],
+      gap: space['2'],
+    },
+    skeletonBar: { height: 12, borderRadius: 6, backgroundColor: c.surface.sunken },
 
-  centered: { alignItems: 'center', gap: space['3'], paddingVertical: space['10'] },
-  emptyMark: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.pill,
-    backgroundColor: accent.wash,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyTitle: { ...type.heading, color: text.primary, textAlign: 'center' },
-  emptyHint: { ...type.callout, color: text.secondary, textAlign: 'center' },
+    centered: { alignItems: 'center', gap: space['3'], paddingVertical: space['10'] },
+    emptyMark: {
+      width: 56,
+      height: 56,
+      borderRadius: radius.pill,
+      backgroundColor: c.accent.wash,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    emptyTitle: { ...type.heading, color: c.text.primary, textAlign: 'center' },
+    emptyHint: { ...type.callout, color: c.text.secondary, textAlign: 'center' },
 
-  errorBox: {
-    backgroundColor: colors.dangerBg,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.danger,
-    padding: space['4'],
-    gap: space['3'],
-  },
-  errorHead: { flexDirection: 'row', alignItems: 'center', gap: space['2'] },
-  errorText: { ...type.callout, color: colors.danger, flex: 1, textAlign: 'right' },
+    errorBox: {
+      backgroundColor: c.semantic.dangerBg,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: c.semantic.danger,
+      padding: space['4'],
+      gap: space['3'],
+    },
+    errorHead: { flexDirection: 'row', alignItems: 'center', gap: space['2'] },
+    errorText: { ...type.callout, color: c.semantic.danger, flex: 1, textAlign: 'right' },
 
-  banner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['2'],
-    borderRadius: radius.md,
-    borderWidth: 1,
-    paddingHorizontal: space['3'],
-    paddingVertical: space['3'],
-  },
-  bannerText: { ...type.callout, flex: 1, textAlign: 'right' },
-  bannerAction: { minHeight: TAP, justifyContent: 'center', paddingHorizontal: space['2'] },
-  bannerActionText: { ...type.label, textDecorationLine: 'underline' },
+    banner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space['2'],
+      borderRadius: radius.md,
+      borderWidth: 1,
+      paddingHorizontal: space['3'],
+      paddingVertical: space['3'],
+    },
+    bannerText: { ...type.callout, flex: 1, textAlign: 'right' },
+    bannerAction: { minHeight: TAP, justifyContent: 'center', paddingHorizontal: space['2'] },
+    bannerActionText: { ...type.label, textDecorationLine: 'underline' },
 
-  field: { gap: space['2'] },
-  fieldLabel: { ...type.label, color: text.secondary, textAlign: 'right' },
-  requiredMark: { color: colors.danger },
-  input: {
-    minHeight: TAP,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: surface.lineStrong,
-    backgroundColor: surface.card,
-    paddingHorizontal: space['3'],
-    ...type.body,
-    color: text.primary,
-    textAlign: 'right',
-  },
-  inputMultiline: { minHeight: 96, textAlignVertical: 'top', paddingVertical: space['3'] },
-  inputError: { borderColor: colors.danger, backgroundColor: colors.dangerBg },
-  errorHint: { ...type.caption, color: colors.danger, textAlign: 'right' },
-  hintText: { ...type.caption, color: text.secondary, textAlign: 'right' },
+    field: { gap: space['2'] },
+    fieldLabel: { ...type.label, color: c.text.secondary, textAlign: 'right' },
+    requiredMark: { color: c.semantic.danger },
+    input: {
+      minHeight: TAP,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: c.surface.lineStrong,
+      backgroundColor: c.surface.card,
+      paddingHorizontal: space['3'],
+      ...type.body,
+      color: c.text.primary,
+      textAlign: 'right',
+    },
+    inputMultiline: { minHeight: 96, textAlignVertical: 'top', paddingVertical: space['3'] },
+    inputError: { borderColor: c.semantic.danger, backgroundColor: c.semantic.dangerBg },
+    errorHint: { ...type.caption, color: c.semantic.danger, textAlign: 'right' },
+    hintText: { ...type.caption, color: c.text.secondary, textAlign: 'right' },
 
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space['2'] },
-  chip: {
-    // TAP, not 38. The skill's floor is 44pt on iOS and 48dp on
-    // Android, and `TAP` already holds whichever applies.
-    minHeight: TAP,
-    justifyContent: 'center',
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: surface.lineStrong,
-    backgroundColor: surface.card,
-    paddingHorizontal: space['4'],
-  },
-  chipSelected: { backgroundColor: accent.base, borderColor: accent.base },
-  chipDown: { backgroundColor: surface.sunken },
-  chipText: { ...type.callout, color: text.primary },
-  chipTextSelected: { color: text.onBrand, fontWeight: '600' },
+    chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space['2'] },
+    chip: {
+      // TAP, not 38. The skill's floor is 44pt on iOS and 48dp on
+      // Android, and `TAP` already holds whichever applies.
+      minHeight: TAP,
+      justifyContent: 'center',
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: c.surface.lineStrong,
+      backgroundColor: c.surface.card,
+      paddingHorizontal: space['4'],
+    },
+    chipSelected: { backgroundColor: c.accent.base, borderColor: c.accent.base },
+    chipDown: { backgroundColor: c.surface.sunken },
+    chipText: { ...type.callout, color: c.text.primary },
+    chipTextSelected: { color: c.text.onBrand, fontWeight: '600' },
 
-  /**
-   * A segmented control, not loose text.
-   *
-   * These used to be bare words with a 2px underline and nothing behind them,
-   * so the strip read as unfinished — the underline had no rule to sit on and
-   * the counts were glued to the labels as plain text.
-   *
-   * Now: a sunken track, and the current option is a raised white pill. That
-   * is the same figure-and-ground the rest of the app now uses, and it gives
-   * the selection two cues — shape and colour — where colour alone was
-   * carrying it.
-   */
-  tabsTrack: {
-    backgroundColor: surface.sunken,
-    borderRadius: radius.lg,
-    padding: space['1'],
-  },
-  tabsRow: { gap: space['1'] },
-  tab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['2'],
-    minHeight: TAP - 6,
-    paddingHorizontal: space['4'],
-    borderRadius: radius.md,
-  },
-  tabPressed: { backgroundColor: 'rgba(11,31,26,0.05)' },
-  tabSelected: {
-    backgroundColor: surface.card,
-    ...elevation[1],
-  },
-  tabText: { ...type.callout, fontWeight: '600', color: text.secondary },
-  tabTextSelected: { color: text.primary, fontWeight: '700' },
-  tabBadge: {
-    minWidth: 22,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: radius.pill,
-    backgroundColor: 'rgba(11,31,26,0.07)',
-    alignItems: 'center',
-  },
-  tabBadgeSelected: { backgroundColor: accent.wash },
-  tabBadgeText: { ...type.caption, fontSize: 11, color: text.secondary },
-  tabBadgeTextSelected: { color: accent.dark, fontWeight: '700' },
+    /**
+     * A segmented control, not loose text.
+     *
+     * These used to be bare words with a 2px underline and nothing behind them,
+     * so the strip read as unfinished — the underline had no rule to sit on and
+     * the counts were glued to the labels as plain text.
+     *
+     * Now: a sunken track, and the current option is a raised white pill. That
+     * is the same figure-and-ground the rest of the app now uses, and it gives
+     * the selection two cues — shape and colour — where colour alone was
+     * carrying it.
+     */
+    tabsTrack: {
+      backgroundColor: c.surface.sunken,
+      borderRadius: radius.lg,
+      padding: space['1'],
+    },
+    tabsRow: { gap: space['1'] },
+    tab: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space['2'],
+      minHeight: TAP - 6,
+      paddingHorizontal: space['4'],
+      borderRadius: radius.md,
+    },
+    tabPressed: { backgroundColor: 'rgba(11,31,26,0.05)' },
+    tabSelected: {
+      backgroundColor: c.surface.card,
+      ...elevation[1],
+    },
+    tabText: { ...type.callout, fontWeight: '600', color: c.text.secondary },
+    tabTextSelected: { color: c.text.primary, fontWeight: '700' },
+    tabBadge: {
+      minWidth: 22,
+      paddingHorizontal: 6,
+      paddingVertical: 1,
+      borderRadius: radius.pill,
+      backgroundColor: 'rgba(11,31,26,0.07)',
+      alignItems: 'center',
+    },
+    tabBadgeSelected: { backgroundColor: c.accent.wash },
+    tabBadgeText: { ...type.caption, fontSize: 11, color: c.text.secondary },
+    tabBadgeTextSelected: { color: c.accent.dark, fontWeight: '700' },
 
-  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(11,31,26,0.5)' },
-  sheet: {
-    backgroundColor: surface.card,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: space['4'],
-    paddingBottom: space['8'],
-    paddingTop: space['2'],
-    maxHeight: '80%',
-    ...sheetElevation,
-  },
-  sheetHandle: {
-    alignSelf: 'center',
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: surface.lineStrong,
-    marginBottom: space['3'],
-  },
-  sheetTitle: { ...type.heading, color: text.primary, textAlign: 'right' },
-  sheetBody: { gap: space['3'], paddingTop: space['3'] },
-});
+    sheetBackdrop: { flex: 1, backgroundColor: 'rgba(11,31,26,0.5)' },
+    sheet: {
+      backgroundColor: c.surface.card,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      paddingHorizontal: space['4'],
+      paddingBottom: space['8'],
+      paddingTop: space['2'],
+      maxHeight: '80%',
+      ...sheetElevation,
+    },
+    sheetHandle: {
+      alignSelf: 'center',
+      width: 40,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: c.surface.lineStrong,
+      marginBottom: space['3'],
+    },
+    sheetTitle: { ...type.heading, color: c.text.primary, textAlign: 'right' },
+    sheetBody: { gap: space['3'], paddingTop: space['3'] },
+  });

@@ -10,9 +10,11 @@ import { useApi, useApp, useTranslator } from '@/components/providers';
 import { Banner, Body, Button, InfoRow, Picker, Section } from '@/components/ui';
 import { clearDrafts, listDrafts, type CaptureDraft } from '@/lib/draft-store';
 import { syncDrafts } from '@/lib/draft-sync';
-import { accent, elevation, fontFamily, radius, space, surface, text, type } from '@/theme';
+import { useStyles } from '@/theme-context';
+import { elevation, fontFamily, radius, space, type, type Palette } from '@/theme';
 
 export default function SettingsScreen() {
+  const styles = useStyles(makeStyles);
   const api = useApi();
   const t = useTranslator();
   const {
@@ -224,32 +226,38 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  identity: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['3'],
-    backgroundColor: surface.card,
-    borderRadius: radius.xl,
-    ...elevation[2],
-    padding: space['4'],
-  },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.pill,
-    backgroundColor: accent.wash,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  initial: { ...type.heading, color: accent.dark },
-  identityText: { flex: 1, gap: 1 },
-  name: { ...type.heading, color: text.primary, textAlign: 'right' },
-  container: {
-    padding: space['4'],
-    gap: space['4'],
-    backgroundColor: 'transparent',
-    paddingBottom: space['16'],
-  },
-  meta: { fontFamily: fontFamily.regular, fontSize: 13, color: text.secondary, textAlign: 'right' },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    identity: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space['3'],
+      backgroundColor: c.surface.card,
+      borderRadius: radius.xl,
+      ...elevation[2],
+      padding: space['4'],
+    },
+    avatar: {
+      width: 48,
+      height: 48,
+      borderRadius: radius.pill,
+      backgroundColor: c.accent.wash,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    initial: { ...type.heading, color: c.accent.dark },
+    identityText: { flex: 1, gap: 1 },
+    name: { ...type.heading, color: c.text.primary, textAlign: 'right' },
+    container: {
+      padding: space['4'],
+      gap: space['4'],
+      backgroundColor: 'transparent',
+      paddingBottom: space['16'],
+    },
+    meta: {
+      fontFamily: fontFamily.regular,
+      fontSize: 13,
+      color: c.text.secondary,
+      textAlign: 'right',
+    },
+  });

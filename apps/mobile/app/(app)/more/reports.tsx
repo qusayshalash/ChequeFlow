@@ -18,7 +18,8 @@ import {
 } from '@/components/ui';
 import { addDaysIso, todayIso } from '@/lib/dates';
 import { shareTextFile } from '@/lib/export-file';
-import { accent, elevation, radius, space, surface, text, type } from '@/theme';
+import { useStyles, useTheme } from '@/theme-context';
+import { elevation, radius, space, type, type Palette } from '@/theme';
 
 /** Windows on offer, as days ahead. */
 const WINDOWS = [7, 30, 90] as const;
@@ -41,6 +42,8 @@ function mondayOf(iso: string): string {
  * what is due and what is late; then where the cheques physically are.
  */
 export default function ReportsScreen() {
+  const c = useTheme();
+  const styles = useStyles(makeStyles);
   const api = useApi();
   const t = useTranslator();
   const { money, date, locale } = useApp();
@@ -172,19 +175,19 @@ export default function ReportsScreen() {
               <Figure
                 label={t('reports.inflow')}
                 value={money(flow.inflow.toFixed(2), shown!)}
-                tone={accent.dark}
+                tone={c.accent.dark}
               />
               <View style={styles.figureRule} />
               <Figure
                 label={t('reports.outflow')}
                 value={money(flow.outflow.toFixed(2), shown!)}
-                tone="#C43D42"
+                tone={c.semantic.danger}
               />
               <View style={styles.figureRule} />
               <Figure
                 label={t('reports.net')}
                 value={money(flow.net.toFixed(2), shown!)}
-                tone={flow.net < 0 ? '#C43D42' : accent.dark}
+                tone={flow.net < 0 ? c.semantic.danger : c.accent.dark}
               />
             </View>
           </>
@@ -199,16 +202,16 @@ export default function ReportsScreen() {
           <View style={styles.callouts}>
             <Callout
               Icon={IconCalendar}
-              wash={accent.wash}
-              ink={accent.dark}
+              wash={c.accent.wash}
+              ink={c.accent.dark}
               count={due.data.count}
               label={t('reports.due')}
               lines={due.data.byCurrency.map((entry) => money(entry.total, entry.currency))}
             />
             <Callout
               Icon={IconAlert}
-              wash="#FBE2E6"
-              ink="#C43D42"
+              wash={c.semantic.dangerBg}
+              ink={c.semantic.danger}
               count={due.data.overdueCount}
               label={t('reports.overdue')}
               lines={due.data.overdueByCurrency.map((entry) => money(entry.total, entry.currency))}
@@ -235,7 +238,7 @@ export default function ReportsScreen() {
                   <Text style={styles.custodyTitle} numberOfLines={1}>
                     {[entry.holderName, entry.locationName].filter(Boolean).join(' — ') || '—'}
                   </Text>
-                  <IconSafe size={15} color={text.faint} />
+                  <IconSafe size={15} color={c.text.faint} />
                 </View>
               </View>
 
@@ -271,6 +274,7 @@ export default function ReportsScreen() {
 }
 
 function Figure({ label, value, tone }: { label: string; value: string; tone: string }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.figure}>
       <Text style={styles.figureLabel}>{label}</Text>
@@ -296,6 +300,7 @@ function Callout({
   label: string;
   lines: string[];
 }) {
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.callout}>
       <View style={[styles.calloutIcon, { backgroundColor: wash }]}>
@@ -315,61 +320,62 @@ function Callout({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    padding: space['4'],
-    gap: space['4'],
-    backgroundColor: 'transparent',
-    paddingBottom: space['16'],
-  },
-  window: { ...type.caption, color: text.faint, textAlign: 'right' },
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    container: {
+      padding: space['4'],
+      gap: space['4'],
+      backgroundColor: 'transparent',
+      paddingBottom: space['16'],
+    },
+    window: { ...type.caption, color: c.text.faint, textAlign: 'right' },
 
-  figures: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    marginTop: space['3'],
-    paddingTop: space['3'],
-    borderTopWidth: 1,
-    borderTopColor: surface.line,
-  },
-  figure: { flex: 1, alignItems: 'center', gap: 2 },
-  figureRule: { width: 1, backgroundColor: surface.line },
-  figureLabel: { ...type.caption, fontSize: 11, color: text.faint },
-  figureValue: { ...type.label, textAlign: 'center' },
+    figures: {
+      flexDirection: 'row',
+      alignItems: 'stretch',
+      marginTop: space['3'],
+      paddingTop: space['3'],
+      borderTopWidth: 1,
+      borderTopColor: c.surface.line,
+    },
+    figure: { flex: 1, alignItems: 'center', gap: 2 },
+    figureRule: { width: 1, backgroundColor: c.surface.line },
+    figureLabel: { ...type.caption, fontSize: 11, color: c.text.faint },
+    figureValue: { ...type.label, textAlign: 'center' },
 
-  callouts: { gap: space['2'] },
-  callout: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['3'],
-    borderRadius: radius.lg,
-    backgroundColor: surface.card,
-    padding: space['3'],
-    ...elevation[1],
-  },
-  calloutIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  calloutBody: { flex: 1, alignItems: 'flex-end' },
-  calloutCount: { ...type.title, color: text.primary },
-  calloutLabel: { ...type.callout, color: text.secondary },
-  calloutMoney: { ...type.caption, color: text.faint, textAlign: 'right' },
+    callouts: { gap: space['2'] },
+    callout: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space['3'],
+      borderRadius: radius.lg,
+      backgroundColor: c.surface.card,
+      padding: space['3'],
+      ...elevation[1],
+    },
+    calloutIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    calloutBody: { flex: 1, alignItems: 'flex-end' },
+    calloutCount: { ...type.title, color: c.text.primary },
+    calloutLabel: { ...type.callout, color: c.text.secondary },
+    calloutMoney: { ...type.caption, color: c.text.faint, textAlign: 'right' },
 
-  custodyRow: { gap: space['1'], paddingVertical: space['2'] },
-  custodyHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  custodyName: { flexDirection: 'row', alignItems: 'center', gap: space['2'], flex: 1 },
-  custodyTitle: { ...type.bodyStrong, color: text.primary, textAlign: 'right', flexShrink: 1 },
-  custodyShare: { ...type.caption, color: text.secondary },
-  custodyTrack: {
-    height: 8,
-    borderRadius: radius.pill,
-    backgroundColor: surface.sunken,
-    overflow: 'hidden',
-  },
-  custodyFill: { height: '100%', borderRadius: radius.pill, backgroundColor: accent.base },
-  custodyMoney: { ...type.caption, color: text.secondary, textAlign: 'right' },
-});
+    custodyRow: { gap: space['1'], paddingVertical: space['2'] },
+    custodyHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    custodyName: { flexDirection: 'row', alignItems: 'center', gap: space['2'], flex: 1 },
+    custodyTitle: { ...type.bodyStrong, color: c.text.primary, textAlign: 'right', flexShrink: 1 },
+    custodyShare: { ...type.caption, color: c.text.secondary },
+    custodyTrack: {
+      height: 8,
+      borderRadius: radius.pill,
+      backgroundColor: c.surface.sunken,
+      overflow: 'hidden',
+    },
+    custodyFill: { height: '100%', borderRadius: radius.pill, backgroundColor: c.accent.base },
+    custodyMoney: { ...type.caption, color: c.text.secondary, textAlign: 'right' },
+  });

@@ -6,7 +6,6 @@ import { StyleSheet, Text, View } from 'react-native';
 import { ApiClientError } from '@cheque-flow/api-client';
 import { ChequeDirection, type DuplicateChequeMatch } from '@cheque-flow/shared-types';
 import { createChequeSchema } from '@cheque-flow/validation';
-import { colors } from '@cheque-flow/ui/tokens';
 
 import { FormScreen } from '@/components/form-screen';
 import * as haptics from '@/lib/haptics';
@@ -23,7 +22,8 @@ import {
 } from '@/components/ui';
 import { addDaysIso, todayIso } from '@/lib/dates';
 import { fieldErrorsFrom, validateForm, type FieldErrors } from '@/lib/form';
-import { fontFamily, space } from '@/theme';
+import { useStyles } from '@/theme-context';
+import { fontFamily, space, type Palette } from '@/theme';
 
 const CURRENCIES = ['ILS', 'USD', 'JOD', 'EUR'];
 
@@ -54,6 +54,7 @@ const EXTRA_FIELDS = [
 ] as const;
 
 export default function NewChequeScreen() {
+  const styles = useStyles(makeStyles);
   const api = useApi();
   const t = useTranslator();
   const { money, online } = useApp();
@@ -360,23 +361,24 @@ export default function NewChequeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  duplicateBox: {
-    backgroundColor: colors.warningBg,
-    borderRadius: 10,
-    padding: space['4'],
-    gap: space['2'],
-  },
-  duplicateTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: 15,
-    color: colors.warning,
-    textAlign: 'right',
-  },
-  duplicateRow: {
-    fontFamily: fontFamily.regular,
-    fontSize: 14,
-    color: colors.warning,
-    textAlign: 'right',
-  },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    duplicateBox: {
+      backgroundColor: c.semantic.warningBg,
+      borderRadius: 10,
+      padding: space['4'],
+      gap: space['2'],
+    },
+    duplicateTitle: {
+      fontFamily: fontFamily.bold,
+      fontSize: 15,
+      color: c.semantic.warning,
+      textAlign: 'right',
+    },
+    duplicateRow: {
+      fontFamily: fontFamily.regular,
+      fontSize: 14,
+      color: c.semantic.warning,
+      textAlign: 'right',
+    },
+  });

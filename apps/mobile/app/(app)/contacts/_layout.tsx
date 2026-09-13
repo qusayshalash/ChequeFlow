@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router';
 
+import { useTheme } from '@/theme-context';
 import { useTranslator } from '@/components/providers';
 import { stackScreenOptions } from '@/components/stack-header';
 
@@ -7,7 +8,7 @@ export default function ContactsLayout() {
   const t = useTranslator();
 
   return (
-    <Stack screenOptions={stackScreenOptions()}>
+    <Stack screenOptions={stackScreenOptions(useTheme())}>
       <Stack.Screen name="index" options={{ title: t('contact.title') }} />
       <Stack.Screen name="new" options={{ title: t('contact.newTitle') }} />
       <Stack.Screen name="[id]/index" options={{ title: t('contact.statement') }} />

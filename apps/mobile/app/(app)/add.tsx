@@ -5,7 +5,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { IconCamera, IconCheque, IconContacts, IconEdit, type IconProps } from '@/components/icons';
 import { useTranslator } from '@/components/providers';
 import { Body, ScreenHeader } from '@/components/ui';
-import { accent, elevation, fontFamily, radius, space, surface, text } from '@/theme';
+import { useStyles, useTheme } from '@/theme-context';
+import { elevation, fontFamily, radius, space, type Palette } from '@/theme';
 
 /**
  * The two ways a cheque enters the system.
@@ -19,6 +20,7 @@ import { accent, elevation, fontFamily, radius, space, surface, text } from '@/t
  * slowest path through the app.
  */
 export default function AddScreen() {
+  const styles = useStyles(makeStyles);
   const t = useTranslator();
   const router = useRouter();
 
@@ -67,6 +69,8 @@ function Choice({
   hint: string;
   onPress: () => void;
 }) {
+  const c = useTheme();
+  const styles = useStyles(makeStyles);
   return (
     <Pressable
       accessibilityRole="button"
@@ -77,7 +81,7 @@ function Choice({
       {/* The icon repeats what the label already says, so it is decorative and
           stays out of the screen reader's way. */}
       <View style={styles.glyphWrap}>
-        <Icon size={26} color={accent.base} />
+        <Icon size={26} color={c.accent.base} />
       </View>
       <Text style={styles.label}>{label}</Text>
       <Text style={styles.hint}>{hint}</Text>
@@ -85,33 +89,39 @@ function Choice({
   );
 }
 
-const styles = StyleSheet.create({
-  container: { padding: space['4'], gap: space['4'], backgroundColor: 'transparent' },
-  choice: {
-    backgroundColor: surface.card,
-    borderRadius: radius.xl,
-    ...elevation[2],
-    padding: space['6'],
-    gap: 6,
-    minHeight: 110,
-    alignItems: 'center',
-  },
-  // Opacity alone reads as "broken" on a card this large; the brand tint plus
-  // a slight lift says "pressed" without moving anything around it.
-  pressed: { opacity: 0.9, backgroundColor: accent.wash, borderColor: accent.base },
-  glyphWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: radius.md,
-    backgroundColor: accent.wash,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  label: { fontFamily: fontFamily.bold, fontSize: 18, color: text.primary, textAlign: 'center' },
-  hint: {
-    fontFamily: fontFamily.regular,
-    fontSize: 13,
-    color: text.secondary,
-    textAlign: 'center',
-  },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    container: { padding: space['4'], gap: space['4'], backgroundColor: 'transparent' },
+    choice: {
+      backgroundColor: c.surface.card,
+      borderRadius: radius.xl,
+      ...elevation[2],
+      padding: space['6'],
+      gap: 6,
+      minHeight: 110,
+      alignItems: 'center',
+    },
+    // Opacity alone reads as "broken" on a card this large; the brand tint plus
+    // a slight lift says "pressed" without moving anything around it.
+    pressed: { opacity: 0.9, backgroundColor: c.accent.wash, borderColor: c.accent.base },
+    glyphWrap: {
+      width: 52,
+      height: 52,
+      borderRadius: radius.md,
+      backgroundColor: c.accent.wash,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    label: {
+      fontFamily: fontFamily.bold,
+      fontSize: 18,
+      color: c.text.primary,
+      textAlign: 'center',
+    },
+    hint: {
+      fontFamily: fontFamily.regular,
+      fontSize: 13,
+      color: c.text.secondary,
+      textAlign: 'center',
+    },
+  });

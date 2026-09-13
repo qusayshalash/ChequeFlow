@@ -9,7 +9,8 @@ import type { ChequeDetailView } from '@cheque-flow/shared-types';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { Body, Button, Chip, DateField, ErrorView, Field, Section } from '@/components/ui';
 import { addDaysIso, isValidDate, todayIso } from '@/lib/dates';
-import { space } from '@/theme';
+import { useStyles } from '@/theme-context';
+import { space, type Palette } from '@/theme';
 
 /**
  * A reminder the user sets themselves on one cheque.
@@ -18,6 +19,7 @@ import { space } from '@/theme';
  * a reminder set here is marked custom on the server and survives that.
  */
 export default function RemindScreen() {
+  const styles = useStyles(makeStyles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const api = useApi();
   const t = useTranslator();
@@ -114,7 +116,8 @@ export default function RemindScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { padding: space['4'], gap: space['4'], backgroundColor: 'transparent' },
-  chips: { gap: space['2'] },
-});
+const makeStyles = (_c: Palette) =>
+  StyleSheet.create({
+    container: { padding: space['4'], gap: space['4'], backgroundColor: 'transparent' },
+    chips: { gap: space['2'] },
+  });

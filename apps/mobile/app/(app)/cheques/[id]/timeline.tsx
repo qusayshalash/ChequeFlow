@@ -7,7 +7,8 @@ import type { ChequeEventView } from '@cheque-flow/shared-types';
 import { IconChevronEnd } from '@/components/icons';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { EmptyView, ErrorView, LoadingView, StatusPill } from '@/components/ui';
-import { accent, elevation, radius, space, surface, text, type } from '@/theme';
+import { useStyles, useTheme } from '@/theme-context';
+import { elevation, radius, space, type, type Palette } from '@/theme';
 
 /**
  * The cheque's full movement history.
@@ -16,6 +17,8 @@ import { accent, elevation, radius, space, surface, text, type } from '@/theme';
  * anyone, which is what makes it usable as evidence of where a cheque went.
  */
 export default function ChequeTimelineScreen() {
+  const c = useTheme();
+  const styles = useStyles(makeStyles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const api = useApi();
   const t = useTranslator();
@@ -77,7 +80,7 @@ export default function ChequeTimelineScreen() {
                   <Text style={styles.moveText} numberOfLines={1}>
                     {from ?? '—'}
                   </Text>
-                  <IconChevronEnd size={14} color={text.faint} />
+                  <IconChevronEnd size={14} color={c.text.faint} />
                   <Text style={styles.moveText} numberOfLines={1}>
                     {to ?? '—'}
                   </Text>
@@ -105,51 +108,52 @@ export default function ChequeTimelineScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  list: { flex: 1, backgroundColor: 'transparent' },
-  content: { padding: space['4'], paddingBottom: space['16'] },
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    list: { flex: 1, backgroundColor: 'transparent' },
+    content: { padding: space['4'], paddingBottom: space['16'] },
 
-  entry: { flexDirection: 'row', gap: space['3'] },
-  /** The rail runs down the leading edge, so the eye follows one line. */
-  rail: { alignItems: 'center', width: 14, paddingTop: space['5'] },
-  node: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: surface.lineStrong,
-  },
-  /** The newest movement is the one people came to read. */
-  nodeLatest: { backgroundColor: accent.base, width: 14, height: 14, borderRadius: 7 },
-  line: { flex: 1, width: 2, backgroundColor: surface.line, marginTop: 2 },
+    entry: { flexDirection: 'row', gap: space['3'] },
+    /** The rail runs down the leading edge, so the eye follows one line. */
+    rail: { alignItems: 'center', width: 14, paddingTop: space['5'] },
+    node: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: c.surface.lineStrong,
+    },
+    /** The newest movement is the one people came to read. */
+    nodeLatest: { backgroundColor: c.accent.base, width: 14, height: 14, borderRadius: 7 },
+    line: { flex: 1, width: 2, backgroundColor: c.surface.line, marginTop: 2 },
 
-  body: {
-    flex: 1,
-    gap: space['1'],
-    backgroundColor: surface.card,
-    borderRadius: radius.xl,
-    ...elevation[2],
-    padding: space['4'],
-    marginBottom: space['3'],
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: space['2'],
-  },
-  title: { ...type.bodyStrong, color: text.primary, textAlign: 'right', flexShrink: 1 },
-  time: { ...type.caption, color: text.faint, textAlign: 'right' },
-  move: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['2'],
-    backgroundColor: surface.sunken,
-    borderRadius: radius.sm,
-    paddingHorizontal: space['3'],
-    paddingVertical: space['2'],
-    marginTop: space['1'],
-  },
-  moveText: { ...type.caption, color: text.primary, flexShrink: 1 },
-  meta: { ...type.caption, color: text.secondary, textAlign: 'right' },
-  notes: { ...type.callout, color: text.primary, textAlign: 'right', marginTop: space['1'] },
-});
+    body: {
+      flex: 1,
+      gap: space['1'],
+      backgroundColor: c.surface.card,
+      borderRadius: radius.xl,
+      ...elevation[2],
+      padding: space['4'],
+      marginBottom: space['3'],
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: space['2'],
+    },
+    title: { ...type.bodyStrong, color: c.text.primary, textAlign: 'right', flexShrink: 1 },
+    time: { ...type.caption, color: c.text.faint, textAlign: 'right' },
+    move: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space['2'],
+      backgroundColor: c.surface.sunken,
+      borderRadius: radius.sm,
+      paddingHorizontal: space['3'],
+      paddingVertical: space['2'],
+      marginTop: space['1'],
+    },
+    moveText: { ...type.caption, color: c.text.primary, flexShrink: 1 },
+    meta: { ...type.caption, color: c.text.secondary, textAlign: 'right' },
+    notes: { ...type.callout, color: c.text.primary, textAlign: 'right', marginTop: space['1'] },
+  });

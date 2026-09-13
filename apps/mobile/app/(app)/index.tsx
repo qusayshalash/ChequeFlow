@@ -5,7 +5,6 @@ import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'r
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { utcToday, type DashboardSummary } from '@cheque-flow/shared-types';
-import { colors } from '@cheque-flow/ui/tokens';
 
 import { AttentionList, StatCard } from '@/components/dashboard-parts';
 import {
@@ -23,7 +22,8 @@ import {
 import { BankMark } from '@/components/marks';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { Amount, Banner, ErrorView, LoadingView, ScreenHeader, StatusPill } from '@/components/ui';
-import { TAP, accent, elevation, radius, space, surface, text, type } from '@/theme';
+import { useStyles, useTheme } from '@/theme-context';
+import { TAP, elevation, radius, space, type, type Palette } from '@/theme';
 
 /** How far ahead the upcoming list looks. */
 const UPCOMING_HORIZON_DAYS = 90;
@@ -53,6 +53,8 @@ function addDays(iso: string, days: number): string {
  * rather than a wall of read-only numbers.
  */
 export default function DashboardScreen() {
+  const c = useTheme();
+  const styles = useStyles(makeStyles);
   const api = useApi();
   const t = useTranslator();
   const { money, date, dueDistance, online, checkConnection } = useApp();
@@ -191,7 +193,7 @@ export default function DashboardScreen() {
               caveat on that one number, not on the screen. */}
           {query.data.baseTotal.unconvertedCount > 0 ? (
             <View style={styles.warn}>
-              <IconAlert size={14} color={colors.warning} />
+              <IconAlert size={14} color={c.semantic.warning} />
               <Text style={styles.warnText}>
                 {t('dashboard.unconverted', {
                   count: String(query.data.baseTotal.unconvertedCount),
@@ -269,7 +271,7 @@ export default function DashboardScreen() {
                 onPress={() => open('tab=DUE')}
                 style={({ pressed }) => [styles.viewAll, pressed && styles.pressed]}
               >
-                <IconChevronEnd size={15} color={text.secondary} />
+                <IconChevronEnd size={15} color={c.text.secondary} />
                 <Text style={styles.viewAllText}>{t('dashboard.viewAllCheques')}</Text>
               </Pressable>
               <Text style={styles.panelTitle}>{t('dashboard.upcomingTitle')}</Text>
@@ -342,6 +344,8 @@ function QuickAction({
   Icon: (props: IconProps) => ReactElement;
   onPress: () => void;
 }) {
+  const c = useTheme();
+  const styles = useStyles(makeStyles);
   return (
     <Pressable
       accessibilityRole="button"
@@ -349,7 +353,7 @@ function QuickAction({
       onPress={onPress}
       style={({ pressed }) => [styles.quick, pressed && styles.pressed]}
     >
-      <Icon size={20} color={accent.base} />
+      <Icon size={20} color={c.accent.base} />
       <Text style={styles.quickLabel} numberOfLines={2}>
         {label}
       </Text>
@@ -357,90 +361,91 @@ function QuickAction({
   );
 }
 
-const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: 'transparent' },
-  container: { padding: space['4'], paddingBottom: space['10'], gap: space['3'] },
-  pressed: { backgroundColor: surface.sunken },
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    page: { flex: 1, backgroundColor: 'transparent' },
+    container: { padding: space['4'], paddingBottom: space['10'], gap: space['3'] },
+    pressed: { backgroundColor: c.surface.sunken },
 
-  statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space['2'] },
+    statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space['2'] },
 
-  warn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['2'],
-    backgroundColor: '#FBEEDA',
-    borderRadius: radius.md,
-    padding: space['3'],
-  },
-  warnText: { ...type.caption, color: '#7A4A06', flex: 1, textAlign: 'right' },
+    warn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space['2'],
+      backgroundColor: c.semantic.warningBg,
+      borderRadius: radius.md,
+      padding: space['3'],
+    },
+    warnText: { ...type.caption, color: c.semantic.warning, flex: 1, textAlign: 'right' },
 
-  quickRow: { flexDirection: 'row', gap: space['2'] },
-  quick: {
-    flex: 1,
-    minHeight: 76,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: space['1'],
-    backgroundColor: surface.card,
-    borderRadius: radius.xl,
-    ...elevation[2],
-    padding: space['2'],
-  },
-  quickLabel: { ...type.caption, color: text.primary, textAlign: 'center' },
+    quickRow: { flexDirection: 'row', gap: space['2'] },
+    quick: {
+      flex: 1,
+      minHeight: 76,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: space['1'],
+      backgroundColor: c.surface.card,
+      borderRadius: radius.xl,
+      ...elevation[2],
+      padding: space['2'],
+    },
+    quickLabel: { ...type.caption, color: c.text.primary, textAlign: 'center' },
 
-  panel: {
-    backgroundColor: surface.card,
-    borderRadius: radius.xl,
-    ...elevation[2],
-    padding: space['3'],
-  },
-  panelHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: space['2'],
-  },
-  panelTitle: { ...type.heading, color: text.primary },
-  viewAll: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['1'],
-    minHeight: TAP,
-    paddingHorizontal: space['3'],
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: surface.line,
-  },
-  viewAllText: { ...type.caption, color: text.secondary },
+    panel: {
+      backgroundColor: c.surface.card,
+      borderRadius: radius.xl,
+      ...elevation[2],
+      padding: space['3'],
+    },
+    panelHead: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: space['2'],
+    },
+    panelTitle: { ...type.heading, color: c.text.primary },
+    viewAll: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space['1'],
+      minHeight: TAP,
+      paddingHorizontal: space['3'],
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: c.surface.line,
+    },
+    viewAllText: { ...type.caption, color: c.text.secondary },
 
-  upcomingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['3'],
-    minHeight: TAP + 16,
-    paddingVertical: space['2'],
-  },
-  divided: { borderTopWidth: 1, borderTopColor: surface.line },
-  upcomingBody: { flex: 1, gap: 3 },
-  upcomingTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  upcomingAmount: { ...type.bodyStrong, color: text.primary },
-  upcomingNumber: { ...type.caption, color: text.faint, writingDirection: 'ltr' },
-  upcomingBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  upcomingDue: { alignItems: 'flex-start' },
-  upcomingDate: { ...type.caption, color: text.secondary },
-  upcomingDistance: { ...type.caption, fontSize: 11, color: text.faint },
+    upcomingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space['3'],
+      minHeight: TAP + 16,
+      paddingVertical: space['2'],
+    },
+    divided: { borderTopWidth: 1, borderTopColor: c.surface.line },
+    upcomingBody: { flex: 1, gap: 3 },
+    upcomingTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    upcomingAmount: { ...type.bodyStrong, color: c.text.primary },
+    upcomingNumber: { ...type.caption, color: c.text.faint, writingDirection: 'ltr' },
+    upcomingBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    upcomingDue: { alignItems: 'flex-start' },
+    upcomingDate: { ...type.caption, color: c.text.secondary },
+    upcomingDistance: { ...type.caption, fontSize: 11, color: c.text.faint },
 
-  emptyLine: {
-    ...type.callout,
-    color: text.faint,
-    textAlign: 'center',
-    paddingVertical: space['4'],
-  },
-  showingLine: {
-    ...type.caption,
-    fontSize: 11,
-    color: text.faint,
-    textAlign: 'center',
-    marginTop: space['2'],
-  },
-});
+    emptyLine: {
+      ...type.callout,
+      color: c.text.faint,
+      textAlign: 'center',
+      paddingVertical: space['4'],
+    },
+    showingLine: {
+      ...type.caption,
+      fontSize: 11,
+      color: c.text.faint,
+      textAlign: 'center',
+      marginTop: space['2'],
+    },
+  });

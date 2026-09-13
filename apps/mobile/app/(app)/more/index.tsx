@@ -14,7 +14,8 @@ import {
 } from '@/components/icons';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { Banner } from '@/components/ui';
-import { TAP, accent, elevation, radius, space, surface, text, type } from '@/theme';
+import { useStyles, useTheme } from '@/theme-context';
+import { TAP, elevation, radius, space, type, type Palette } from '@/theme';
 
 /**
  * Everything that is not a daily destination.
@@ -24,6 +25,8 @@ import { TAP, accent, elevation, radius, space, surface, text, type } from '@/th
  * not offering it.
  */
 export default function MoreScreen() {
+  const c = useTheme();
+  const styles = useStyles(makeStyles);
   const api = useApi();
   const t = useTranslator();
   const router = useRouter();
@@ -69,7 +72,7 @@ export default function MoreScreen() {
           equal lines: the name is the answer, the rest is reference. */}
       <View style={styles.identity}>
         <View style={styles.avatar}>
-          <IconUser size={22} color={accent.base} />
+          <IconUser size={22} color={c.accent.base} />
         </View>
         <View style={styles.identityText}>
           <Text style={styles.name}>{session.data?.name ?? ''}</Text>
@@ -96,9 +99,9 @@ export default function MoreScreen() {
               pressed && styles.pressed,
             ]}
           >
-            <entry.Icon size={20} color={text.secondary} />
+            <entry.Icon size={20} color={c.text.secondary} />
             <Text style={styles.label}>{entry.label}</Text>
-            <IconChevronEnd size={18} color={text.faint} />
+            <IconChevronEnd size={18} color={c.text.faint} />
           </Pressable>
         ))}
       </View>
@@ -106,45 +109,46 @@ export default function MoreScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { padding: space['4'], gap: space['4'], backgroundColor: 'transparent' },
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    container: { padding: space['4'], gap: space['4'], backgroundColor: 'transparent' },
 
-  identity: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['3'],
-    backgroundColor: surface.card,
-    borderRadius: radius.xl,
-    ...elevation[2],
-    padding: space['4'],
-  },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.pill,
-    backgroundColor: accent.wash,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  identityText: { flex: 1, gap: 1 },
-  name: { ...type.heading, color: text.primary, textAlign: 'right' },
-  meta: { ...type.caption, color: text.secondary, textAlign: 'right' },
+    identity: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space['3'],
+      backgroundColor: c.surface.card,
+      borderRadius: radius.xl,
+      ...elevation[2],
+      padding: space['4'],
+    },
+    avatar: {
+      width: 48,
+      height: 48,
+      borderRadius: radius.pill,
+      backgroundColor: c.accent.wash,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    identityText: { flex: 1, gap: 1 },
+    name: { ...type.heading, color: c.text.primary, textAlign: 'right' },
+    meta: { ...type.caption, color: c.text.secondary, textAlign: 'right' },
 
-  list: {
-    backgroundColor: surface.card,
-    borderRadius: radius.xl,
-    ...elevation[2],
-    overflow: 'hidden',
-  },
-  divided: { borderTopWidth: 1, borderTopColor: surface.line },
-  entry: {
-    minHeight: TAP + 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['3'],
-    paddingHorizontal: space['4'],
-    paddingVertical: space['3'],
-  },
-  pressed: { backgroundColor: surface.sunken },
-  label: { ...type.body, color: text.primary, flex: 1, textAlign: 'right' },
-});
+    list: {
+      backgroundColor: c.surface.card,
+      borderRadius: radius.xl,
+      ...elevation[2],
+      overflow: 'hidden',
+    },
+    divided: { borderTopWidth: 1, borderTopColor: c.surface.line },
+    entry: {
+      minHeight: TAP + 8,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space['3'],
+      paddingHorizontal: space['4'],
+      paddingVertical: space['3'],
+    },
+    pressed: { backgroundColor: c.surface.sunken },
+    label: { ...type.body, color: c.text.primary, flex: 1, textAlign: 'right' },
+  });

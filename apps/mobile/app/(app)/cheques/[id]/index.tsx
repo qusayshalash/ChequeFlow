@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ChequeAction, utcToday, type ChequeDetailView } from '@cheque-flow/shared-types';
-import { colors } from '@cheque-flow/ui/tokens';
 
 import { IconAlert, IconCalendar } from '@/components/icons';
 import { ChequeJourney } from '@/components/journey';
@@ -20,7 +19,8 @@ import {
   LoadingView,
   StatusPill,
 } from '@/components/ui';
-import { elevation, fontFamily, radius, space, surface, text, type } from '@/theme';
+import { useStyles, useTheme } from '@/theme-context';
+import { elevation, fontFamily, radius, space, type, type Palette } from '@/theme';
 
 /**
  * Actions that get their own button on the detail screen.
@@ -36,6 +36,8 @@ const PRIMARY_ACTIONS: readonly string[] = [
 ];
 
 export default function ChequeDetailScreen() {
+  const c = useTheme();
+  const styles = useStyles(makeStyles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const api = useApi();
   const t = useTranslator();
@@ -90,13 +92,13 @@ export default function ChequeDetailScreen() {
         ) : null}
 
         <View style={[styles.dueLine, cheque.isOverdue && styles.dueLineLate]}>
-          <IconCalendar size={15} color={cheque.isOverdue ? colors.danger : text.secondary} />
+          <IconCalendar size={15} color={cheque.isOverdue ? c.semantic.danger : c.text.secondary} />
           <Text style={[styles.dueText, cheque.isOverdue && styles.overdueText]}>
             {date(cheque.dueDate)} · {dueDistance(cheque.dueDate, today)}
           </Text>
           {cheque.isOverdue ? (
             <>
-              <IconAlert size={15} color={colors.danger} />
+              <IconAlert size={15} color={c.semantic.danger} />
               <Text style={styles.overdueText}>{t('cheque.overdue')}</Text>
             </>
           ) : null}
@@ -246,6 +248,7 @@ function ChequeImages({
   chequeId: string;
   images: ChequeDetailView['images'];
 }) {
+  const styles = useStyles(makeStyles);
   const api = useApi();
   const t = useTranslator();
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -320,78 +323,79 @@ function ChequeImages({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    padding: space['4'],
-    gap: space['4'],
-    backgroundColor: 'transparent',
-    paddingBottom: space['16'],
-  },
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    container: {
+      padding: space['4'],
+      gap: space['4'],
+      backgroundColor: 'transparent',
+      paddingBottom: space['16'],
+    },
 
-  hero: {
-    backgroundColor: surface.card,
-    borderRadius: radius.xl,
-    ...elevation[2],
-    padding: space['5'],
-    gap: space['2'],
-  },
-  heroTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: space['2'],
-  },
-  heroNumber: {
-    ...type.caption,
-    color: text.secondary,
-    flexShrink: 1,
-    fontVariant: ['tabular-nums'],
-  },
-  heroAmount: {
-    ...type.display,
-    fontSize: 36,
-    color: text.primary,
-    textAlign: 'right',
-    fontVariant: ['tabular-nums'],
-  },
-  heroWords: { ...type.callout, color: text.secondary, textAlign: 'right' },
+    hero: {
+      backgroundColor: c.surface.card,
+      borderRadius: radius.xl,
+      ...elevation[2],
+      padding: space['5'],
+      gap: space['2'],
+    },
+    heroTop: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: space['2'],
+    },
+    heroNumber: {
+      ...type.caption,
+      color: c.text.secondary,
+      flexShrink: 1,
+      fontVariant: ['tabular-nums'],
+    },
+    heroAmount: {
+      ...type.display,
+      fontSize: 36,
+      color: c.text.primary,
+      textAlign: 'right',
+      fontVariant: ['tabular-nums'],
+    },
+    heroWords: { ...type.callout, color: c.text.secondary, textAlign: 'right' },
 
-  dueLine: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['2'],
-    flexWrap: 'wrap',
-    marginTop: space['1'],
-    backgroundColor: surface.sunken,
-    borderRadius: radius.sm,
-    paddingHorizontal: space['3'],
-    paddingVertical: space['2'],
-  },
-  dueLineLate: { backgroundColor: colors.dangerBg },
-  dueText: { ...type.callout, color: text.secondary },
-  overdueText: { ...type.label, color: colors.danger },
-  sectionTitle: { ...type.label, color: text.secondary, textAlign: 'right' },
-  imageRow: { gap: space['2'] },
-  imageThumb: {
-    width: 180,
-    height: 100,
-    borderRadius: radius.sm,
-    backgroundColor: surface.sunken,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  imageLarge: {
-    width: 320,
-    height: 200,
-    borderRadius: radius.sm,
-    backgroundColor: surface.sunken,
-  },
-  imagePlaceholder: { fontFamily: fontFamily.regular, fontSize: 12, color: colors.textMuted },
-  imageCaption: {
-    fontFamily: fontFamily.regular,
-    fontSize: 12,
-    color: colors.textMuted,
-    textAlign: 'center',
-    paddingTop: 4,
-  },
-});
+    dueLine: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space['2'],
+      flexWrap: 'wrap',
+      marginTop: space['1'],
+      backgroundColor: c.surface.sunken,
+      borderRadius: radius.sm,
+      paddingHorizontal: space['3'],
+      paddingVertical: space['2'],
+    },
+    dueLineLate: { backgroundColor: c.semantic.dangerBg },
+    dueText: { ...type.callout, color: c.text.secondary },
+    overdueText: { ...type.label, color: c.semantic.danger },
+    sectionTitle: { ...type.label, color: c.text.secondary, textAlign: 'right' },
+    imageRow: { gap: space['2'] },
+    imageThumb: {
+      width: 180,
+      height: 100,
+      borderRadius: radius.sm,
+      backgroundColor: c.surface.sunken,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    imageLarge: {
+      width: 320,
+      height: 200,
+      borderRadius: radius.sm,
+      backgroundColor: c.surface.sunken,
+    },
+    imagePlaceholder: { fontFamily: fontFamily.regular, fontSize: 12, color: c.text.secondary },
+    imageCaption: {
+      fontFamily: fontFamily.regular,
+      fontSize: 12,
+      color: c.text.secondary,
+      textAlign: 'center',
+      paddingTop: 4,
+    },
+  });

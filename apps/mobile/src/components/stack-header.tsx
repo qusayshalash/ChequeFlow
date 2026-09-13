@@ -4,7 +4,8 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 import { MIN_TOUCH_TARGET } from '@cheque-flow/ui/tokens';
 
 import { useApp } from '@/components/providers';
-import { accent, fontFamily, space, surface, text } from '@/theme';
+import { useStyles } from '@/theme-context';
+import { fontFamily, space, type Palette } from '@/theme';
 
 /**
  * Back control for the stack headers.
@@ -16,6 +17,7 @@ import { accent, fontFamily, space, surface, text } from '@/theme';
  * immediately and on every launch.
  */
 export function BackButton() {
+  const styles = useStyles(makeStyles);
   const router = useRouter();
   const navigation = useNavigation();
   const { locale, t } = useApp();
@@ -38,23 +40,29 @@ export function BackButton() {
   );
 }
 
-/** Shared options for every stack inside the tab bar. */
-export function stackScreenOptions() {
+/**
+ * Shared options for every stack inside the tab bar.
+ *
+ * Takes the palette rather than reading it: this is called from a layout's
+ * render, not rendered itself, so it cannot hold a hook of its own.
+ */
+export function stackScreenOptions(c: Palette) {
   return {
     headerTitleAlign: 'center' as const,
     headerLeft: () => <BackButton />,
-    headerStyle: { backgroundColor: surface.card },
-    headerTintColor: text.primary,
+    headerStyle: { backgroundColor: c.surface.card },
+    headerTintColor: c.text.primary,
   };
 }
 
-const styles = StyleSheet.create({
-  button: {
-    minWidth: MIN_TOUCH_TARGET,
-    minHeight: MIN_TOUCH_TARGET,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: space['2'],
-  },
-  chevron: { fontFamily: fontFamily.regular, fontSize: 34, lineHeight: 38, color: accent.base },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    button: {
+      minWidth: MIN_TOUCH_TARGET,
+      minHeight: MIN_TOUCH_TARGET,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: space['2'],
+    },
+    chevron: { fontFamily: fontFamily.regular, fontSize: 34, lineHeight: 38, color: c.accent.base },
+  });

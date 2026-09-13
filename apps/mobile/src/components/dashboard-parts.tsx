@@ -2,7 +2,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { IconBell, IconChevronEnd, type IconProps } from '@/components/icons';
 import { Amount } from '@/components/ui';
-import { TAP, elevation, radius, space, surface, text, type } from '@/theme';
+import { useStyles, useTheme } from '@/theme-context';
+import { TAP, elevation, radius, space, type, type Palette } from '@/theme';
 
 /**
  * The dashboard's headline figures and its worklist.
@@ -14,12 +15,34 @@ import { TAP, elevation, radius, space, surface, text, type } from '@/theme';
 
 export type StatTone = 'teal' | 'green' | 'amber' | 'red' | 'neutral';
 
-const TONES: Record<StatTone, { wash: string; icon: string; amount: string }> = {
+interface Tone {
+  wash: string;
+  icon: string;
+  amount: string;
+}
+
+/**
+ * The five tones a headline figure can carry, in each theme.
+ *
+ * A pale wash is a patch of light. On a dark card it stops being a tint and
+ * becomes a lamp — five of them in a grid is a screen nobody can look at in
+ * bed. The dark washes are deep versions of the same hue and the figures on
+ * them are lifted, so the meaning survives and the brightness does not.
+ */
+const TONES: Record<StatTone, Tone> = {
   teal: { wash: '#DFF1ED', icon: '#0B7C6B', amount: '#0B7C6B' },
   green: { wash: '#DEF3E4', icon: '#12805C', amount: '#12805C' },
   amber: { wash: '#FBEEDA', icon: '#B56A0B', amount: '#A55F07' },
   red: { wash: '#FBE2E6', icon: '#C43D42', amount: '#C43D42' },
   neutral: { wash: '#EFF2F1', icon: '#5B6B68', amount: '#5B6B68' },
+};
+
+const DARK_TONES: Record<StatTone, Tone> = {
+  teal: { wash: '#123029', icon: '#54C3AA', amount: '#54C3AA' },
+  green: { wash: '#0F2A22', icon: '#68C79D', amount: '#68C79D' },
+  amber: { wash: '#2E2513', icon: '#DDB160', amount: '#DDB160' },
+  red: { wash: '#33191C', icon: '#EE9098', amount: '#EE9098' },
+  neutral: { wash: '#1B2724', icon: '#A9BAB4', amount: '#A9BAB4' },
 };
 
 /**
@@ -50,7 +73,9 @@ export function StatCard({
   Icon: (props: IconProps) => React.ReactElement;
   onPress: () => void;
 }) {
-  const palette = TONES[tone];
+  const c = useTheme();
+  const styles = useStyles(makeStyles);
+  const palette = (c.dark ? DARK_TONES : TONES)[tone];
 
   return (
     <Pressable
@@ -77,7 +102,7 @@ export function StatCard({
           cards of two different heights in one row read as a layout fault. */}
       <View style={styles.statFoot}>
         <Text style={styles.statAmountLabel}>{amountLabel}</Text>
-        <Amount style={[styles.statAmount, { color: amount ? palette.amount : text.faint }]}>
+        <Amount style={[styles.statAmount, { color: amount ? palette.amount : c.text.faint }]}>
           {amount || '—'}
         </Amount>
       </View>
@@ -114,15 +139,17 @@ export function AttentionList({
   footerLabel: string;
   onFooterPress: () => void;
 }) {
+  const c = useTheme();
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.panel}>
       <View style={styles.panelHead}>
         <Text style={styles.panelTitle}>{title}</Text>
-        <IconBell size={17} color={text.faint} />
+        <IconBell size={17} color={c.text.faint} />
       </View>
 
       {items.map((item, index) => {
-        const palette = TONES[item.tone];
+        const palette = (c.dark ? DARK_TONES : TONES)[item.tone];
         return (
           <Pressable
             key={item.key}
@@ -160,84 +187,90 @@ export function AttentionList({
         onPress={onFooterPress}
         style={({ pressed }) => [styles.panelFooter, pressed && styles.pressed]}
       >
-        <IconChevronEnd size={15} color={text.secondary} />
+        <IconChevronEnd size={15} color={c.text.secondary} />
         <Text style={styles.panelFooterText}>{footerLabel}</Text>
       </Pressable>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  pressed: { backgroundColor: surface.sunken },
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    pressed: { backgroundColor: c.surface.sunken },
 
-  stat: {
-    flex: 1,
-    minWidth: 150,
-    backgroundColor: surface.card,
-    borderRadius: radius.xl,
-    ...elevation[2],
-    padding: space['3'],
-    gap: space['3'],
-  },
-  statTop: { flexDirection: 'row', alignItems: 'flex-start', gap: space['2'] },
-  statIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statHead: { flex: 1, alignItems: 'flex-end' },
-  statLabel: { ...type.caption, color: text.secondary, textAlign: 'right' },
-  statValue: { ...type.title, color: text.primary, textAlign: 'right' },
-  statFoot: { alignItems: 'flex-end' },
-  statAmountLabel: { ...type.caption, fontSize: 11, color: text.faint },
-  statAmount: { ...type.label, textAlign: 'right' },
+    stat: {
+      flex: 1,
+      minWidth: 150,
+      backgroundColor: c.surface.card,
+      borderRadius: radius.xl,
+      ...elevation[2],
+      padding: space['3'],
+      gap: space['3'],
+    },
+    statTop: { flexDirection: 'row', alignItems: 'flex-start', gap: space['2'] },
+    statIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: radius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    statHead: { flex: 1, alignItems: 'flex-end' },
+    statLabel: { ...type.caption, color: c.text.secondary, textAlign: 'right' },
+    statValue: { ...type.title, color: c.text.primary, textAlign: 'right' },
+    statFoot: { alignItems: 'flex-end' },
+    statAmountLabel: { ...type.caption, fontSize: 11, color: c.text.faint },
+    statAmount: { ...type.label, textAlign: 'right' },
 
-  panel: {
-    backgroundColor: surface.card,
-    borderRadius: radius.xl,
-    ...elevation[2],
-    padding: space['3'],
-  },
-  panelHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: space['2'],
-  },
-  panelTitle: { ...type.heading, color: text.primary },
+    panel: {
+      backgroundColor: c.surface.card,
+      borderRadius: radius.xl,
+      ...elevation[2],
+      padding: space['3'],
+    },
+    panelHead: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: space['2'],
+    },
+    panelTitle: { ...type.heading, color: c.text.primary },
 
-  attentionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['3'],
-    minHeight: TAP + 8,
-    paddingVertical: space['2'],
-  },
-  divided: { borderTopWidth: 1, borderTopColor: surface.line },
-  attentionIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  attentionBody: { flex: 1, alignItems: 'flex-end' },
-  attentionLabel: { ...type.callout, fontWeight: '600', color: text.primary, textAlign: 'right' },
-  attentionAmount: { ...type.caption, fontSize: 11, color: text.faint, textAlign: 'right' },
-  attentionCount: { ...type.title, minWidth: 28, textAlign: 'left' },
+    attentionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space['3'],
+      minHeight: TAP + 8,
+      paddingVertical: space['2'],
+    },
+    divided: { borderTopWidth: 1, borderTopColor: c.surface.line },
+    attentionIcon: {
+      width: 34,
+      height: 34,
+      borderRadius: radius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    attentionBody: { flex: 1, alignItems: 'flex-end' },
+    attentionLabel: {
+      ...type.callout,
+      fontWeight: '600',
+      color: c.text.primary,
+      textAlign: 'right',
+    },
+    attentionAmount: { ...type.caption, fontSize: 11, color: c.text.faint, textAlign: 'right' },
+    attentionCount: { ...type.title, minWidth: 28, textAlign: 'left' },
 
-  panelFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: space['1'],
-    minHeight: TAP,
-    marginTop: space['2'],
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: surface.line,
-  },
-  panelFooterText: { ...type.label, color: text.secondary },
-});
+    panelFooter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: space['1'],
+      minHeight: TAP,
+      marginTop: space['2'],
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: c.surface.line,
+    },
+    panelFooterText: { ...type.label, color: c.text.secondary },
+  });

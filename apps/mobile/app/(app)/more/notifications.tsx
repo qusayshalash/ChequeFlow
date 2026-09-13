@@ -3,11 +3,11 @@ import { useRouter } from 'expo-router';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { ReminderRow } from '@cheque-flow/api-client';
-import { colors } from '@cheque-flow/ui/tokens';
 
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { Amount, Badge, Button, EmptyView, ErrorView, LoadingView } from '@/components/ui';
-import { TAP, elevation, fontFamily, radius, space, surface, text } from '@/theme';
+import { useStyles } from '@/theme-context';
+import { TAP, elevation, fontFamily, radius, space, type Palette } from '@/theme';
 
 /** Snooze options, in minutes. */
 const SNOOZE = [
@@ -23,6 +23,7 @@ const SNOOZE = [
  * from the feed, and snoozing pushes it forward without losing it.
  */
 export default function NotificationsScreen() {
+  const styles = useStyles(makeStyles);
   const api = useApi();
   const t = useTranslator();
   const { money, date, dateTime } = useApp();
@@ -118,35 +119,51 @@ export default function NotificationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  list: { flex: 1, backgroundColor: 'transparent' },
-  content: { padding: space['4'], gap: space['2'], paddingBottom: space['16'] },
-  row: {
-    backgroundColor: surface.card,
-    borderRadius: radius.xl,
-    ...elevation[2],
-    padding: space['4'],
-    gap: space['2'],
-  },
-  rowDue: { borderColor: colors.warning, borderStartWidth: 4 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  number: {
-    fontFamily: fontFamily.bold,
-    fontSize: 16,
-    color: text.primary,
-    writingDirection: 'ltr',
-  },
-  amount: { fontFamily: fontFamily.regular, fontSize: 16, color: text.primary, textAlign: 'right' },
-  meta: { fontFamily: fontFamily.regular, fontSize: 13, color: text.secondary, textAlign: 'right' },
-  note: { fontFamily: fontFamily.regular, fontSize: 14, color: text.primary, textAlign: 'right' },
-  actions: { flexDirection: 'row', gap: space['2'], flexWrap: 'wrap' },
-  snoozeChip: {
-    minHeight: TAP,
-    justifyContent: 'center',
-    paddingHorizontal: space['4'],
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: surface.line,
-  },
-  snoozeText: { fontFamily: fontFamily.regular, fontSize: 14, color: text.primary },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    list: { flex: 1, backgroundColor: 'transparent' },
+    content: { padding: space['4'], gap: space['2'], paddingBottom: space['16'] },
+    row: {
+      backgroundColor: c.surface.card,
+      borderRadius: radius.xl,
+      ...elevation[2],
+      padding: space['4'],
+      gap: space['2'],
+    },
+    rowDue: { borderColor: c.semantic.warning, borderStartWidth: 4 },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    number: {
+      fontFamily: fontFamily.bold,
+      fontSize: 16,
+      color: c.text.primary,
+      writingDirection: 'ltr',
+    },
+    amount: {
+      fontFamily: fontFamily.regular,
+      fontSize: 16,
+      color: c.text.primary,
+      textAlign: 'right',
+    },
+    meta: {
+      fontFamily: fontFamily.regular,
+      fontSize: 13,
+      color: c.text.secondary,
+      textAlign: 'right',
+    },
+    note: {
+      fontFamily: fontFamily.regular,
+      fontSize: 14,
+      color: c.text.primary,
+      textAlign: 'right',
+    },
+    actions: { flexDirection: 'row', gap: space['2'], flexWrap: 'wrap' },
+    snoozeChip: {
+      minHeight: TAP,
+      justifyContent: 'center',
+      paddingHorizontal: space['4'],
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: c.surface.line,
+    },
+    snoozeText: { fontFamily: fontFamily.regular, fontSize: 14, color: c.text.primary },
+  });

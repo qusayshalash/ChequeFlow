@@ -9,7 +9,8 @@ import { IconAlert, IconCheck, IconClose } from '@/components/icons';
 import * as haptics from '@/lib/haptics';
 import { useApi, useTranslator } from '@/components/providers';
 import { Banner, Button, Picker, Sheet } from '@/components/ui';
-import { TAP, accent, elevation, motion, radius, space, surface, text, type } from '@/theme';
+import { useStyles, useTheme } from '@/theme-context';
+import { TAP, elevation, motion, radius, space, type, type Palette } from '@/theme';
 
 type BulkAction = (typeof BULK_CHEQUE_ACTIONS)[number];
 
@@ -42,6 +43,8 @@ export function BulkBar({
   contacts: readonly { id: string; name: string }[];
   locations: readonly { id: string; name: string }[];
 }) {
+  const c = useTheme();
+  const styles = useStyles(makeStyles);
   const api = useApi();
   const t = useTranslator();
   const queryClient = useQueryClient();
@@ -143,7 +146,7 @@ export function BulkBar({
             style={styles.clear}
             hitSlop={8}
           >
-            <IconClose size={18} color={text.secondary} />
+            <IconClose size={18} color={c.text.secondary} />
           </Pressable>
 
           <Text style={styles.count}>
@@ -181,7 +184,7 @@ export function BulkBar({
         {/* Nobody hunting for "confirm" would guess it is called "receive". */}
         {action === 'RECEIVE' ? (
           <View style={styles.hint}>
-            <IconCheck size={16} color={accent.dark} />
+            <IconCheck size={16} color={c.accent.dark} />
             <Text style={styles.hintText}>{t('bulk.receiveHint')}</Text>
           </View>
         ) : null}
@@ -211,7 +214,7 @@ export function BulkBar({
         {blocked.length > 0 ? (
           <View style={styles.blocked}>
             <View style={styles.blockedHead}>
-              <IconAlert size={16} color="#C43D42" />
+              <IconAlert size={16} color={c.semantic.danger} />
               <Text style={styles.blockedTitle}>{t('bulk.blocked')}</Text>
             </View>
             {blocked.slice(0, 6).map((entry, index) => (
@@ -235,51 +238,58 @@ export function BulkBar({
   );
 }
 
-const styles = StyleSheet.create({
-  doneWrap: { position: 'absolute', left: space['4'], right: space['4'], bottom: space['4'] },
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    doneWrap: { position: 'absolute', left: space['4'], right: space['4'], bottom: space['4'] },
 
-  bar: {
-    position: 'absolute',
-    left: space['4'],
-    right: space['4'],
-    bottom: space['4'],
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['3'],
-    minHeight: TAP + 12,
-    paddingHorizontal: space['3'],
-    borderRadius: radius.xl,
-    backgroundColor: surface.card,
-    ...elevation[3],
-  },
-  clear: { width: TAP, height: TAP, alignItems: 'center', justifyContent: 'center' },
-  count: { ...type.bodyStrong, color: text.primary, flex: 1, textAlign: 'right' },
-  go: {
-    minHeight: TAP,
-    justifyContent: 'center',
-    paddingHorizontal: space['5'],
-    borderRadius: radius.md,
-    backgroundColor: accent.dark,
-  },
-  goDown: { opacity: 0.85 },
-  goText: { ...type.label, color: text.onBrand },
+    bar: {
+      position: 'absolute',
+      left: space['4'],
+      right: space['4'],
+      bottom: space['4'],
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space['3'],
+      minHeight: TAP + 12,
+      paddingHorizontal: space['3'],
+      borderRadius: radius.xl,
+      backgroundColor: c.surface.card,
+      ...elevation[3],
+    },
+    clear: { width: TAP, height: TAP, alignItems: 'center', justifyContent: 'center' },
+    count: { ...type.bodyStrong, color: c.text.primary, flex: 1, textAlign: 'right' },
+    go: {
+      minHeight: TAP,
+      justifyContent: 'center',
+      paddingHorizontal: space['5'],
+      borderRadius: radius.md,
+      backgroundColor: c.accent.dark,
+    },
+    goDown: { opacity: 0.85 },
+    goText: { ...type.label, color: c.text.onBrand },
 
-  hint: {
-    flexDirection: 'row',
-    gap: space['2'],
-    backgroundColor: accent.wash,
-    borderRadius: radius.md,
-    padding: space['3'],
-  },
-  hintText: { ...type.caption, color: accent.dark, flex: 1, textAlign: 'right', lineHeight: 19 },
+    hint: {
+      flexDirection: 'row',
+      gap: space['2'],
+      backgroundColor: c.accent.wash,
+      borderRadius: radius.md,
+      padding: space['3'],
+    },
+    hintText: {
+      ...type.caption,
+      color: c.accent.dark,
+      flex: 1,
+      textAlign: 'right',
+      lineHeight: 19,
+    },
 
-  blocked: {
-    gap: space['1'],
-    backgroundColor: '#FBE2E6',
-    borderRadius: radius.md,
-    padding: space['3'],
-  },
-  blockedHead: { flexDirection: 'row', alignItems: 'center', gap: space['2'] },
-  blockedTitle: { ...type.label, color: '#C43D42', flex: 1, textAlign: 'right' },
-  blockedRow: { ...type.caption, color: '#C43D42', textAlign: 'right' },
-});
+    blocked: {
+      gap: space['1'],
+      backgroundColor: c.semantic.dangerBg,
+      borderRadius: radius.md,
+      padding: space['3'],
+    },
+    blockedHead: { flexDirection: 'row', alignItems: 'center', gap: space['2'] },
+    blockedTitle: { ...type.label, color: c.semantic.danger, flex: 1, textAlign: 'right' },
+    blockedRow: { ...type.caption, color: c.semantic.danger, textAlign: 'right' },
+  });

@@ -21,7 +21,8 @@ import {
   Section,
 } from '@/components/ui';
 import { isValidDate, todayIso } from '@/lib/dates';
-import { space } from '@/theme';
+import { useStyles } from '@/theme-context';
+import { space, type Palette } from '@/theme';
 
 /** Which extra inputs each action needs. Drives the whole form. */
 const NEEDS_CONTACT = new Set<string>([
@@ -42,6 +43,7 @@ const NEEDS_FEE = new Set<string>([ChequeAction.BOUNCE]);
 
 /** Records a custody movement from the phone. */
 export default function PerformActionScreen() {
+  const styles = useStyles(makeStyles);
   const { id, action: preselected } = useLocalSearchParams<{ id: string; action?: string }>();
   const api = useApi();
   const t = useTranslator();
@@ -244,11 +246,12 @@ export default function PerformActionScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    padding: space['4'],
-    gap: space['4'],
-    backgroundColor: 'transparent',
-    paddingBottom: space['16'],
-  },
-});
+const makeStyles = (_c: Palette) =>
+  StyleSheet.create({
+    container: {
+      padding: space['4'],
+      gap: space['4'],
+      backgroundColor: 'transparent',
+      paddingBottom: space['16'],
+    },
+  });

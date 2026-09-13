@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { accent, radius, space, surface, text, type } from '@/theme';
+import { useStyles } from '@/theme-context';
+import { radius, space, type, type Palette } from '@/theme';
 
 export interface SparkBar {
   /** Axis label. Only some are printed, so the axis does not smudge. */
@@ -33,6 +34,7 @@ export function SparkBars({
   height?: number;
   emptyLabel: string;
 }) {
+  const styles = useStyles(makeStyles);
   const peak = Math.max(...bars.map((bar) => bar.value), 0);
 
   if (bars.length === 0 || peak === 0) {
@@ -80,32 +82,33 @@ export function SparkBars({
   );
 }
 
-const styles = StyleSheet.create({
-  plot: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 3,
-    borderBottomWidth: 1,
-    borderBottomColor: surface.line,
-    paddingBottom: 2,
-  },
-  column: { flex: 1, alignItems: 'center' },
-  bar: { width: '100%', borderRadius: 3, minWidth: 3 },
-  barSolid: { backgroundColor: accent.base },
-  barForecast: {
-    borderWidth: 1.5,
-    borderColor: accent.base,
-    backgroundColor: accent.wash,
-  },
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    plot: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      gap: 3,
+      borderBottomWidth: 1,
+      borderBottomColor: c.surface.line,
+      paddingBottom: 2,
+    },
+    column: { flex: 1, alignItems: 'center' },
+    bar: { width: '100%', borderRadius: 3, minWidth: 3 },
+    barSolid: { backgroundColor: c.accent.base },
+    barForecast: {
+      borderWidth: 1.5,
+      borderColor: c.accent.base,
+      backgroundColor: c.accent.wash,
+    },
 
-  axis: { flexDirection: 'row', gap: 3, marginTop: space['1'] },
-  axisLabel: { ...type.caption, fontSize: 10, color: text.faint },
+    axis: { flexDirection: 'row', gap: 3, marginTop: space['1'] },
+    axisLabel: { ...type.caption, fontSize: 10, color: c.text.faint },
 
-  empty: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.md,
-    backgroundColor: surface.sunken,
-  },
-  emptyText: { ...type.callout, color: text.faint },
-});
+    empty: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.md,
+      backgroundColor: c.surface.sunken,
+    },
+    emptyText: { ...type.callout, color: c.text.faint },
+  });

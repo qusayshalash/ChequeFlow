@@ -4,17 +4,19 @@ import { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { ContactType, type ContactListItemView } from '@cheque-flow/shared-types';
-import { colors } from '@cheque-flow/ui/tokens';
 
 import { IconChevronEnd, IconPhone } from '@/components/icons';
 import { ContactAvatar } from '@/components/marks';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { Amount, Button, EmptyView, ErrorView, LoadingView, SegmentedTabs } from '@/components/ui';
-import { TAP, elevation, radius, space, surface, text, type } from '@/theme';
+import { useStyles, useTheme } from '@/theme-context';
+import { TAP, elevation, radius, space, type, type Palette } from '@/theme';
 
 const TYPE_TABS = ['ALL', ContactType.CUSTOMER, ContactType.SUPPLIER, ContactType.PERSON] as const;
 
 export default function ContactsScreen() {
+  const c = useTheme();
+  const styles = useStyles(makeStyles);
   const api = useApi();
   const t = useTranslator();
   const { money } = useApp();
@@ -80,7 +82,7 @@ export default function ContactsScreen() {
       <TextInput
         style={styles.search}
         placeholder={t('contact.searchPlaceholder')}
-        placeholderTextColor={text.secondary}
+        placeholderTextColor={c.text.secondary}
         value={search}
         onChangeText={setSearch}
         accessibilityLabel={t('common.search')}
@@ -132,7 +134,7 @@ export default function ContactsScreen() {
                 {/* A missing number is what stops a reminder being sent, so it
                     is said rather than shown as an empty line. */}
                 <View style={styles.phoneRow}>
-                  <IconPhone size={13} color={item.phone ? text.faint : colors.warning} />
+                  <IconPhone size={13} color={item.phone ? c.text.faint : c.semantic.warning} />
                   <Text style={[styles.phone, !item.phone && styles.phoneMissing]}>
                     {item.phone ?? t('contact.noPhone')}
                   </Text>
@@ -168,7 +170,7 @@ export default function ContactsScreen() {
               {!item.isActive ? (
                 <Text style={styles.inactiveTag}>{t('userStatus.DISABLED')}</Text>
               ) : (
-                <IconChevronEnd size={18} color={text.faint} />
+                <IconChevronEnd size={18} color={c.text.faint} />
               )}
             </Pressable>
           )}
@@ -184,49 +186,50 @@ export default function ContactsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'transparent',
-    padding: space['4'],
-    gap: space['2'],
-  },
-  search: {
-    minHeight: TAP,
-    borderWidth: 1,
-    borderColor: surface.lineStrong,
-    borderRadius: radius.md,
-    backgroundColor: surface.card,
-    paddingHorizontal: space['4'],
-    ...type.body,
-    color: text.primary,
-    textAlign: 'right',
-  },
-  list: { gap: space['2'], paddingBottom: space['4'] },
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: 'transparent',
+      padding: space['4'],
+      gap: space['2'],
+    },
+    search: {
+      minHeight: TAP,
+      borderWidth: 1,
+      borderColor: c.surface.lineStrong,
+      borderRadius: radius.md,
+      backgroundColor: c.surface.card,
+      paddingHorizontal: space['4'],
+      ...type.body,
+      color: c.text.primary,
+      textAlign: 'right',
+    },
+    list: { gap: space['2'], paddingBottom: space['4'] },
 
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space['3'],
-    backgroundColor: surface.card,
-    borderRadius: radius.xl,
-    ...elevation[2],
-    padding: space['3'],
-    minHeight: 76,
-  },
-  rowDown: { backgroundColor: surface.sunken },
-  rowBody: { flex: 1, gap: 1 },
-  name: { ...type.bodyStrong, color: text.primary, textAlign: 'right' },
-  meta: { ...type.caption, color: text.secondary, textAlign: 'right' },
-  phoneRow: { flexDirection: 'row', alignItems: 'center', gap: space['1'], marginTop: 1 },
-  phone: { ...type.caption, color: text.faint, writingDirection: 'ltr' },
-  phoneMissing: { color: colors.warning },
-  money: { alignItems: 'flex-start', gap: 1, maxWidth: 130 },
-  balance: { ...type.label, writingDirection: 'ltr' },
-  balanceOwed: { color: '#12805C' },
-  balanceWeOwe: { color: colors.danger },
-  settled: { ...type.caption, color: text.faint },
-  chequeCount: { ...type.caption, fontSize: 11, color: text.faint },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space['3'],
+      backgroundColor: c.surface.card,
+      borderRadius: radius.xl,
+      ...elevation[2],
+      padding: space['3'],
+      minHeight: 76,
+    },
+    rowDown: { backgroundColor: c.surface.sunken },
+    rowBody: { flex: 1, gap: 1 },
+    name: { ...type.bodyStrong, color: c.text.primary, textAlign: 'right' },
+    meta: { ...type.caption, color: c.text.secondary, textAlign: 'right' },
+    phoneRow: { flexDirection: 'row', alignItems: 'center', gap: space['1'], marginTop: 1 },
+    phone: { ...type.caption, color: c.text.faint, writingDirection: 'ltr' },
+    phoneMissing: { color: c.semantic.warning },
+    money: { alignItems: 'flex-start', gap: 1, maxWidth: 130 },
+    balance: { ...type.label, writingDirection: 'ltr' },
+    balanceOwed: { color: c.semantic.success },
+    balanceWeOwe: { color: c.semantic.danger },
+    settled: { ...type.caption, color: c.text.faint },
+    chequeCount: { ...type.caption, fontSize: 11, color: c.text.faint },
 
-  inactiveTag: { ...type.caption, color: colors.danger },
-});
+    inactiveTag: { ...type.caption, color: c.semantic.danger },
+  });

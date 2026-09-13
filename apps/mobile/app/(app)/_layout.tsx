@@ -4,7 +4,7 @@ import { Redirect, Tabs } from 'expo-router';
 import { Platform, StyleSheet, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, MIN_TOUCH_TARGET } from '@cheque-flow/ui/tokens';
+import { MIN_TOUCH_TARGET } from '@cheque-flow/ui/tokens';
 
 import { BiometricGate } from '@/components/biometric-gate';
 import {
@@ -17,7 +17,8 @@ import {
 } from '@/components/icons';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { LoadingView } from '@/components/ui';
-import { fontFamily, pageGradient } from '@/theme';
+import { fontFamily } from '@/theme';
+import { useTheme } from '@/theme-context';
 
 /**
  * Draws a tab's icon in the tint the navigator asks for.
@@ -49,6 +50,7 @@ export default function AppLayout() {
   const t = useTranslator();
   const { ready } = useApp();
   const insets = useSafeAreaInsets();
+  const c = useTheme();
 
   const session = useQuery({ queryKey: ['session'], queryFn: () => api.me(), retry: false });
 
@@ -62,7 +64,7 @@ export default function AppLayout() {
           transparent so this shows through; each screen keeps its own padding
           and draws its cards on top. */}
       <LinearGradient
-        colors={[...pageGradient]}
+        colors={[...c.pageGradient]}
         locations={[0, 0.45, 1]}
         style={StyleSheet.absoluteFill}
       />
@@ -71,11 +73,11 @@ export default function AppLayout() {
           headerShown: false,
           // Transparent, so the gradient above shows through every tab.
           sceneStyle: { backgroundColor: 'transparent' },
-          tabBarActiveTintColor: colors.brand,
-          tabBarInactiveTintColor: colors.textMuted,
+          tabBarActiveTintColor: c.accent.base,
+          tabBarInactiveTintColor: c.text.secondary,
           tabBarStyle: {
-            backgroundColor: colors.surface,
-            borderTopColor: colors.border,
+            backgroundColor: c.surface.card,
+            borderTopColor: c.surface.line,
             // The gesture bar sits on top of the tab bar on modern phones, so
             // the bar grows by the inset rather than letting the system draw
             // over the labels.
@@ -93,7 +95,7 @@ export default function AppLayout() {
           },
           // Android's default ripple is a grey circle that ignores the brand.
           ...(Platform.OS === 'android'
-            ? { tabBarAndroidRipple: { color: colors.brandLight, borderless: false } }
+            ? { tabBarAndroidRipple: { color: c.accent.wash, borderless: false } }
             : {}),
         }}
       >

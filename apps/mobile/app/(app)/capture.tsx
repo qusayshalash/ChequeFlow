@@ -4,7 +4,6 @@ import { useRef, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ApiClientError } from '@cheque-flow/api-client';
-import { colors } from '@cheque-flow/ui/tokens';
 
 import * as haptics from '@/lib/haptics';
 import { useApi, useTranslator } from '@/components/providers';
@@ -12,7 +11,8 @@ import { Body, Button, Card, Heading, Screen, ScreenHeader } from '@/components/
 import { checkCaptureQuality } from '@/lib/image-quality';
 import { uploadCapturedCheque } from '@/lib/cheque-upload';
 import { saveDraft } from '@/lib/draft-store';
-import { fontFamily, radius, space, surface, text } from '@/theme';
+import { useStyles } from '@/theme-context';
+import { fontFamily, radius, space, type Palette } from '@/theme';
 
 type Side = 'FRONT' | 'BACK';
 
@@ -30,6 +30,7 @@ interface Shot {
  * user photographed is lost.
  */
 export default function CaptureScreen() {
+  const styles = useStyles(makeStyles);
   const api = useApi();
   const t = useTranslator();
   const router = useRouter();
@@ -195,44 +196,55 @@ export default function CaptureScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { padding: space['4'], gap: space['4'], backgroundColor: 'transparent' },
-  cameraBox: { height: 260, borderRadius: radius.md, overflow: 'hidden', backgroundColor: '#000' },
-  camera: { flex: 1 },
-  thumbs: { flexDirection: 'row', gap: space['2'] },
-  thumbBox: { flex: 1, gap: space['1'] },
-  thumbLabel: {
-    fontFamily: fontFamily.regular,
-    fontSize: 13,
-    color: text.secondary,
-    textAlign: 'right',
-  },
-  thumb: {
-    width: '100%',
-    height: 90,
-    borderRadius: radius.sm,
-    backgroundColor: 'transparent',
-  },
-  thumbEmpty: {
-    borderWidth: 1,
-    borderColor: surface.line,
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  optional: { fontFamily: fontFamily.regular, fontSize: 12, color: text.faint },
-  hint: {
-    fontFamily: fontFamily.regular,
-    fontSize: 13,
-    color: text.secondary,
-    textAlign: 'right',
-    lineHeight: 19,
-  },
-  warning: {
-    color: colors.warning,
-    fontFamily: fontFamily.regular,
-    fontSize: 14,
-    textAlign: 'right',
-  },
-  error: { color: colors.danger, fontFamily: fontFamily.regular, fontSize: 14, textAlign: 'right' },
-});
+const makeStyles = (c: Palette) =>
+  StyleSheet.create({
+    container: { padding: space['4'], gap: space['4'], backgroundColor: 'transparent' },
+    cameraBox: {
+      height: 260,
+      borderRadius: radius.md,
+      overflow: 'hidden',
+      backgroundColor: '#000',
+    },
+    camera: { flex: 1 },
+    thumbs: { flexDirection: 'row', gap: space['2'] },
+    thumbBox: { flex: 1, gap: space['1'] },
+    thumbLabel: {
+      fontFamily: fontFamily.regular,
+      fontSize: 13,
+      color: c.text.secondary,
+      textAlign: 'right',
+    },
+    thumb: {
+      width: '100%',
+      height: 90,
+      borderRadius: radius.sm,
+      backgroundColor: 'transparent',
+    },
+    thumbEmpty: {
+      borderWidth: 1,
+      borderColor: c.surface.line,
+      borderStyle: 'dashed',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    optional: { fontFamily: fontFamily.regular, fontSize: 12, color: c.text.faint },
+    hint: {
+      fontFamily: fontFamily.regular,
+      fontSize: 13,
+      color: c.text.secondary,
+      textAlign: 'right',
+      lineHeight: 19,
+    },
+    warning: {
+      color: c.semantic.warning,
+      fontFamily: fontFamily.regular,
+      fontSize: 14,
+      textAlign: 'right',
+    },
+    error: {
+      color: c.semantic.danger,
+      fontFamily: fontFamily.regular,
+      fontSize: 14,
+      textAlign: 'right',
+    },
+  });
