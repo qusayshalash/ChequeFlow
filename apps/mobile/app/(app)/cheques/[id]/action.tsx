@@ -6,6 +6,7 @@ import { ScrollView, StyleSheet } from 'react-native';
 import { ApiClientError } from '@cheque-flow/api-client';
 import { ChequeAction, type ChequeDetailView } from '@cheque-flow/shared-types';
 
+import * as haptics from '@/lib/haptics';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import {
   Banner,
@@ -114,6 +115,7 @@ export default function PerformActionScreen() {
       }
     },
     onSuccess: () => {
+      haptics.recorded();
       void queryClient.invalidateQueries({ queryKey: ['cheque', id] });
       void queryClient.invalidateQueries({ queryKey: ['cheques'] });
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
@@ -121,6 +123,7 @@ export default function PerformActionScreen() {
       router.back();
     },
     onError: (caught: unknown) => {
+      haptics.refused();
       setError(caught instanceof ApiClientError ? t(caught.messageKey) : t('errors.saveFailed'));
     },
   });

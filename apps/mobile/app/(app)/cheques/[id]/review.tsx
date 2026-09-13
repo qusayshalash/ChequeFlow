@@ -7,6 +7,7 @@ import { ApiClientError, type OcrSuggestionResponse } from '@cheque-flow/api-cli
 import type { ChequeDetailView, DuplicateChequeMatch } from '@cheque-flow/shared-types';
 import { colors } from '@cheque-flow/ui/tokens';
 
+import * as haptics from '@/lib/haptics';
 import { useApi, useTranslator } from '@/components/providers';
 import { Body, Button, Card, LoadingView } from '@/components/ui';
 import { fontFamily, radius, space, surface, text } from '@/theme';
@@ -84,6 +85,7 @@ export default function ReviewExtractedDataScreen() {
       );
     },
     onSuccess: () => {
+      haptics.recorded();
       void queryClient.invalidateQueries({ queryKey: ['cheque', id] });
       void queryClient.invalidateQueries({ queryKey: ['cheques'] });
       router.replace(`/(app)/cheques/${id}`);
@@ -93,11 +95,13 @@ export default function ReviewExtractedDataScreen() {
       // rather than refuse: a re-issued cheque can legitimately repeat a
       // number, and only the person holding it knows which this is.
       if (caught instanceof ApiClientError && caught.code === 'DUPLICATE_CHEQUE') {
+        haptics.needsAttention();
         const details = caught.details as { duplicates?: DuplicateChequeMatch[] } | undefined;
         setDuplicates(details?.duplicates ?? []);
         setError(null);
         return;
       }
+      haptics.refused();
       setError(caught instanceof ApiClientError ? t(caught.messageKey) : t('errors.network'));
     },
   });

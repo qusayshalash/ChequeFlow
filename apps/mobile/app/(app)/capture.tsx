@@ -6,6 +6,7 @@ import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ApiClientError } from '@cheque-flow/api-client';
 import { colors } from '@cheque-flow/ui/tokens';
 
+import * as haptics from '@/lib/haptics';
 import { useApi, useTranslator } from '@/components/providers';
 import { Body, Button, Card, Heading, Screen, ScreenHeader } from '@/components/ui';
 import { checkCaptureQuality } from '@/lib/image-quality';
@@ -72,7 +73,12 @@ export default function CaptureScreen() {
       fileSize: Math.round((photo.width * photo.height) / 4),
     });
 
-    if (!quality.ok) {
+    if (quality.ok) {
+      // The shutter's own confirmation: the screen shows a thumbnail, but the
+      // phone is usually held over a cheque rather than looked at.
+      haptics.captured();
+    } else {
+      haptics.needsAttention();
       setWarning(quality.messageKeys.map((key) => t(key)).join(' · '));
     }
 
@@ -94,6 +100,7 @@ export default function CaptureScreen() {
 
     try {
       const chequeId = await uploadCapturedCheque(api, images);
+      haptics.recorded();
       router.replace(`/(app)/cheques/${chequeId}/review`);
     } catch (caught) {
       // The reason, in the log, before it is turned into a message.

@@ -1,14 +1,15 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ApiClientError } from '@cheque-flow/api-client';
 import { BULK_CHEQUE_ACTIONS } from '@cheque-flow/validation';
 
 import { IconAlert, IconCheck, IconClose } from '@/components/icons';
+import * as haptics from '@/lib/haptics';
 import { useApi, useTranslator } from '@/components/providers';
 import { Banner, Button, Picker, Sheet } from '@/components/ui';
-import { TAP, accent, elevation, radius, space, surface, text, type } from '@/theme';
+import { TAP, accent, elevation, motion, radius, space, surface, text, type } from '@/theme';
 
 type BulkAction = (typeof BULK_CHEQUE_ACTIONS)[number];
 
@@ -51,6 +52,19 @@ export function BulkBar({
   const [locationId, setLocationId] = useState<string | null>(null);
   const [blocked, setBlocked] = useState<{ chequeNumber: string; reason: string }[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  // Driven by the selection rather than by mounting: the bar is unmounted at
+  // zero, so a value that only animated on mount would jump on every reselect.
+  const rise = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const run = Animated.timing(rise, {
+      toValue: selected.size > 0 ? 1 : 0,
+      duration: selected.size > 0 ? motion.enter : motion.exit,
+      useNativeDriver: true,
+    });
+    run.start();
+    return () => run.stop();
+  }, [rise, selected.size]);
   const [done, setDone] = useState<string | null>(null);
 
   const apply = useMutation({
@@ -67,6 +81,8 @@ export function BulkBar({
       // The endpoint resolves rather than throwing when the selection is
       // refused, so a blocked result has to be read, not caught.
       if (result.status === 'BLOCKED') {
+        // Nothing was written: the selection needs a decision, not a retry.
+        haptics.needsAttention();
         setBlocked(
           result.skipped.map((entry) => ({
             chequeNumber: entry.chequeNumber,
@@ -75,6 +91,7 @@ export function BulkBar({
         );
         return;
       }
+      haptics.recorded();
       void queryClient.invalidateQueries({ queryKey: ['cheques'] });
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       setDone(t('bulk.confirmBatchDone', { count: String(result.applied.length) }));
@@ -82,8 +99,10 @@ export function BulkBar({
       setOpen(false);
       onClear();
     },
-    onError: (caught: unknown) =>
-      setError(caught instanceof ApiClientError ? t(caught.messageKey) : t('errors.loadFailed')),
+    onError: (caught: unknown) => {
+      haptics.refused();
+      setError(caught instanceof ApiClientError ? t(caught.messageKey) : t('errors.loadFailed'));
+    },
   });
 
   if (selected.size === 0 && !done) return null;
@@ -102,7 +121,21 @@ export function BulkBar({
       ) : null}
 
       {selected.size > 0 ? (
-        <View style={styles.bar}>
+        // Rising from the edge it sits on, rather than appearing over the row
+        // that was just tapped. Transform and opacity only: the list behind it
+        // does not reflow, and a second tap while it is arriving simply
+        // retargets the same value.
+        <Animated.View
+          style={[
+            styles.bar,
+            {
+              opacity: rise,
+              transform: [
+                { translateY: rise.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) },
+              ],
+            },
+          ]}
+        >
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('common.clear')}
@@ -128,7 +161,7 @@ export function BulkBar({
           >
             <Text style={styles.goText}>{t('bulk.apply')}</Text>
           </Pressable>
-        </View>
+        </Animated.View>
       ) : null}
 
       <Sheet visible={open} title={t('bulk.apply')} onClose={() => setOpen(false)}>

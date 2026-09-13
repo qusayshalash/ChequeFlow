@@ -1,6 +1,7 @@
-import { useState, type ReactNode, type RefObject } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   Modal,
   Pressable,
   ScrollView,
@@ -25,6 +26,7 @@ import {
   TAP,
   accent,
   elevation,
+  motion,
   radius,
   sheetElevation,
   space,
@@ -147,6 +149,46 @@ export function InfoRow({
   );
 }
 
+/**
+ * Content arriving where there was none.
+ *
+ * Rows that appear between one frame and the next read as a redraw rather than
+ * as an answer to the tap that asked for them — the reader has to re-find
+ * their place. A short fade with a few pixels of travel says "this came from
+ * the control you just pressed" and costs nothing: opacity and transform only,
+ * so it runs off the main thread and never reflows the list around it.
+ *
+ * Interruptible by construction. `Animated.timing` restarts from wherever the
+ * value currently is, so opening and closing quickly cannot strand a panel
+ * half-faded — the last tap wins.
+ */
+function Reveal({ children }: { children: ReactNode }) {
+  const progress = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const run = Animated.timing(progress, {
+      toValue: 1,
+      duration: motion.enter,
+      useNativeDriver: true,
+    });
+    run.start();
+    return () => run.stop();
+  }, [progress]);
+
+  return (
+    <Animated.View
+      style={{
+        opacity: progress,
+        transform: [
+          { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) },
+        ],
+      }}
+    >
+      {children}
+    </Animated.View>
+  );
+}
+
 /** One fact about a record: what it is called, and what it says. */
 export interface Fact {
   label: string;
@@ -200,11 +242,13 @@ export function FactSection({
           <InfoRow key={fact.label} label={fact.label} value={fact.value!} ltr={fact.ltr} />
         ))}
 
-        {showEmpty
-          ? empty.map((fact) => (
+        {showEmpty ? (
+          <Reveal>
+            {empty.map((fact) => (
               <InfoRow key={fact.label} label={fact.label} value="—" ltr={fact.ltr} />
-            ))
-          : null}
+            ))}
+          </Reveal>
+        ) : null}
 
         {children}
 
@@ -273,7 +317,11 @@ export function MoreFields({
         <Text style={styles.moreLabel}>{`${label} (${count})`}</Text>
       </Pressable>
 
-      {shown ? <View style={styles.card}>{children}</View> : null}
+      {shown ? (
+        <Reveal>
+          <View style={styles.card}>{children}</View>
+        </Reveal>
+      ) : null}
     </View>
   );
 }

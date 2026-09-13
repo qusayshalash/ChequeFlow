@@ -9,6 +9,7 @@ import { createChequeSchema } from '@cheque-flow/validation';
 import { colors } from '@cheque-flow/ui/tokens';
 
 import { FormScreen } from '@/components/form-screen';
+import * as haptics from '@/lib/haptics';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import {
   Banner,
@@ -123,6 +124,7 @@ export default function NewChequeScreen() {
       return api.createCheque(validated.data, allowDuplicate);
     },
     onSuccess: (result) => {
+      haptics.recorded();
       void queryClient.invalidateQueries({ queryKey: ['cheques'] });
       void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       router.replace(`/(app)/cheques/${result.cheque.id}`);
@@ -134,6 +136,9 @@ export default function NewChequeScreen() {
         // A duplicate is not a failure: the API found a matching cheque and is
         // asking whether this really is a second one.
         if (error.code === 'DUPLICATE_CHEQUE') {
+          // Not a failure: the API found a match and is asking about it. The
+          // buzz is the one that means "look at this", not "that went wrong".
+          haptics.needsAttention();
           const details = error.details as { duplicates?: DuplicateChequeMatch[] } | undefined;
           setDuplicates(details?.duplicates ?? []);
           return;
