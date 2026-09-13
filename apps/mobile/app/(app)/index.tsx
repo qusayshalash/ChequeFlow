@@ -22,7 +22,7 @@ import {
 } from '@/components/icons';
 import { BankMark } from '@/components/marks';
 import { useApi, useApp, useTranslator } from '@/components/providers';
-import { Banner, ErrorView, LoadingView, ScreenHeader, StatusPill } from '@/components/ui';
+import { Amount, Banner, ErrorView, LoadingView, ScreenHeader, StatusPill } from '@/components/ui';
 import { TAP, accent, elevation, radius, space, surface, text, type } from '@/theme';
 
 /** How far ahead the upcoming list looks. */
@@ -297,9 +297,9 @@ export default function DashboardScreen() {
 
                 <View style={styles.upcomingBody}>
                   <View style={styles.upcomingTop}>
-                    <Text style={styles.upcomingAmount} numberOfLines={1}>
+                    <Amount style={styles.upcomingAmount}>
                       {money(cheque.amount, cheque.currency)}
-                    </Text>
+                    </Amount>
                     <Text style={styles.upcomingNumber}>{cheque.chequeNumber}</Text>
                   </View>
                   <View style={styles.upcomingBottom}>

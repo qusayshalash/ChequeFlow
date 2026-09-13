@@ -6,7 +6,7 @@ import type { ReminderRow } from '@cheque-flow/api-client';
 import { colors } from '@cheque-flow/ui/tokens';
 
 import { useApi, useApp, useTranslator } from '@/components/providers';
-import { Badge, Button, EmptyView, ErrorView, LoadingView } from '@/components/ui';
+import { Amount, Badge, Button, EmptyView, ErrorView, LoadingView } from '@/components/ui';
 import { TAP, elevation, fontFamily, radius, space, surface, text } from '@/theme';
 
 /** Snooze options, in minutes. */
@@ -84,7 +84,7 @@ export default function NotificationsScreen() {
               )}
             </View>
 
-            <Text style={styles.amount}>{money(item.cheque.amount, item.cheque.currency)}</Text>
+            <Amount style={styles.amount}>{money(item.cheque.amount, item.cheque.currency)}</Amount>
             <Text style={styles.meta}>
               {t('cheque.dueDate')}: {date(item.cheque.dueDate)}
             </Text>

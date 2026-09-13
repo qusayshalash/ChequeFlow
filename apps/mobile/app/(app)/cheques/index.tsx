@@ -18,6 +18,7 @@ import { BulkBar } from '@/components/bulk-bar';
 import { BankMark } from '@/components/marks';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import {
+  Amount,
   Button,
   DateField,
   EmptyView,
@@ -330,9 +331,7 @@ export default function ChequeListScreen() {
 
               <View style={styles.rowBody}>
                 <View style={styles.rowTop}>
-                  <Text style={styles.amount} numberOfLines={1}>
-                    {money(item.amount, item.currency)}
-                  </Text>
+                  <Amount style={styles.amount}>{money(item.amount, item.currency)}</Amount>
                   <StatusPill status={item.status} label={t(`status.${item.status}`)} />
                 </View>
 

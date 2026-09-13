@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import type { StyleProp, TextStyle } from 'react-native';
+
 import { STATUS_TONES, TONE_COLORS, colors } from '@cheque-flow/ui/tokens';
 
 import {
@@ -104,6 +106,29 @@ export function Card({ children }: { children: ReactNode }) {
 
 export function Heading({ children }: { children: ReactNode }) {
   return <Text style={styles.heading}>{children}</Text>;
+}
+
+/**
+ * A sum of money on screen.
+ *
+ * The one string in this app that must never be cut short. Everything is sized
+ * for the default text setting, and the phone's own setting scales it: at the
+ * larger accessibility sizes an amount in a list row runs past its column, and
+ * a `numberOfLines={1}` row does not wrap it — it truncates. "USD 9,000.00"
+ * becomes "USD 9,00…", which is not a smaller number on screen, it is a
+ * different one.
+ *
+ * So it shrinks instead, down to three quarters of its size and no further;
+ * past that the row is wrong anyway and the text should be allowed to reflow.
+ * One component, because the rule is easy to forget on the next screen — and
+ * the test that enforces it needs one thing to look at.
+ */
+export function Amount({ children, style }: { children: ReactNode; style?: StyleProp<TextStyle> }) {
+  return (
+    <Text style={style} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+      {children}
+    </Text>
+  );
 }
 
 export function Body({ children, muted }: { children: ReactNode; muted?: boolean }) {

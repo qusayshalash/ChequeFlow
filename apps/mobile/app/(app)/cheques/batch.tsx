@@ -16,6 +16,7 @@ import { colors } from '@cheque-flow/ui/tokens';
 import { FormScreen } from '@/components/form-screen';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import {
+  Amount,
   Banner,
   Body,
   Button,
@@ -394,7 +395,7 @@ export default function ChequeBatchScreen() {
 
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>{t('cheque.batchTotal')}</Text>
-          <Text style={styles.totalValue}>{money(total, currency)}</Text>
+          <Amount style={styles.totalValue}>{money(total, currency)}</Amount>
         </View>
       </Section>
 

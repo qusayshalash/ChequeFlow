@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { IconBell, IconChevronEnd, type IconProps } from '@/components/icons';
+import { Amount } from '@/components/ui';
 import { TAP, elevation, radius, space, surface, text, type } from '@/theme';
 
 /**
@@ -76,14 +77,9 @@ export function StatCard({
           cards of two different heights in one row read as a layout fault. */}
       <View style={styles.statFoot}>
         <Text style={styles.statAmountLabel}>{amountLabel}</Text>
-        <Text
-          style={[styles.statAmount, { color: amount ? palette.amount : text.faint }]}
-          numberOfLines={1}
-          adjustsFontSizeToFit
-          minimumFontScale={0.75}
-        >
+        <Amount style={[styles.statAmount, { color: amount ? palette.amount : text.faint }]}>
           {amount || '—'}
-        </Text>
+        </Amount>
       </View>
     </Pressable>
   );

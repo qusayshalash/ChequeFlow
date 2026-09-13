@@ -9,7 +9,7 @@ import { colors } from '@cheque-flow/ui/tokens';
 import { IconChevronEnd, IconPhone } from '@/components/icons';
 import { ContactAvatar } from '@/components/marks';
 import { useApi, useApp, useTranslator } from '@/components/providers';
-import { Button, EmptyView, ErrorView, LoadingView, SegmentedTabs } from '@/components/ui';
+import { Amount, Button, EmptyView, ErrorView, LoadingView, SegmentedTabs } from '@/components/ui';
 import { TAP, elevation, radius, space, surface, text, type } from '@/theme';
 
 const TYPE_TABS = ['ALL', ContactType.CUSTOMER, ContactType.SUPPLIER, ContactType.PERSON] as const;
@@ -149,13 +149,12 @@ export default function ContactsScreen() {
                   item.balances.map((balance) => {
                     const owed = !balance.net.startsWith('-');
                     return (
-                      <Text
+                      <Amount
                         key={balance.currency}
                         style={[styles.balance, owed ? styles.balanceOwed : styles.balanceWeOwe]}
-                        numberOfLines={1}
                       >
                         {money(balance.net, balance.currency)}
-                      </Text>
+                      </Amount>
                     );
                   })
                 )}

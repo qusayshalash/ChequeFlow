@@ -60,7 +60,12 @@ export function BankMark({ name, size = 32 }: { name: string | null; size?: numb
   if (!name?.trim()) {
     return (
       <View style={[styles.mark, box, styles.empty]}>
-        <Text style={[styles.letter, styles.emptyLetter, { fontSize: size * 0.42 }]}>—</Text>
+        <Text
+          allowFontScaling={false}
+          style={[styles.letter, styles.emptyLetter, { fontSize: size * 0.42 }]}
+        >
+          —
+        </Text>
       </View>
     );
   }
@@ -68,7 +73,10 @@ export function BankMark({ name, size = 32 }: { name: string | null; size?: numb
   const palette = markFor(name, BANK_MARKS);
   return (
     <View style={[styles.mark, box, { backgroundColor: palette.bg }]}>
-      <Text style={[styles.letter, { color: palette.fg, fontSize: size * 0.45 }]}>
+      <Text
+        allowFontScaling={false}
+        style={[styles.letter, { color: palette.fg, fontSize: size * 0.45 }]}
+      >
         {name.trim().charAt(0)}
       </Text>
     </View>
@@ -95,6 +103,7 @@ export function ContactAvatar({
       accessible={false}
     >
       <Text
+        allowFontScaling={false}
         style={[
           styles.letter,
           { fontSize: size * 0.4 },

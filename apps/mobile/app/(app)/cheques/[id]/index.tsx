@@ -10,6 +10,7 @@ import { IconAlert, IconCalendar } from '@/components/icons';
 import { ChequeJourney } from '@/components/journey';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import {
+  Amount,
   Banner,
   Body,
   Button,
@@ -81,9 +82,7 @@ export default function ChequeDetailScreen() {
           <StatusPill status={cheque.status} label={t(`status.${cheque.status}`)} />
         </View>
 
-        <Text style={styles.heroAmount} numberOfLines={1} adjustsFontSizeToFit>
-          {money(cheque.amount, cheque.currency)}
-        </Text>
+        <Amount style={styles.heroAmount}>{money(cheque.amount, cheque.currency)}</Amount>
         {cheque.amountInWords ? (
           <Text style={styles.heroWords} numberOfLines={2}>
             {cheque.amountInWords}

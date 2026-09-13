@@ -11,6 +11,7 @@ import { IconMessage, IconPhone } from '@/components/icons';
 import { ContactAvatar } from '@/components/marks';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import {
+  Amount,
   Badge,
   Banner,
   Body,
@@ -184,7 +185,7 @@ export default function ContactStatementScreen() {
                       : t('contact.owesUs')}
                 </Text>
               </View>
-              <Text
+              <Amount
                 style={[
                   styles.netValue,
                   Number(totals.net) === 0
@@ -195,7 +196,7 @@ export default function ContactStatementScreen() {
                 ]}
               >
                 {money(totals.net, totals.currency)}
-              </Text>
+              </Amount>
             </View>
 
             <InfoRow
@@ -249,7 +250,7 @@ export default function ContactStatementScreen() {
                 <StatusPill status={cheque.status} label={t(`status.${cheque.status}`)} />
               </View>
               <View style={styles.chequeMeta}>
-                <Text style={styles.meta}>{money(cheque.amount, cheque.currency)}</Text>
+                <Amount style={styles.meta}>{money(cheque.amount, cheque.currency)}</Amount>
                 <Text style={[styles.meta, cheque.isOverdue && styles.overdue]}>
                   {date(cheque.dueDate)}
                 </Text>
