@@ -25,7 +25,8 @@ import {
   IconClock,
 } from '@/components/icons';
 import { maskDateInput } from '@/lib/dates';
-import { TAP, elevation, motion, radius, sheetElevation, space, type, type Palette } from '@/theme';
+import { useMotionDurations } from '@/lib/reduced-motion';
+import { TAP, elevation, radius, sheetElevation, space, type, type Palette } from '@/theme';
 
 /**
  * The app's interface primitives.
@@ -186,16 +187,17 @@ export function InfoRow({
  */
 function Reveal({ children }: { children: ReactNode }) {
   const progress = useRef(new Animated.Value(0)).current;
+  const durations = useMotionDurations();
 
   useEffect(() => {
     const run = Animated.timing(progress, {
       toValue: 1,
-      duration: motion.enter,
+      duration: durations.enter,
       useNativeDriver: true,
     });
     run.start();
     return () => run.stop();
-  }, [progress]);
+  }, [progress, durations.enter]);
 
   return (
     <Animated.View

@@ -7,10 +7,11 @@ import { BULK_CHEQUE_ACTIONS } from '@cheque-flow/validation';
 
 import { IconAlert, IconCheck, IconClose } from '@/components/icons';
 import * as haptics from '@/lib/haptics';
+import { useMotionDurations } from '@/lib/reduced-motion';
 import { useApi, useTranslator } from '@/components/providers';
 import { Banner, Button, Picker, Sheet } from '@/components/ui';
 import { useStyles, useTheme } from '@/theme-context';
-import { TAP, elevation, motion, radius, space, type, type Palette } from '@/theme';
+import { TAP, elevation, radius, space, type, type Palette } from '@/theme';
 
 type BulkAction = (typeof BULK_CHEQUE_ACTIONS)[number];
 
@@ -59,15 +60,16 @@ export function BulkBar({
   // Driven by the selection rather than by mounting: the bar is unmounted at
   // zero, so a value that only animated on mount would jump on every reselect.
   const rise = useRef(new Animated.Value(0)).current;
+  const durations = useMotionDurations();
   useEffect(() => {
     const run = Animated.timing(rise, {
       toValue: selected.size > 0 ? 1 : 0,
-      duration: selected.size > 0 ? motion.enter : motion.exit,
+      duration: selected.size > 0 ? durations.enter : durations.exit,
       useNativeDriver: true,
     });
     run.start();
     return () => run.stop();
-  }, [rise, selected.size]);
+  }, [rise, selected.size, durations.enter, durations.exit]);
   const [done, setDone] = useState<string | null>(null);
 
   const apply = useMutation({

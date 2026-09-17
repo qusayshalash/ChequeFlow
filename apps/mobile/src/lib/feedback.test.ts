@@ -15,6 +15,11 @@ import { describe, expect, it } from 'vitest';
  * haptics off for every app on the phone. These tests hold the line at the
  * moments that change the books, and at the two places where movement answers
  * a tap.
+ *
+ * Motion also has an owner who can decline it. "Reduce Motion" is switched on
+ * by people for whom a sliding panel causes nausea or a migraine, so a screen
+ * that takes its duration straight from the theme is a fault, not a shortcut:
+ * the setting has to be answered in one place or it is answered nowhere.
  */
 
 const SRC = join(process.cwd(), 'src');
@@ -35,6 +40,7 @@ function sources(): Array<{ file: string; text: string }> {
 }
 
 const HAPTICS = readFileSync(join(SRC, 'lib', 'haptics.ts'), 'utf8');
+const STILLNESS = readFileSync(join(SRC, 'lib', 'reduced-motion.ts'), 'utf8');
 
 describe('haptics', () => {
   it('names the moment, not the waveform', () => {
@@ -91,12 +97,31 @@ describe('motion', () => {
   });
 
   it('uses the durations the theme already declared', () => {
-    const all = sources()
-      .map((entry) => entry.text)
-      .join('\n');
-    expect(all).toContain('duration: motion.enter');
     // An exit reads as more responsive at about two thirds of the entrance,
-    // which is what the theme's pair already encodes.
-    expect(all).toContain('motion.exit');
+    // which is what the theme's pair already encodes — and which the hook
+    // hands to the screens unchanged whenever movement is allowed.
+    expect(STILLNESS).toMatch(/import \{ motion \} from '@\/theme'/);
+    expect(STILLNESS).toMatch(/return[^;]*\bmotion\b/);
+  });
+
+  it('reads every duration through the reduced-motion hook', () => {
+    // A screen that reaches for `motion.enter` itself is a screen that keeps
+    // moving after the owner asked the phone to hold still. The setting has to
+    // be answered in one place or it is answered nowhere.
+    for (const { file, text } of sources()) {
+      if (!text.includes('Animated.timing')) continue;
+      expect(text, `${file} animates without the hook`).toContain('useMotionDurations()');
+      expect(text, `${file} takes a duration straight from the theme`).not.toMatch(
+        /duration:[^,\n]*\bmotion\.(enter|exit)/,
+      );
+    }
+  });
+
+  it('holds still rather than skipping, so nothing is stranded half-faded', () => {
+    // The animated values carry the final opacity and offset as well as the
+    // travel. An animation that never runs would leave the panel invisible; a
+    // zero-length one puts it where it belongs in a single frame.
+    expect(STILLNESS).toMatch(/enter: 0,\s*exit: 0/);
+    expect(STILLNESS).toContain("AccessibilityInfo.addEventListener('reduceMotionChanged'");
   });
 });
