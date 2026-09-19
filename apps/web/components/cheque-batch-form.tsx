@@ -476,26 +476,24 @@ export function ChequeBatchForm() {
       </Panel>
 
       <Panel title={`${t('cheque.batchRows')} — ${rows.length}`}>
-        <p className="mb-3 text-sm text-slate-500">{t('cheque.batchAutoHint')}</p>
+        <p className="mb-3 text-sm text-ink-muted">{t('cheque.batchAutoHint')}</p>
 
         {/* The grid scrolls inside its own box so the page never moves sideways. */}
-        <div className="overflow-x-auto rounded-xl border border-slate-200">
+        <div className="overflow-x-auto rounded-xl border border-line">
           <table className="w-full min-w-[560px] border-separate border-spacing-0 text-sm">
-            <thead className="bg-slate-50">
-              <tr className="text-slate-500">
-                <th className="w-10 border-b border-slate-200 px-2 py-2 text-start font-medium">
-                  #
-                </th>
-                <th className="border-b border-slate-200 px-2 py-2 text-start font-medium">
+            <thead className="bg-subtle">
+              <tr className="text-ink-muted">
+                <th className="w-10 border-b border-line px-2 py-2 text-start font-medium">#</th>
+                <th className="border-b border-line px-2 py-2 text-start font-medium">
                   {t('cheque.number')}
                 </th>
-                <th className="border-b border-slate-200 px-2 py-2 text-start font-medium">
+                <th className="border-b border-line px-2 py-2 text-start font-medium">
                   {t('common.amount')}
                 </th>
-                <th className="border-b border-slate-200 px-2 py-2 text-start font-medium">
+                <th className="border-b border-line px-2 py-2 text-start font-medium">
                   {t('cheque.dueDate')}
                 </th>
-                <th className="w-24 border-b border-slate-200 px-2 py-2" />
+                <th className="w-24 border-b border-line px-2 py-2" />
               </tr>
             </thead>
             <tbody>
@@ -503,8 +501,8 @@ export function ChequeBatchForm() {
                 const isDuplicate = duplicateRows.includes(index);
                 const errors = rowErrors[index] ?? {};
                 return (
-                  <tr key={row.id} className={isDuplicate ? 'bg-amber-50' : undefined}>
-                    <td className="px-2 py-1.5 text-slate-400 tabular-nums">{index + 1}</td>
+                  <tr key={row.id} className={isDuplicate ? 'bg-warning-soft' : undefined}>
+                    <td className="px-2 py-1.5 text-ink-muted tabular-nums">{index + 1}</td>
                     <td className="px-2 py-1.5">
                       <input
                         dir="ltr"
@@ -519,7 +517,7 @@ export function ChequeBatchForm() {
                         aria-invalid={Boolean(errors.chequeNumber)}
                       />
                       {errors.chequeNumber ? (
-                        <span className="text-xs text-red-600">{errors.chequeNumber}</span>
+                        <span className="text-xs text-danger">{errors.chequeNumber}</span>
                       ) : null}
                     </td>
                     <td className="px-2 py-1.5">
@@ -538,7 +536,7 @@ export function ChequeBatchForm() {
                         aria-invalid={Boolean(errors.amount)}
                       />
                       {errors.amount ? (
-                        <span className="text-xs text-red-600">{errors.amount}</span>
+                        <span className="text-xs text-danger">{errors.amount}</span>
                       ) : null}
                     </td>
                     <td className="px-2 py-1.5">
@@ -555,7 +553,7 @@ export function ChequeBatchForm() {
                         aria-invalid={Boolean(errors.dueDate)}
                       />
                       {errors.dueDate ? (
-                        <span className="text-xs text-red-600">{errors.dueDate}</span>
+                        <span className="text-xs text-danger">{errors.dueDate}</span>
                       ) : null}
                     </td>
                     <td className="px-2 py-1.5">
@@ -566,7 +564,7 @@ export function ChequeBatchForm() {
                           aria-label={`${t('cheque.batchCopyRow')} ${index + 1}`}
                           onClick={() => duplicateRow(index)}
                           disabled={atLimit}
-                          className="rounded-lg border border-slate-200 px-2 py-1 text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+                          className="rounded-lg border border-line px-2 py-1 text-ink-soft hover:bg-subtle disabled:opacity-40"
                         >
                           ⧉
                         </button>
@@ -576,7 +574,7 @@ export function ChequeBatchForm() {
                           aria-label={`${t('cheque.batchRemoveRow')} ${index + 1}`}
                           onClick={() => removeRow(index)}
                           disabled={rows.length === 1}
-                          className="rounded-lg border border-slate-200 px-2 py-1 text-slate-600 hover:bg-red-50 hover:text-red-700 disabled:opacity-40"
+                          className="rounded-lg border border-line px-2 py-1 text-ink-soft hover:bg-danger-soft hover:text-danger disabled:opacity-40"
                         >
                           ✕
                         </button>
@@ -620,11 +618,9 @@ export function ChequeBatchForm() {
             </Button>
           </div>
 
-          {atLimit ? (
-            <span className="text-sm text-amber-700">{t('cheque.batchLimit')}</span>
-          ) : null}
+          {atLimit ? <span className="text-sm text-warning">{t('cheque.batchLimit')}</span> : null}
 
-          <span className="ms-auto text-sm text-slate-600">
+          <span className="ms-auto text-sm text-ink-soft">
             {t('cheque.batchTotal')}:{' '}
             <b className="tabular-nums">{formatMoney(locale, total, currency)}</b>
           </span>
@@ -636,12 +632,12 @@ export function ChequeBatchForm() {
       ) : null}
 
       {formError ? (
-        <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
+        <p role="alert" className="rounded-xl bg-danger-soft p-3 text-sm text-danger">
           {formError}
         </p>
       ) : null}
 
-      <div className="sticky bottom-4 z-10 -mx-1 flex flex-wrap gap-3 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-[0_18px_48px_-30px_rgb(16_24_40/0.6)] backdrop-blur-xl">
+      <div className="sticky bottom-4 z-10 -mx-1 flex flex-wrap gap-3 rounded-2xl border border-line bg-surface/95 p-4 shadow-[0_18px_48px_-30px_rgb(16_24_40/0.6)] backdrop-blur-xl">
         <Button type="submit" size="lg" loading={mutation.isPending}>
           {t('common.save')}
         </Button>

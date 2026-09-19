@@ -167,19 +167,19 @@ export default function DashboardPage() {
         {
           label: t('dashboard.expectedFlow'),
           values: days.map((day) => Number(inflowByDay.get(day)?.inflow ?? 0)),
-          color: '#0B7C6B',
+          color: 'var(--app-primary)',
           fill: 'url(#flowFill)',
           ...(futureFrom >= 0 ? { dashedFrom: futureFrom } : {}),
         },
         {
           label: t('dashboard.collectedSeries'),
           values: days.map((day) => Number(inflowByDay.get(day)?.outflow ?? 0)),
-          color: '#12866F',
+          color: 'var(--app-success)',
         },
         {
           label: t('dashboard.bouncedSeries'),
           values: days.map((day) => bouncedByDay.get(day) ?? 0),
-          color: '#E5484D',
+          color: 'var(--app-danger-solid)',
         },
       ],
       netTotal: (cashFlow.data?.periods ?? []).reduce(
@@ -217,7 +217,7 @@ export default function DashboardPage() {
         actions={
           currencies.length > 1 ? (
             <div
-              className="inline-flex rounded-xl border border-slate-200 bg-white p-1"
+              className="inline-flex rounded-xl border border-line bg-surface p-1"
               role="group"
               aria-label={t('cheque.currency')}
             >
@@ -283,7 +283,7 @@ export default function DashboardPage() {
       {/* Only the base-currency figure carries an unconverted warning, and it
           belongs beside the figure rather than in a banner of its own. */}
       {base.unconvertedCount > 0 ? (
-        <p className="mt-3 rounded-xl border border-amber-100 bg-amber-50 px-4 py-2.5 text-xs font-medium text-amber-700">
+        <p className="mt-3 rounded-xl border border-warning-line bg-warning-soft px-4 py-2.5 text-xs font-medium text-warning">
           {t('dashboard.unconverted', { count: String(base.unconvertedCount) })}
         </p>
       ) : null}
@@ -330,10 +330,10 @@ export default function DashboardPage() {
           ]}
         />
 
-        <section className="min-w-0 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_1px_2px_rgb(16_24_40/0.04)]">
+        <section className="min-w-0 rounded-2xl border border-line/90 bg-surface p-4 shadow-[0_1px_2px_rgb(16_24_40/0.04)]">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <label className="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 px-3 text-[13px] font-semibold text-slate-600 hover:border-slate-300">
-              <IconCalendar width="15" height="15" className="text-slate-400" />
+            <label className="inline-flex h-9 items-center gap-2 rounded-xl border border-line px-3 text-[13px] font-semibold text-ink-soft hover:border-line-strong">
+              <IconCalendar width="15" height="15" className="text-ink-muted" />
               <select
                 className="bg-transparent pe-1 outline-none"
                 value={windowDays}
@@ -349,7 +349,7 @@ export default function DashboardPage() {
             </label>
 
             {chart ? (
-              <div className="flex flex-wrap items-center gap-4 text-[11px] text-slate-500">
+              <div className="flex flex-wrap items-center gap-4 text-[11px] text-ink-muted">
                 {chart.series.map((entry) => (
                   <Legend key={entry.label} color={entry.color} label={entry.label} />
                 ))}
@@ -364,8 +364,8 @@ export default function DashboardPage() {
               <svg width="0" height="0" aria-hidden="true" className="absolute">
                 <defs>
                   <linearGradient id="flowFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#0B7C6B" stopOpacity="0.16" />
-                    <stop offset="100%" stopColor="#0B7C6B" stopOpacity="0" />
+                    <stop offset="0%" stopColor="var(--app-primary)" stopOpacity="0.16" />
+                    <stop offset="100%" stopColor="var(--app-primary)" stopOpacity="0" />
                   </linearGradient>
                 </defs>
               </svg>
@@ -393,21 +393,21 @@ export default function DashboardPage() {
                   .join(' — ')}
               </p>
 
-              <div className="mt-4 grid grid-cols-1 divide-slate-200/70 rounded-xl bg-slate-50/70 p-3 text-center sm:grid-cols-3 sm:divide-x sm:divide-x-reverse">
+              <div className="mt-4 grid grid-cols-1 divide-line/70 rounded-xl bg-subtle/70 p-3 text-center sm:grid-cols-3 sm:divide-x sm:divide-x-reverse">
                 <Summary
                   label={t('dashboard.totalCollected')}
                   value={totals.cleared.money || money(locale, '0', chart.currency)}
-                  tone="text-teal-700"
+                  tone="text-primary-ink"
                 />
                 <Summary
                   label={t('dashboard.totalBounced')}
                   value={totals.bounced.money || money(locale, '0', chart.currency)}
-                  tone="text-red-500"
+                  tone="text-danger"
                 />
                 <Summary
                   label={t('dashboard.netExpected')}
                   value={money(locale, chart.netTotal.toFixed(2), chart.currency)}
-                  tone="text-teal-700"
+                  tone="text-primary-ink"
                 />
               </div>
             </>
@@ -417,16 +417,16 @@ export default function DashboardPage() {
         </section>
       </div>
 
-      <section className="mt-4 overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_1px_2px_rgb(16_24_40/0.04)]">
+      <section className="mt-4 overflow-hidden rounded-2xl border border-line/90 bg-surface shadow-[0_1px_2px_rgb(16_24_40/0.04)]">
         <div className="flex items-center justify-between gap-3 px-4 py-3.5">
           <Link
             href="/cheques"
-            className="inline-flex h-9 shrink-0 items-center gap-1 rounded-xl border border-slate-200 px-3 text-[13px] font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+            className="inline-flex h-9 shrink-0 items-center gap-1 rounded-xl border border-line px-3 text-[13px] font-semibold text-ink-soft transition hover:border-line-strong hover:bg-subtle"
           >
             {t('dashboard.viewAllCheques')}
             <IconChevronEnd width="15" height="15" />
           </Link>
-          <h2 className="text-[15px] font-bold text-slate-900">{t('dashboard.upcomingTitle')}</h2>
+          <h2 className="text-[15px] font-bold text-ink">{t('dashboard.upcomingTitle')}</h2>
         </div>
 
         {due.isPending ? <LoadingState label={t('common.loading')} /> : null}
@@ -440,7 +440,7 @@ export default function DashboardPage() {
             <div className="overflow-x-auto">
               <table className="w-full min-w-[860px] border-separate border-spacing-0 text-sm">
                 <thead>
-                  <tr className="bg-slate-50/80 text-slate-500">
+                  <tr className="bg-subtle/80 text-ink-muted">
                     {[
                       '#',
                       t('cheque.number'),
@@ -454,7 +454,7 @@ export default function DashboardPage() {
                       <th
                         key={header}
                         scope="col"
-                        className={`border-y border-slate-200/80 px-4 py-2.5 text-[11px] font-semibold ${
+                        className={`border-y border-line/80 px-4 py-2.5 text-[11px] font-semibold ${
                           index === 0 ? 'w-12 text-center' : 'text-start'
                         }`}
                       >
@@ -465,53 +465,53 @@ export default function DashboardPage() {
                 </thead>
                 <tbody>
                   {upcoming.map((cheque, index) => (
-                    <tr key={cheque.id} className="group transition-colors hover:bg-slate-50/70">
-                      <td className="border-b border-slate-100 px-4 py-3 text-center text-[13px] text-slate-400 tabular-nums">
+                    <tr key={cheque.id} className="group transition-colors hover:bg-subtle/70">
+                      <td className="border-b border-line-soft px-4 py-3 text-center text-[13px] text-ink-muted tabular-nums">
                         {index + 1}
                       </td>
-                      <td className="border-b border-slate-100 px-4 py-3">
+                      <td className="border-b border-line-soft px-4 py-3">
                         <Link
                           href={`/cheques/${cheque.id}`}
                           dir="ltr"
-                          className="font-semibold text-slate-900 tabular-nums hover:text-teal-700"
+                          className="font-semibold text-ink tabular-nums hover:text-primary-ink"
                         >
                           {cheque.chequeNumber}
                         </Link>
                       </td>
-                      <td className="border-b border-slate-100 px-4 py-3 text-[13px] text-slate-700">
+                      <td className="border-b border-line-soft px-4 py-3 text-[13px] text-ink-soft">
                         {cheque.originalSourceName ?? cheque.drawerName ?? '—'}
                       </td>
-                      <td className="border-b border-slate-100 px-4 py-3">
+                      <td className="border-b border-line-soft px-4 py-3">
                         <span className="flex items-center gap-2.5">
                           <BankMark name={cheque.bankName} size="sm" />
-                          <span className="truncate text-[13px] text-slate-700">
+                          <span className="truncate text-[13px] text-ink-soft">
                             {cheque.bankName ?? '—'}
                           </span>
                         </span>
                       </td>
-                      <td className="border-b border-slate-100 px-4 py-3">
-                        <span className="block text-[13px] font-medium text-slate-700 tabular-nums">
+                      <td className="border-b border-line-soft px-4 py-3">
+                        <span className="block text-[13px] font-medium text-ink-soft tabular-nums">
                           {formatDate(locale, cheque.dueDate)}
                         </span>
-                        <span className="block text-[11px] text-slate-400">
+                        <span className="block text-[11px] text-ink-muted">
                           <RelativeDue dueDate={cheque.dueDate} today={today} />
                         </span>
                       </td>
-                      <td className="border-b border-slate-100 px-4 py-3 font-semibold text-slate-900 tabular-nums">
+                      <td className="border-b border-line-soft px-4 py-3 font-semibold text-ink tabular-nums">
                         {money(locale, cheque.amount, cheque.currency)}
                       </td>
-                      <td className="border-b border-slate-100 px-4 py-3">
+                      <td className="border-b border-line-soft px-4 py-3">
                         <DuePill
                           isOverdue={cheque.isOverdue}
                           dueDate={cheque.dueDate}
                           today={today}
                         />
                       </td>
-                      <td className="border-b border-slate-100 px-4 py-3">
+                      <td className="border-b border-line-soft px-4 py-3">
                         <Link
                           href={`/cheques/${cheque.id}`}
                           aria-label={`${t('common.view')} ${cheque.chequeNumber}`}
-                          className="flex size-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition hover:bg-slate-50 hover:text-slate-700"
+                          className="flex size-8 items-center justify-center rounded-lg border border-line text-ink-muted transition hover:bg-subtle hover:text-ink-soft"
                         >
                           <IconDots width="16" height="16" />
                         </Link>
@@ -524,7 +524,7 @@ export default function DashboardPage() {
 
             {/* Says what is not shown. The table is capped at five, and without
                 this a person cannot tell five upcoming cheques from fifty. */}
-            <p className="px-4 py-3 text-center text-[12px] text-slate-400">
+            <p className="px-4 py-3 text-center text-[12px] text-ink-muted">
               {t('dashboard.showingOfUpcoming', {
                 shown: upcoming.length,
                 total: upcomingAll.length,
@@ -552,7 +552,7 @@ function CurrencyChip({
       onClick={onClick}
       aria-pressed={active}
       className={`h-9 rounded-lg px-4 text-sm font-semibold transition-colors ${
-        active ? 'bg-teal-50 text-teal-900' : 'text-slate-500 hover:text-slate-900'
+        active ? 'bg-primary-soft text-primary-ink' : 'text-ink-muted hover:text-ink'
       }`}
     >
       {label}
@@ -576,7 +576,7 @@ function Legend({ color, label }: { color: string; label: string }) {
 function Summary({ label, value, tone }: { label: string; value: string; tone: string }) {
   return (
     <div className="px-2 py-1">
-      <p className="text-[11px] font-medium text-slate-400">{label}</p>
+      <p className="text-[11px] font-medium text-ink-muted">{label}</p>
       <p className={`mt-1 text-[15px] font-bold tabular-nums ${tone}`}>{value}</p>
     </div>
   );
@@ -616,16 +616,16 @@ function DuePill({
   );
 
   const { label, className } = isOverdue
-    ? { label: t('cheque.overdue'), className: 'bg-red-50 text-red-600' }
+    ? { label: t('cheque.overdue'), className: 'bg-danger-soft text-danger' }
     : days <= 0
-      ? { label: t('due.today'), className: 'bg-amber-50 text-amber-600' }
+      ? { label: t('due.today'), className: 'bg-warning-soft text-warning' }
       : days <= 1
-        ? { label: t('due.tomorrowShort'), className: 'bg-amber-50 text-amber-600' }
+        ? { label: t('due.tomorrowShort'), className: 'bg-warning-soft text-warning' }
         : days <= 3
-          ? { label: t('due.inDaysShort', { days }), className: 'bg-amber-50 text-amber-600' }
+          ? { label: t('due.inDaysShort', { days }), className: 'bg-warning-soft text-warning' }
           : days <= 7
-            ? { label: t('due.inDaysShort', { days }), className: 'bg-emerald-50 text-emerald-600' }
-            : { label: t('due.inDays', { days }), className: 'bg-sky-50 text-sky-700' };
+            ? { label: t('due.inDaysShort', { days }), className: 'bg-success-soft text-success' }
+            : { label: t('due.inDays', { days }), className: 'bg-info-soft text-info' };
 
   return (
     <span className={`inline-flex rounded-lg px-2.5 py-1 text-[11px] font-semibold ${className}`}>

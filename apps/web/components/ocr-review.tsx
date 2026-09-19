@@ -95,8 +95,8 @@ export function OcrReviewPanel({ cheque }: { cheque: ChequeDetailView }) {
   if (!suggestion.data) {
     return (
       <Card className="flex flex-col items-start gap-3">
-        <h2 className="text-lg font-semibold text-slate-900">{t('ocr.reviewTitle')}</h2>
-        <p className="text-sm text-slate-600">{t('ocr.suggestionNotice')}</p>
+        <h2 className="text-lg font-semibold text-ink">{t('ocr.reviewTitle')}</h2>
+        <p className="text-sm text-ink-soft">{t('ocr.suggestionNotice')}</p>
         {/* An action, not a status. This said "reading the cheque data…" while
             nothing was happening, so it read as a stuck spinner and nobody
             pressed it. `ocr.processing` belongs to the waiting state above. */}
@@ -104,7 +104,7 @@ export function OcrReviewPanel({ cheque }: { cheque: ChequeDetailView }) {
           {t('ocr.run')}
         </Button>
         {error ? (
-          <p role="alert" className="text-sm text-red-700">
+          <p role="alert" className="text-sm text-danger">
             {error}
           </p>
         ) : null}
@@ -117,11 +117,11 @@ export function OcrReviewPanel({ cheque }: { cheque: ChequeDetailView }) {
   return (
     <Card className="flex flex-col gap-4">
       <div>
-        <h2 className="text-lg font-semibold text-slate-900">{t('ocr.reviewTitle')}</h2>
-        <p className="text-sm text-slate-600">{t('ocr.reviewSubtitle')}</p>
+        <h2 className="text-lg font-semibold text-ink">{t('ocr.reviewTitle')}</h2>
+        <p className="text-sm text-ink-soft">{t('ocr.reviewSubtitle')}</p>
       </div>
 
-      <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+      <p className="rounded-lg bg-warning-soft p-3 text-sm text-warning">
         {t('ocr.suggestionNotice')}
       </p>
 
@@ -168,7 +168,10 @@ export function OcrReviewPanel({ cheque }: { cheque: ChequeDetailView }) {
         })}
 
         {error ? (
-          <p role="alert" className="sm:col-span-2 rounded-lg bg-red-50 p-3 text-sm text-red-800">
+          <p
+            role="alert"
+            className="sm:col-span-2 rounded-lg bg-danger-soft p-3 text-sm text-danger"
+          >
             {error}
           </p>
         ) : null}

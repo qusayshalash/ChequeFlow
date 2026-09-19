@@ -142,14 +142,14 @@ function ReminderCard({
 }) {
   return (
     <li
-      className={`rounded-xl border p-4 transition-colors hover:border-slate-300 ${due ? 'border-amber-200 bg-amber-50/40' : 'border-slate-200 bg-white'}`}
+      className={`rounded-xl border p-4 transition-colors hover:border-line-strong ${due ? 'border-warning-line bg-warning-soft/40' : 'border-line bg-surface'}`}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href={`/cheques/${row.cheque.id}`}
-              className="font-mono font-semibold text-slate-900 hover:text-teal-700"
+              className="font-mono font-semibold text-ink hover:text-primary-ink"
               dir="ltr"
             >
               {row.cheque.chequeNumber}
@@ -157,27 +157,27 @@ function ReminderCard({
             {row.custom ? <Badge>{t('reminders.custom')}</Badge> : null}
           </div>
 
-          <p className="mt-1 text-sm font-semibold text-slate-900 tabular-nums">
+          <p className="mt-1 text-sm font-semibold text-ink tabular-nums">
             {formatAmount(row.cheque.amount, row.cheque.currency)}
           </p>
-          <p className="mt-0.5 text-xs text-slate-500 tabular-nums">
+          <p className="mt-0.5 text-xs text-ink-muted tabular-nums">
             {t('cheque.dueDate')}: {date(row.cheque.dueDate)} · {dateTime(row.remindAt)}
           </p>
-          {row.note ? <p className="mt-1 text-sm text-slate-700">{row.note}</p> : null}
+          {row.note ? <p className="mt-1 text-sm text-ink-soft">{row.note}</p> : null}
         </div>
 
         <div className="flex flex-wrap items-start gap-2">
           <details className="group relative">
-            <summary className="flex min-h-11 cursor-pointer list-none items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 shadow-sm hover:bg-slate-50">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center rounded-xl border border-line bg-surface px-4 text-sm font-semibold text-ink-soft shadow-sm hover:bg-subtle">
               {t('reminders.snooze')}
             </summary>
-            <div className="absolute end-0 z-20 mt-2 flex w-36 flex-col rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
+            <div className="absolute end-0 z-20 mt-2 flex w-36 flex-col rounded-xl border border-line bg-surface p-1.5 shadow-xl">
               {SNOOZE.map((option) => (
                 <button
                   key={option.minutes}
                   type="button"
                   onClick={() => onSnooze(option.minutes)}
-                  className="min-h-9 rounded-lg px-3 text-start text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-950"
+                  className="min-h-9 rounded-lg px-3 text-start text-sm text-ink-soft hover:bg-subtle hover:text-ink"
                 >
                   {t(option.labelKey)}
                 </button>

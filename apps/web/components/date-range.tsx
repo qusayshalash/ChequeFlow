@@ -109,16 +109,16 @@ export function DateRangePicker({
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
         aria-haspopup="dialog"
-        className={`inline-flex h-11 items-center gap-2 rounded-xl border bg-white px-3 text-sm font-semibold shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 ${
-          invalid ? 'border-red-300 text-red-600' : 'border-slate-200 text-slate-700'
+        className={`inline-flex h-11 items-center gap-2 rounded-xl border bg-surface px-3 text-sm font-semibold shadow-sm transition-colors hover:border-line-strong hover:bg-subtle ${
+          invalid ? 'border-danger-line text-danger' : 'border-line text-ink-soft'
         }`}
       >
-        <IconCalendar className="shrink-0 text-slate-400" />
+        <IconCalendar className="shrink-0 text-ink-muted" />
         <span className="tabular-nums">{label}</span>
         <IconChevronDown
           width="16"
           height="16"
-          className={`shrink-0 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`shrink-0 text-ink-muted transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
 
@@ -126,7 +126,7 @@ export function DateRangePicker({
         <div
           role="dialog"
           aria-label={t('common.period')}
-          className="absolute end-0 z-20 mt-2 w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl"
+          className="absolute end-0 z-20 mt-2 w-72 rounded-2xl border border-line bg-surface p-3 shadow-xl"
         >
           <div className="grid grid-cols-2 gap-1.5">
             {presets.map((preset) => (
@@ -140,8 +140,8 @@ export function DateRangePicker({
                 aria-pressed={activePreset?.key === preset.key}
                 className={`h-9 rounded-lg px-2 text-sm font-semibold transition-colors ${
                   activePreset?.key === preset.key
-                    ? 'bg-teal-700 text-white'
-                    : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
+                    ? 'bg-primary text-on-primary'
+                    : 'border border-line text-ink-soft hover:bg-subtle'
                 }`}
               >
                 {preset.label}
@@ -149,8 +149,8 @@ export function DateRangePicker({
             ))}
           </div>
 
-          <div className="mt-3 flex flex-col gap-2 border-t border-slate-100 pt-3">
-            <label className="flex items-center justify-between gap-2 text-sm text-slate-500">
+          <div className="mt-3 flex flex-col gap-2 border-t border-line-soft pt-3">
+            <label className="flex items-center justify-between gap-2 text-sm text-ink-muted">
               <span>{t('range.from')}</span>
               <input
                 type="date"
@@ -158,10 +158,10 @@ export function DateRangePicker({
                 max={value.to || undefined}
                 onChange={(event) => onChange({ ...value, from: event.target.value })}
                 aria-invalid={invalid}
-                className="rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-slate-700 outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10"
+                className="rounded-lg border border-line px-2 py-1.5 text-sm text-ink-soft outline-none focus:border-primary focus:ring-4 focus:ring-primary/10"
               />
             </label>
-            <label className="flex items-center justify-between gap-2 text-sm text-slate-500">
+            <label className="flex items-center justify-between gap-2 text-sm text-ink-muted">
               <span>{t('range.to')}</span>
               <input
                 type="date"
@@ -169,13 +169,13 @@ export function DateRangePicker({
                 min={value.from || undefined}
                 onChange={(event) => onChange({ ...value, to: event.target.value })}
                 aria-invalid={invalid}
-                className="rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-slate-700 outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10"
+                className="rounded-lg border border-line px-2 py-1.5 text-sm text-ink-soft outline-none focus:border-primary focus:ring-4 focus:ring-primary/10"
               />
             </label>
           </div>
 
           {invalid ? (
-            <p role="alert" className="mt-2 text-xs text-red-600">
+            <p role="alert" className="mt-2 text-xs text-danger">
               {t('range.invalid')}
             </p>
           ) : null}

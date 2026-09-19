@@ -13,11 +13,11 @@ import { useTranslator } from '@/components/providers';
 export type StatTone = 'neutral' | 'teal' | 'green' | 'amber' | 'red';
 
 const TONES: Record<StatTone, { iconBg: string; iconFg: string; amount: string }> = {
-  neutral: { iconBg: 'bg-slate-100', iconFg: 'text-slate-500', amount: 'text-slate-700' },
-  teal: { iconBg: 'bg-teal-50', iconFg: 'text-teal-700', amount: 'text-teal-700' },
-  green: { iconBg: 'bg-emerald-50', iconFg: 'text-emerald-600', amount: 'text-emerald-600' },
-  amber: { iconBg: 'bg-amber-50', iconFg: 'text-amber-500', amount: 'text-amber-500' },
-  red: { iconBg: 'bg-red-50', iconFg: 'text-red-500', amount: 'text-red-500' },
+  neutral: { iconBg: 'bg-sunken', iconFg: 'text-ink-muted', amount: 'text-ink-soft' },
+  teal: { iconBg: 'bg-primary-soft', iconFg: 'text-primary-ink', amount: 'text-primary-ink' },
+  green: { iconBg: 'bg-success-soft', iconFg: 'text-success', amount: 'text-success' },
+  amber: { iconBg: 'bg-warning-soft', iconFg: 'text-warning', amount: 'text-warning' },
+  red: { iconBg: 'bg-danger-soft', iconFg: 'text-danger', amount: 'text-danger' },
 };
 
 /**
@@ -63,8 +63,8 @@ export function StatCard({
         </span>
 
         <span className="min-w-0 flex-1 text-end">
-          <span className="block truncate text-[13px] font-medium text-slate-500">{label}</span>
-          <span className="mt-1 block text-[28px] leading-none font-bold tracking-[-0.03em] text-slate-900 tabular-nums">
+          <span className="block truncate text-[13px] font-medium text-ink-muted">{label}</span>
+          <span className="mt-1 block text-[28px] leading-none font-bold tracking-[-0.03em] text-ink tabular-nums">
             {value}
           </span>
         </span>
@@ -73,14 +73,14 @@ export function StatCard({
             opens the list this figure counts. Rendered as a plain mark rather
             than a menu button so it never looks like an action that is
             missing its menu. */}
-        <span className="-me-1 -mt-1 shrink-0 text-slate-300" aria-hidden="true">
+        <span className="-me-1 -mt-1 shrink-0 text-ink-faint" aria-hidden="true">
           <IconDots width="16" height="16" />
         </span>
       </div>
 
       {amount ? (
         <div className="mt-4">
-          <span className="block text-[11px] font-medium text-slate-400">
+          <span className="block text-[11px] font-medium text-ink-muted">
             {amountLabel ?? t('common.amount')}
           </span>
           <span className={`mt-0.5 block text-sm font-bold tabular-nums ${palette.amount}`}>
@@ -92,14 +92,14 @@ export function StatCard({
   );
 
   const shell =
-    'block rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_1px_2px_rgb(16_24_40/0.04)]';
+    'block rounded-2xl border border-line/90 bg-surface p-4 shadow-[0_1px_2px_rgb(16_24_40/0.04)]';
 
   if (!href) return <div className={shell}>{body}</div>;
 
   return (
     <Link
       href={href}
-      className={`${shell} transition hover:border-slate-300 hover:shadow-[0_10px_26px_-20px_rgb(16_24_40/0.45)]`}
+      className={`${shell} transition hover:border-line-strong hover:shadow-[0_10px_26px_-20px_rgb(16_24_40/0.45)]`}
     >
       {body}
     </Link>

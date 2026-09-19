@@ -40,11 +40,11 @@ function RolesPageBody() {
       <Panel bodyClassName="">
         <div className="overflow-auto">
           <table className="w-full min-w-[920px] border-separate border-spacing-0 text-sm">
-            <thead className="sticky top-0 z-20 bg-slate-50/95 text-slate-500 backdrop-blur-sm">
+            <thead className="sticky top-0 z-20 bg-subtle/95 text-ink-muted backdrop-blur-sm">
               <tr>
                 <th
                   scope="col"
-                  className="sticky start-0 z-30 min-w-72 border-b border-slate-200 bg-slate-50/95 px-5 py-4 text-start text-xs font-bold"
+                  className="sticky start-0 z-30 min-w-72 border-b border-line bg-subtle/95 px-5 py-4 text-start text-xs font-bold"
                 >
                   {t('nav.roles')}
                 </th>
@@ -52,10 +52,10 @@ function RolesPageBody() {
                   <th
                     key={role}
                     scope="col"
-                    className="border-b border-slate-200 px-4 py-4 text-center text-xs font-bold"
+                    className="border-b border-line px-4 py-4 text-center text-xs font-bold"
                   >
                     <span className="inline-flex items-center gap-2 whitespace-nowrap">
-                      <IconShield width="15" height="15" className="text-slate-400" />
+                      <IconShield width="15" height="15" className="text-ink-muted" />
                       {t(`role.${role}`)}
                     </span>
                   </th>
@@ -64,16 +64,16 @@ function RolesPageBody() {
             </thead>
             <tbody>
               {ALL_PERMISSIONS.map((permission) => (
-                <tr key={permission} className="group hover:bg-slate-50/70">
+                <tr key={permission} className="group hover:bg-subtle/70">
                   <th
                     scope="row"
-                    className="sticky start-0 z-10 border-b border-slate-100 bg-white px-5 py-4 text-start font-normal text-slate-700 group-hover:bg-slate-50"
+                    className="sticky start-0 z-10 border-b border-line-soft bg-surface px-5 py-4 text-start font-normal text-ink-soft group-hover:bg-subtle"
                   >
                     <span className="flex flex-col">
-                      <code dir="ltr" className="text-xs text-slate-500">
+                      <code dir="ltr" className="text-xs text-ink-muted">
                         {permission}
                       </code>
-                      <span className="mt-1 font-semibold text-slate-800">
+                      <span className="mt-1 font-semibold text-ink">
                         {t(`permission.${permission}`)}
                       </span>
                     </span>
@@ -84,16 +84,16 @@ function RolesPageBody() {
                     ) : null}
                   </th>
                   {Object.values(SystemRole).map((role) => (
-                    <td key={role} className="border-b border-slate-100 px-4 py-4 text-center">
+                    <td key={role} className="border-b border-line-soft px-4 py-4 text-center">
                       {DEFAULT_ROLE_PERMISSIONS[role].includes(permission) ? (
                         <span
-                          className="inline-flex size-7 items-center justify-center rounded-full bg-teal-50 font-bold text-teal-700 ring-1 ring-teal-100"
+                          className="inline-flex size-7 items-center justify-center rounded-full bg-primary-soft font-bold text-primary-ink ring-1 ring-primary-soft"
                           aria-label={t('common.yes')}
                         >
                           ✓
                         </span>
                       ) : (
-                        <span className="text-slate-300" aria-label={t('common.no')}>
+                        <span className="text-ink-faint" aria-label={t('common.no')}>
                           —
                         </span>
                       )}

@@ -207,7 +207,7 @@ export default function NewChequePage() {
       <div
         role="tablist"
         aria-label={t('cheque.newTitle')}
-        className="grid grid-cols-2 gap-1 rounded-2xl border border-slate-200/90 bg-white p-1.5 shadow-[0_1px_2px_rgb(16_24_40/0.035)] sm:self-start"
+        className="grid grid-cols-2 gap-1 rounded-2xl border border-line/90 bg-surface p-1.5 shadow-[0_1px_2px_rgb(16_24_40/0.035)] sm:self-start"
       >
         {(['single', 'batch'] as const).map((value) => (
           <button
@@ -218,8 +218,8 @@ export default function NewChequePage() {
             onClick={() => setMode(value)}
             className={
               mode === value
-                ? 'min-h-10 rounded-xl bg-[#15211f] px-5 text-sm font-semibold text-white shadow-sm'
-                : 'min-h-10 rounded-xl px-5 text-sm font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-900'
+                ? 'min-h-10 rounded-xl bg-ink px-5 text-sm font-semibold text-page shadow-sm'
+                : 'min-h-10 rounded-xl px-5 text-sm font-semibold text-ink-muted hover:bg-subtle hover:text-ink'
             }
           >
             {value === 'single' ? t('cheque.singleMode') : t('cheque.batchMode')}
@@ -240,7 +240,7 @@ export default function NewChequePage() {
       ) : null}
 
       {replacesChequeId ? (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+        <p className="rounded-xl border border-warning-line bg-warning-soft p-3 text-sm text-warning">
           {t('cheque.replacesHint')}
         </p>
       ) : null}
@@ -444,7 +444,7 @@ export default function NewChequePage() {
                     href={`/contacts/new?next=${encodeURIComponent('/cheques/new')}`}
                     aria-label={t('contact.newTitle')}
                     title={t('contact.newTitle')}
-                    className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                    className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-line text-ink-muted hover:bg-subtle hover:text-ink"
                   >
                     <IconPlus width="18" height="18" />
                   </Link>
@@ -493,13 +493,13 @@ export default function NewChequePage() {
 
         <div hidden={step !== 3} className="flex flex-col gap-5">
           <Panel title={t('cheque.stepReview')}>
-            <p className="mb-4 text-sm text-slate-500">{t('cheque.reviewIntro')}</p>
+            <p className="mb-4 text-sm text-ink-muted">{t('cheque.reviewIntro')}</p>
             <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
               {review.map((entry) => (
                 <div key={entry.label} className="flex items-baseline justify-between gap-3">
-                  <dt className="text-sm text-slate-500">{entry.label}</dt>
+                  <dt className="text-sm text-ink-muted">{entry.label}</dt>
                   <dd
-                    className={`text-sm font-semibold text-slate-900 ${entry.ltr ? 'tabular-nums' : ''}`}
+                    className={`text-sm font-semibold text-ink ${entry.ltr ? 'tabular-nums' : ''}`}
                     dir={entry.ltr ? 'ltr' : undefined}
                   >
                     {entry.value}
@@ -511,7 +511,7 @@ export default function NewChequePage() {
         </div>
 
         {formError ? (
-          <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
+          <p role="alert" className="rounded-xl bg-danger-soft p-3 text-sm text-danger">
             {formError}
           </p>
         ) : null}
@@ -519,7 +519,7 @@ export default function NewChequePage() {
         {/* The save bar sticks to the bottom: the form is now five panels tall,
             and a submit button you have to go looking for is a form people
             abandon halfway. */}
-        <div className="sticky bottom-4 z-10 -mx-1 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-[0_18px_48px_-30px_rgb(16_24_40/0.6)] backdrop-blur-xl">
+        <div className="sticky bottom-4 z-10 -mx-1 flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-surface/95 p-4 shadow-[0_18px_48px_-30px_rgb(16_24_40/0.6)] backdrop-blur-xl">
           {step > 1 ? (
             <Button type="button" variant="secondary" onClick={() => setStep(step - 1)}>
               {t('common.previous')}

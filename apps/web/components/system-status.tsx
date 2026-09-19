@@ -9,9 +9,9 @@ import { loadErrorRequestId, loadErrorTitle } from '@/lib/query-error';
 import { useApi, useTranslator } from '@/components/providers';
 
 const STATE_STYLES = {
-  ok: 'bg-teal-50 text-teal-700',
-  degraded: 'bg-amber-50 text-amber-700',
-  down: 'bg-red-50 text-red-700',
+  ok: 'bg-primary-soft text-primary-ink',
+  degraded: 'bg-warning-soft text-warning',
+  down: 'bg-danger-soft text-danger',
 } as const;
 
 /**
@@ -65,16 +65,16 @@ export function SystemStatus() {
         {rows.map((row) => (
           <li
             key={row.key}
-            className="flex min-h-14 flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3"
+            className="flex min-h-14 flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-subtle/50 px-4 py-3"
           >
-            <span className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <span className="flex items-center gap-2 text-sm font-semibold text-ink-soft">
               <span
                 className={`size-2 rounded-full ${
                   row.status.state === 'ok'
-                    ? 'bg-emerald-500'
+                    ? 'bg-success'
                     : row.status.state === 'degraded'
-                      ? 'bg-amber-500'
-                      : 'bg-red-500'
+                      ? 'bg-warning'
+                      : 'bg-danger-solid'
                 }`}
               />
               {row.label}
@@ -89,12 +89,12 @@ export function SystemStatus() {
       </ul>
 
       {query.data.ocr.state !== 'ok' ? (
-        <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 p-4">
-          <p className="text-sm font-semibold text-amber-800">{t('diagnostics.howToFix')}</p>
-          <p className="mt-1 text-sm text-amber-700">{t('diagnostics.ocrGuide')}</p>
+        <div className="mt-4 rounded-xl border border-warning-line bg-warning-soft p-4">
+          <p className="text-sm font-semibold text-warning">{t('diagnostics.howToFix')}</p>
+          <p className="mt-1 text-sm text-warning">{t('diagnostics.ocrGuide')}</p>
           {/* Names the missing variable, never its value. */}
           {query.data.ocr.detail ? (
-            <p className="mt-2 font-mono text-xs text-amber-700" dir="ltr">
+            <p className="mt-2 font-mono text-xs text-warning" dir="ltr">
               {query.data.ocr.detail}
             </p>
           ) : null}

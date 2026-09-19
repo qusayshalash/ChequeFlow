@@ -58,7 +58,7 @@ export function WhatsAppReminder({
 
   if (!link) {
     return (
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-ink-muted">
         {t('reminders.whatsapp')} — {t('reminders.whatsappNoPhone')}
       </p>
     );
@@ -71,12 +71,12 @@ export function WhatsAppReminder({
         target="_blank"
         rel="noopener noreferrer"
         onClick={() => record.mutate()}
-        className="inline-flex h-11 items-center justify-center rounded-xl bg-teal-800 px-4 text-sm font-semibold text-white hover:bg-teal-900"
+        className="inline-flex h-11 items-center justify-center rounded-xl bg-primary-hover px-4 text-sm font-semibold text-on-primary hover:bg-primary-hover"
       >
         {t('reminders.whatsapp')}
       </a>
-      <p className="text-xs text-slate-500">{t('reminders.whatsappHint')}</p>
-      {logged ? <p className="text-xs text-teal-700">{t('reminders.whatsappLogged')}</p> : null}
+      <p className="text-xs text-ink-muted">{t('reminders.whatsappHint')}</p>
+      {logged ? <p className="text-xs text-primary-ink">{t('reminders.whatsappLogged')}</p> : null}
     </div>
   );
 }

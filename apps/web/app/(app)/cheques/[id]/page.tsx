@@ -75,8 +75,7 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
     // A cheque that is not there will not be there on the second attempt, so
     // "try again" is a button that cannot work. Offer it only for the failures
     // retrying can actually fix, and a way out of the dead end otherwise.
-    const missing =
-      cheque.error instanceof ApiClientError && cheque.error.status === 404;
+    const missing = cheque.error instanceof ApiClientError && cheque.error.status === 404;
 
     return (
       <div className="flex flex-col items-start gap-4">
@@ -87,7 +86,7 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
             ? {}
             : { onRetry: () => void cheque.refetch(), retryLabel: t('common.retry') })}
         />
-        <Link href="/cheques" className="text-sm font-semibold text-teal-700 hover:underline">
+        <Link href="/cheques" className="text-sm font-semibold text-primary-ink hover:underline">
           {t('cheque.backToList')}
         </Link>
       </div>
@@ -164,20 +163,20 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
 
   return (
     <div className="mx-auto max-w-[1360px]">
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-5">
-        <nav className="flex items-center gap-1.5 text-sm text-slate-500" aria-label="breadcrumb">
-          <Link href="/cheques" className="hover:text-teal-700">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-line/80 pb-5">
+        <nav className="flex items-center gap-1.5 text-sm text-ink-muted" aria-label="breadcrumb">
+          <Link href="/cheques" className="hover:text-primary-ink">
             {t('cheque.listTitle')}
           </Link>
-          <IconChevronEnd width="14" height="14" className="text-slate-300" />
-          <span className="font-mono text-slate-700" dir="ltr">
+          <IconChevronEnd width="14" height="14" className="text-ink-faint" />
+          <span className="font-mono text-ink-soft" dir="ltr">
             {data.chequeNumber}
           </span>
         </nav>
 
         <Link
           href={`/cheques/${data.id}/timeline`}
-          className="inline-flex items-center gap-1 text-sm font-semibold text-teal-700 hover:text-teal-900"
+          className="inline-flex items-center gap-1 text-sm font-semibold text-primary-ink hover:text-primary-ink"
         >
           {t('cheque.openTimeline')}
           <IconChevronEnd width="16" height="16" />
@@ -185,7 +184,7 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
       </div>
 
       {unreviewed ? (
-        <p className="mb-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+        <p className="mb-4 rounded-xl border border-warning-line bg-warning-soft px-4 py-3 text-sm text-warning">
           {t('cheque.awaitingReview')}
         </p>
       ) : null}
@@ -211,11 +210,11 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
             {/* Only when it happened, and then near the top: a bank's refusal is
               the most consequential thing on the page. */}
             {data.bounceReason ? (
-              <section className="rounded-2xl border border-red-100 bg-red-50 p-5">
-                <h2 className="text-base font-bold text-red-700">{t('cheque.bounceGroup')}</h2>
-                <p className="mt-2 text-sm text-red-700">{data.bounceReason}</p>
+              <section className="rounded-2xl border border-danger-line bg-danger-soft p-5">
+                <h2 className="text-base font-bold text-danger">{t('cheque.bounceGroup')}</h2>
+                <p className="mt-2 text-sm text-danger">{data.bounceReason}</p>
                 {data.bounceFee ? (
-                  <p className="mt-1 text-sm font-semibold text-red-700 tabular-nums">
+                  <p className="mt-1 text-sm font-semibold text-danger tabular-nums">
                     {t('cheque.bounceFee')}: {money(locale, data.bounceFee, data.currency)}
                   </p>
                 ) : null}
@@ -225,7 +224,7 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
                 {data.replacedBy.length === 0 ? (
                   <Link
                     href={`/cheques/new?replaces=${data.id}`}
-                    className="mt-3 inline-flex h-10 items-center rounded-xl border border-red-300 bg-white px-4 text-sm font-semibold text-red-700 hover:bg-red-100"
+                    className="mt-3 inline-flex h-10 items-center rounded-xl border border-danger-line bg-surface px-4 text-sm font-semibold text-danger hover:bg-danger-soft"
                   >
                     {t('cheque.recordReplacement')}
                   </Link>
@@ -277,7 +276,7 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
 
             {data.notes ? (
               <Panel title={t('cheque.notesGroup')}>
-                <p className="text-sm leading-relaxed whitespace-pre-line text-slate-700">
+                <p className="text-sm leading-relaxed whitespace-pre-line text-ink-soft">
                   {data.notes}
                 </p>
               </Panel>
@@ -333,16 +332,16 @@ function ChainRow({ label, link }: { label: string; link: ChequeLinkView }) {
   const { locale } = useApp();
 
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-slate-200 p-3">
-      <span className="text-xs font-semibold text-slate-500">{label}</span>
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-line p-3">
+      <span className="text-xs font-semibold text-ink-muted">{label}</span>
       <Link
         href={`/cheques/${link.id}`}
         dir="ltr"
-        className="font-semibold text-slate-900 tabular-nums hover:text-teal-700"
+        className="font-semibold text-ink tabular-nums hover:text-primary-ink"
       >
         {link.chequeNumber}
       </Link>
-      <span className="text-sm text-slate-600 tabular-nums">
+      <span className="text-sm text-ink-soft tabular-nums">
         {money(locale, link.amount, link.currency)}
       </span>
       <StatusBadge status={link.status} label={t(`status.${link.status}`)} />

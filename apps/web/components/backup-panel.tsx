@@ -43,9 +43,9 @@ export function BackupPanel() {
 
   return (
     <Panel title={t('backup.title')}>
-      <p className="text-sm text-slate-600">{t('backup.hint')}</p>
-      <p className="mt-1 text-sm text-slate-500">{t('backup.excluded')}</p>
-      <p className="mt-1 text-sm font-medium text-amber-700">{t('backup.keepSafe')}</p>
+      <p className="text-sm text-ink-soft">{t('backup.hint')}</p>
+      <p className="mt-1 text-sm text-ink-muted">{t('backup.excluded')}</p>
+      <p className="mt-1 text-sm font-medium text-warning">{t('backup.keepSafe')}</p>
 
       {done ? (
         <div className="mt-3">
@@ -53,7 +53,7 @@ export function BackupPanel() {
         </div>
       ) : null}
       {error ? (
-        <p role="alert" className="mt-3 text-sm text-red-600">
+        <p role="alert" className="mt-3 text-sm text-danger">
           {error}
         </p>
       ) : null}
@@ -143,7 +143,7 @@ function DriveButton({ onBusy }: { onBusy: () => void }) {
         {t('backup.drive')}
       </Button>
 
-      <p className="basis-full text-sm text-slate-500">{t('backup.driveHint')}</p>
+      <p className="basis-full text-sm text-ink-muted">{t('backup.driveHint')}</p>
 
       {uploaded ? (
         <div className="basis-full">
@@ -151,7 +151,7 @@ function DriveButton({ onBusy }: { onBusy: () => void }) {
         </div>
       ) : null}
       {error ? (
-        <p role="alert" className="basis-full text-sm text-red-600">
+        <p role="alert" className="basis-full text-sm text-danger">
           {error}
         </p>
       ) : null}
@@ -204,16 +204,16 @@ function RestoreSection() {
   const ready = file !== null && word.trim() === t('backup.restoreConfirmWord');
 
   return (
-    <section className="mt-6 border-t border-slate-200 pt-5">
-      <h3 className="text-sm font-bold text-slate-900">{t('backup.restoreTitle')}</h3>
-      <p className="mt-1 text-sm text-slate-600">{t('backup.restoreHint')}</p>
-      <p className="mt-1 text-sm text-slate-500">{t('backup.restoreMissing')}</p>
-      <p className="mt-1 text-sm font-medium text-red-700">{t('backup.restoreWarning')}</p>
+    <section className="mt-6 border-t border-line pt-5">
+      <h3 className="text-sm font-bold text-ink">{t('backup.restoreTitle')}</h3>
+      <p className="mt-1 text-sm text-ink-soft">{t('backup.restoreHint')}</p>
+      <p className="mt-1 text-sm text-ink-muted">{t('backup.restoreMissing')}</p>
+      <p className="mt-1 text-sm font-medium text-danger">{t('backup.restoreWarning')}</p>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(220px,0.7fr)_auto] sm:items-end">
-        <label className="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50/60 px-4 py-3 text-center hover:border-teal-400 hover:bg-teal-50/50">
-          <span className="text-sm font-semibold text-slate-700">{t('backup.restorePick')}</span>
-          <span className="mt-1 max-w-full truncate text-xs text-slate-500">
+        <label className="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-line-strong bg-subtle/60 px-4 py-3 text-center hover:border-primary hover:bg-primary-soft/50">
+          <span className="text-sm font-semibold text-ink-soft">{t('backup.restorePick')}</span>
+          <span className="mt-1 max-w-full truncate text-xs text-ink-muted">
             {file?.name ?? 'JSON'}
           </span>
           <input
@@ -229,7 +229,7 @@ function RestoreSection() {
         </label>
 
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-semibold text-slate-700">{t('backup.restoreConfirm')}</span>
+          <span className="text-sm font-semibold text-ink-soft">{t('backup.restoreConfirm')}</span>
           <input
             aria-label={t('backup.restoreConfirm')}
             placeholder={t('backup.restoreConfirm')}
@@ -250,7 +250,7 @@ function RestoreSection() {
       </div>
 
       {result ? (
-        <div className="mt-3 rounded-xl border border-teal-200 bg-teal-50 p-3 text-sm text-teal-900">
+        <div className="mt-3 rounded-xl border border-primary-soft bg-primary-soft p-3 text-sm text-primary-ink">
           <p className="font-semibold">{t('backup.restoreDone')}</p>
           <ul className="mt-1 flex flex-wrap gap-x-4">
             {Object.entries(result.restored).map(([table, count]) => (
@@ -260,12 +260,10 @@ function RestoreSection() {
             ))}
           </ul>
           {result.usersNeedPasswords ? (
-            <p className="mt-2 font-medium text-amber-800">
-              {t('backup.restoreUsersNeedPasswords')}
-            </p>
+            <p className="mt-2 font-medium text-warning">{t('backup.restoreUsersNeedPasswords')}</p>
           ) : null}
           {result.skippedUsers > 0 ? (
-            <p className="mt-1 text-teal-800">
+            <p className="mt-1 text-primary-ink">
               {t('backup.restoreSkippedUsers', { count: String(result.skippedUsers) })}
             </p>
           ) : null}
@@ -273,7 +271,7 @@ function RestoreSection() {
       ) : null}
 
       {error ? (
-        <p role="alert" className="mt-3 text-sm text-red-600">
+        <p role="alert" className="mt-3 text-sm text-danger">
           {error}
         </p>
       ) : null}

@@ -67,14 +67,14 @@ export default function DepositSlipPage() {
             No card either: it is one control, and the bordered panel it lived
             in was the chrome the rest of the app has just shed. */}
         <div className="mb-4 flex justify-end">
-          <label className="inline-flex h-11 items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 focus-within:border-teal-500 focus-within:ring-4 focus-within:ring-teal-500/10">
-            <span className="text-xs font-medium text-slate-400">
+          <label className="inline-flex h-11 items-center gap-3 rounded-xl border border-line bg-surface px-3 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10">
+            <span className="text-xs font-medium text-ink-muted">
               {t('reports.depositSlipDate')}
             </span>
             <input
               type="date"
               aria-label={t('reports.depositSlipDate')}
-              className="bg-transparent text-sm font-semibold text-slate-800 outline-none"
+              className="bg-transparent text-sm font-semibold text-ink outline-none"
               value={on}
               onChange={(event) => setOn(event.target.value || utcToday())}
             />
@@ -100,7 +100,7 @@ export default function DepositSlipPage() {
       ) : null}
 
       {slip.data && slip.data.overdueCount > 0 ? (
-        <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-medium text-amber-900">
+        <p className="mb-4 rounded-xl border border-warning-line bg-warning-soft p-3 text-sm font-medium text-warning">
           {t('reports.depositSlipOverdue', { count: String(slip.data.overdueCount) })}
         </p>
       ) : null}
@@ -114,44 +114,44 @@ export default function DepositSlipPage() {
                 slip.data!.on,
               )}`}
             >
-              <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <div className="overflow-x-auto rounded-xl border border-line">
                 <table className="w-full min-w-[620px] border-separate border-spacing-0 text-sm">
-                  <thead className="bg-slate-50/90">
-                    <tr className="text-slate-500">
-                      <th className="border-b border-slate-200 p-3 text-start text-xs font-bold">
+                  <thead className="bg-subtle/90">
+                    <tr className="text-ink-muted">
+                      <th className="border-b border-line p-3 text-start text-xs font-bold">
                         {t('cheque.number')}
                       </th>
-                      <th className="border-b border-slate-200 p-3 text-start text-xs font-bold">
+                      <th className="border-b border-line p-3 text-start text-xs font-bold">
                         {t('cheque.party')}
                       </th>
-                      <th className="border-b border-slate-200 p-3 text-start text-xs font-bold">
+                      <th className="border-b border-line p-3 text-start text-xs font-bold">
                         {t('cheque.dueDate')}
                       </th>
-                      <th className="border-b border-slate-200 p-3 text-start text-xs font-bold">
+                      <th className="border-b border-line p-3 text-start text-xs font-bold">
                         {t('common.amount')}
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-line-soft">
                     {bank.cheques.map((cheque) => (
                       <tr key={cheque.id}>
                         <td
-                          className="border-b border-slate-100 p-3 font-semibold text-slate-900 tabular-nums"
+                          className="border-b border-line-soft p-3 font-semibold text-ink tabular-nums"
                           dir="ltr"
                         >
                           {cheque.chequeNumber}
                         </td>
-                        <td className="border-b border-slate-100 p-3 text-slate-700">
+                        <td className="border-b border-line-soft p-3 text-ink-soft">
                           {cheque.originalSourceName ?? cheque.drawerName ?? '—'}
                         </td>
                         <td
-                          className={`border-b border-slate-100 p-3 tabular-nums ${
-                            cheque.isOverdue ? 'font-semibold text-red-600' : 'text-slate-700'
+                          className={`border-b border-line-soft p-3 tabular-nums ${
+                            cheque.isOverdue ? 'font-semibold text-danger' : 'text-ink-soft'
                           }`}
                         >
                           {formatDate(locale, cheque.dueDate)}
                         </td>
-                        <td className="border-b border-slate-100 p-3 font-semibold text-slate-900 tabular-nums">
+                        <td className="border-b border-line-soft p-3 font-semibold text-ink tabular-nums">
                           {money(locale, cheque.amount, cheque.currency)}
                         </td>
                       </tr>
@@ -162,20 +162,20 @@ export default function DepositSlipPage() {
 
               {/* One line per currency, never a single mixed figure — the bank
                   takes one envelope per currency too. */}
-              <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1 border-t border-slate-200 pt-3">
+              <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1 border-t border-line pt-3">
                 {bank.currencies.map((entry) => (
-                  <p key={entry.currency} className="text-sm font-bold text-slate-900 tabular-nums">
+                  <p key={entry.currency} className="text-sm font-bold text-ink tabular-nums">
                     {entry.currency}: {money(locale, entry.total, entry.currency)}
-                    <span className="ms-2 font-normal text-slate-500">({entry.count})</span>
+                    <span className="ms-2 font-normal text-ink-muted">({entry.count})</span>
                   </p>
                 ))}
               </div>
 
-              <div className="mt-6 flex justify-between gap-8 text-xs text-slate-500">
+              <div className="mt-6 flex justify-between gap-8 text-xs text-ink-muted">
                 <span>
                   {t('reports.depositSlipPrepared')}: {formatDate(locale, utcToday())}
                 </span>
-                <span className="min-w-[180px] border-t border-slate-400 pt-1 text-center">
+                <span className="min-w-[180px] border-t border-line-strong pt-1 text-center">
                   {t('reports.depositSlipSignature')}
                 </span>
               </div>

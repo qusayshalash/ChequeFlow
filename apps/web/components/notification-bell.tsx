@@ -30,11 +30,11 @@ export function NotificationBell() {
     <Link
       href="/notifications"
       aria-label={`${t('nav.notifications')}${due > 0 ? ` (${due})` : ''}`}
-      className="relative inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800"
+      className="relative inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-line bg-surface text-ink-muted shadow-sm hover:border-line-strong hover:bg-subtle hover:text-ink"
     >
       <IconBell />
       {due > 0 ? (
-        <span className="absolute -top-1 -end-1 flex min-w-5 items-center justify-center rounded-full border-2 border-white bg-red-500 px-1 text-[10px] font-bold text-white tabular-nums">
+        <span className="absolute -top-1 -end-1 flex min-w-5 items-center justify-center rounded-full border-2 border-surface bg-danger-solid px-1 text-[10px] font-bold text-on-danger tabular-nums">
           {due > 99 ? '99+' : due}
         </span>
       ) : null}

@@ -199,14 +199,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen bg-[var(--app-bg)]">
       <a
         href="#main-content"
-        className="fixed start-4 top-3 z-[70] -translate-y-20 rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white shadow-xl focus:translate-y-0"
+        className="fixed start-4 top-3 z-[70] -translate-y-20 rounded-xl bg-ink px-4 py-3 text-sm font-semibold text-page shadow-xl focus:translate-y-0"
       >
         {t('common.skipToContent')}
       </a>
       {menuOpen ? (
         <button
           type="button"
-          className="fixed inset-0 z-40 bg-slate-950/45 backdrop-blur-[2px] lg:hidden"
+          className="fixed inset-0 z-40 bg-scrim/45 backdrop-blur-[2px] lg:hidden"
           aria-label={t('common.close')}
           onClick={() => setMenuOpen(false)}
         />
@@ -240,7 +240,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           }`}
         >
           <Link href="/dashboard" className="flex min-w-0 items-center gap-3">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--app-primary)] text-white shadow-[0_8px_22px_-14px_rgb(8_127_109/0.9)]">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-on-primary shadow-[0_8px_22px_-14px_rgb(8_127_109/0.9)]">
               <IconLogo width="23" height="23" strokeWidth="1.9" />
             </span>
             <span className={`min-w-0 ${collapsed ? 'lg:hidden' : ''}`}>

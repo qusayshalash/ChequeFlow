@@ -39,26 +39,26 @@ export default function LoginPage() {
 
   return (
     <main className="grid min-h-screen bg-[var(--app-bg)] lg:grid-cols-[minmax(420px,0.9fr)_minmax(520px,1.1fr)]">
-      <aside className="relative hidden overflow-hidden bg-[#111c1b] p-10 text-white lg:flex lg:flex-col lg:justify-between xl:p-14">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,rgb(52_211_153/0.13),transparent_34%),radial-gradient(circle_at_20%_90%,rgb(45_212_191/0.08),transparent_30%)]" />
+      <aside className="relative hidden overflow-hidden bg-hero p-10 text-hero-ink lg:flex lg:flex-col lg:justify-between xl:p-14">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_20%,color-mix(in_srgb,var(--app-hero-glow)_13%,transparent),transparent_34%),radial-gradient(circle_at_20%_90%,color-mix(in_srgb,var(--app-hero-glow)_8%,transparent),transparent_30%)]" />
         <div className="relative flex items-center gap-3">
-          <span className="flex size-11 items-center justify-center rounded-xl bg-emerald-400 text-emerald-950 shadow-[0_12px_28px_-14px_rgb(52_211_153/0.8)]">
+          <span className="flex size-11 items-center justify-center rounded-xl bg-hero-accent text-hero shadow-[0_12px_28px_-14px_color-mix(in_srgb,var(--app-hero-glow)_80%,transparent)]">
             <IconLogo width="25" height="25" strokeWidth="1.9" />
           </span>
           <div>
             <p className="text-lg font-bold">{t('common.appName')}</p>
-            <p className="text-[10px] tracking-[0.18em] text-white/40">CHEQUE OPERATIONS</p>
+            <p className="text-[10px] tracking-[0.18em] text-hero-ink/40">CHEQUE OPERATIONS</p>
           </div>
         </div>
 
         <div className="relative max-w-xl py-12">
-          <p className="mb-4 text-xs font-semibold tracking-[0.18em] text-emerald-300">
+          <p className="mb-4 text-xs font-semibold tracking-[0.18em] text-hero-accent">
             ENTERPRISE WORKSPACE
           </p>
           <h1 className="text-4xl leading-[1.35] font-bold tracking-[-0.035em] xl:text-5xl">
             {t('auth.productTitle')}
           </h1>
-          <p className="mt-5 max-w-lg text-base leading-8 text-white/55">
+          <p className="mt-5 max-w-lg text-base leading-8 text-hero-ink/55">
             {t('auth.productSubtitle')}
           </p>
 
@@ -70,9 +70,9 @@ export default function LoginPage() {
             ].map(({ Icon: FeatureIcon, labelKey }) => (
               <li
                 key={labelKey}
-                className="flex items-center gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.04] p-3.5 text-sm text-white/75"
+                className="flex items-center gap-3 rounded-2xl border border-hero-ink/[0.07] bg-hero-ink/[0.04] p-3.5 text-sm text-hero-ink/75"
               >
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-300">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-hero-accent/10 text-hero-accent">
                   <FeatureIcon width="18" height="18" />
                 </span>
                 {t(labelKey)}
@@ -81,24 +81,24 @@ export default function LoginPage() {
           </ul>
         </div>
 
-        <p className="relative text-xs text-white/30">© 2026 {t('common.appName')}</p>
+        <p className="relative text-xs text-hero-ink/30">© 2026 {t('common.appName')}</p>
       </aside>
 
       <section className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-10 lg:px-16">
         <div className="w-full max-w-[460px]">
           <div className="mb-10 flex items-center gap-3 lg:hidden">
-            <span className="flex size-10 items-center justify-center rounded-xl bg-teal-700 text-white">
+            <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-on-primary">
               <IconLogo width="22" height="22" />
             </span>
-            <span className="text-lg font-bold text-slate-900">{t('common.appName')}</span>
+            <span className="text-lg font-bold text-ink">{t('common.appName')}</span>
           </div>
 
-          <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-[0_24px_60px_-42px_rgb(16_24_40/0.5)] sm:p-8">
-            <span className="mb-4 block h-1 w-9 rounded-full bg-teal-600" />
-            <h2 className="text-3xl font-bold tracking-[-0.03em] text-slate-950">
+          <div className="rounded-3xl border border-line/90 bg-surface p-6 shadow-[0_24px_60px_-42px_rgb(16_24_40/0.5)] sm:p-8">
+            <span className="mb-4 block h-1 w-9 rounded-full bg-primary" />
+            <h2 className="text-3xl font-bold tracking-[-0.03em] text-ink">
               {t('auth.loginTitle')}
             </h2>
-            <p className="mt-2 mb-8 text-sm leading-6 text-slate-500">{t('auth.loginSubtitle')}</p>
+            <p className="mt-2 mb-8 text-sm leading-6 text-ink-muted">{t('auth.loginSubtitle')}</p>
 
             <form onSubmit={(event) => void handleSubmit(event)} className="flex flex-col gap-4">
               <Field
@@ -139,7 +139,7 @@ export default function LoginPage() {
                   />
                   <button
                     type="button"
-                    className="absolute inset-y-0 end-3 my-auto h-8 rounded-lg px-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                    className="absolute inset-y-0 end-3 my-auto h-8 rounded-lg px-2 text-xs font-semibold text-ink-muted hover:bg-sunken hover:text-ink"
                     aria-label={showPassword ? t('common.hide') : t('common.show')}
                     onClick={() => setShowPassword((visible) => !visible)}
                   >
@@ -149,7 +149,7 @@ export default function LoginPage() {
               </Field>
 
               {error ? (
-                <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">
+                <p role="alert" className="rounded-lg bg-danger-soft p-3 text-sm text-danger">
                   {error}
                 </p>
               ) : null}
@@ -159,7 +159,7 @@ export default function LoginPage() {
               </Button>
             </form>
           </div>
-          <p className="mt-5 text-center text-xs text-slate-400">{t('auth.featureSecurity')}</p>
+          <p className="mt-5 text-center text-xs text-ink-muted">{t('auth.featureSecurity')}</p>
         </div>
       </section>
     </main>

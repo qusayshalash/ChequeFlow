@@ -73,7 +73,7 @@ export default function ContactsPage() {
           canManage ? (
             <Link
               href="/contacts/new"
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-teal-800 px-4 text-sm font-semibold text-white hover:bg-teal-900"
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary-hover px-4 text-sm font-semibold text-on-primary hover:bg-primary-hover"
             >
               <IconPlus width="18" height="18" />
               {t('contact.newTitle')}
@@ -143,13 +143,13 @@ export default function ContactsPage() {
                 cell: (contact) => (
                   <Link
                     href={`/contacts/${contact.id}`}
-                    className="flex min-w-0 items-center gap-3 font-semibold text-slate-900 hover:text-teal-700"
+                    className="flex min-w-0 items-center gap-3 font-semibold text-ink hover:text-primary-ink"
                   >
                     <ContactAvatar name={contact.name} />
                     <span className="min-w-0">
                       <span className="block truncate">{contact.name}</span>
                       {contact.companyName ? (
-                        <span className="block truncate text-xs font-normal text-slate-400">
+                        <span className="block truncate text-xs font-normal text-ink-muted">
                           {contact.companyName}
                         </span>
                       ) : null}
@@ -174,7 +174,7 @@ export default function ContactsPage() {
                 numeric: true,
                 cell: (contact) =>
                   contact.balances.length === 0 ? (
-                    <span className="text-sm text-slate-400">{t('contact.settled')}</span>
+                    <span className="text-sm text-ink-muted">{t('contact.settled')}</span>
                   ) : (
                     // One line per currency. A single figure would mean adding
                     // dollars to shekels, which has no honest answer.
@@ -193,7 +193,7 @@ export default function ContactsPage() {
                             dir="ltr"
                             title={owed ? t('contact.owesUs') : t('contact.weOwe')}
                             className={`text-sm font-semibold tabular-nums ${
-                              owed ? 'text-emerald-700' : 'text-red-700'
+                              owed ? 'text-success' : 'text-danger'
                             }`}
                           >
                             {money(locale, balance.net, balance.currency)}

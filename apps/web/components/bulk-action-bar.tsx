@@ -138,7 +138,7 @@ export function BulkActionBar({
       <div className="pointer-events-none sticky bottom-5 z-40 flex justify-center px-4">
         <p
           role="status"
-          className="pointer-events-auto rounded-2xl border border-teal-200 bg-teal-50/95 px-4 py-2.5 text-sm font-medium text-teal-900 shadow-[0_18px_40px_-16px_rgb(16_24_40/0.35)] backdrop-blur-xl"
+          className="pointer-events-auto rounded-2xl border border-primary-soft bg-primary-soft/95 px-4 py-2.5 text-sm font-medium text-primary-ink shadow-[0_18px_40px_-16px_rgb(16_24_40/0.35)] backdrop-blur-xl"
         >
           {t('bulk.applied')}: {done}
         </p>
@@ -164,7 +164,7 @@ export function BulkActionBar({
       {/* Said before the pill, not inside it: a full-width line in the pill's
           wrapping row stretches the pill to the whole column. */}
       {action === 'RECEIVE' ? (
-        <p className="pointer-events-auto max-w-[62ch] rounded-xl border border-slate-200 bg-white/95 px-3 py-2 text-xs leading-relaxed text-slate-600 shadow-[0_10px_28px_-18px_rgb(16_24_40/0.35)] backdrop-blur-xl">
+        <p className="pointer-events-auto max-w-[62ch] rounded-xl border border-line bg-surface/95 px-3 py-2 text-xs leading-relaxed text-ink-soft shadow-[0_10px_28px_-18px_rgb(16_24_40/0.35)] backdrop-blur-xl">
           {t('bulk.receiveHint')}
         </p>
       ) : null}
@@ -172,7 +172,7 @@ export function BulkActionBar({
       {blocked.length > 0 ? (
         <div
           role="alert"
-          className="pointer-events-auto max-w-[72ch] rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 shadow-[0_10px_28px_-18px_rgb(16_24_40/0.35)]"
+          className="pointer-events-auto max-w-[72ch] rounded-xl border border-warning-line bg-warning-soft p-3 text-sm text-warning shadow-[0_10px_28px_-18px_rgb(16_24_40/0.35)]"
         >
           <p className="font-semibold">{t('bulk.blocked')}</p>
           <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
@@ -196,14 +196,14 @@ export function BulkActionBar({
       {error ? (
         <p
           role="alert"
-          className="pointer-events-auto max-w-[62ch] rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 shadow-[0_10px_28px_-18px_rgb(16_24_40/0.35)]"
+          className="pointer-events-auto max-w-[62ch] rounded-xl border border-danger-line bg-danger-soft px-3 py-2 text-sm text-danger shadow-[0_10px_28px_-18px_rgb(16_24_40/0.35)]"
         >
           {error}
         </p>
       ) : null}
 
-      <div className="pointer-events-auto flex max-w-full flex-wrap items-center justify-center gap-2.5 rounded-2xl border border-slate-200 bg-white/95 p-2.5 shadow-[0_18px_40px_-16px_rgb(16_24_40/0.35)] backdrop-blur-xl">
-        <span className="text-sm font-semibold text-slate-900">
+      <div className="pointer-events-auto flex max-w-full flex-wrap items-center justify-center gap-2.5 rounded-2xl border border-line bg-surface/95 p-2.5 shadow-[0_18px_40px_-16px_rgb(16_24_40/0.35)] backdrop-blur-xl">
+        <span className="text-sm font-semibold text-ink">
           {t('bulk.selected')}: <span className="tabular-nums">{selected.size}</span>
         </span>
 

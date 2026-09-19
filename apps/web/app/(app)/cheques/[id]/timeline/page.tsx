@@ -18,7 +18,7 @@ export default function ChequeTimelinePage({ params }: { params: Promise<{ id: s
         actions={
           <Link
             href={`/cheques/${id}`}
-            className="inline-flex min-h-11 items-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+            className="inline-flex min-h-11 items-center rounded-xl border border-line bg-surface px-4 text-sm font-semibold text-ink-soft shadow-sm hover:bg-subtle"
           >
             {t('common.back')}
           </Link>

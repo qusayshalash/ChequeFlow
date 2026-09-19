@@ -266,18 +266,18 @@ export default function NewContactPage() {
         </Panel>
 
         {formError ? (
-          <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
+          <p role="alert" className="rounded-xl bg-danger-soft p-3 text-sm text-danger">
             {formError}
           </p>
         ) : null}
 
-        <div className="sticky bottom-4 z-10 -mx-1 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-[0_18px_48px_-30px_rgb(16_24_40/0.6)] backdrop-blur-xl">
+        <div className="sticky bottom-4 z-10 -mx-1 flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-surface/95 p-4 shadow-[0_18px_48px_-30px_rgb(16_24_40/0.6)] backdrop-blur-xl">
           <Button type="submit" size="lg" loading={create.isPending}>
             {t('common.save')}
           </Button>
           <Link
             href={returnTo ?? '/contacts'}
-            className="inline-flex h-11 items-center rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="inline-flex h-11 items-center rounded-xl border border-line px-4 text-sm font-semibold text-ink-soft hover:bg-subtle"
           >
             {t('common.cancel')}
           </Link>

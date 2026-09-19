@@ -18,10 +18,10 @@ export interface AttentionItem {
 }
 
 const TONES = {
-  red: { box: 'bg-red-50 text-red-500', count: 'text-red-500' },
-  amber: { box: 'bg-amber-50 text-amber-500', count: 'text-amber-500' },
-  teal: { box: 'bg-teal-50 text-teal-700', count: 'text-teal-700' },
-  slate: { box: 'bg-slate-100 text-slate-500', count: 'text-slate-600' },
+  red: { box: 'bg-danger-soft text-danger', count: 'text-danger' },
+  amber: { box: 'bg-warning-soft text-warning', count: 'text-warning' },
+  teal: { box: 'bg-primary-soft text-primary-ink', count: 'text-primary-ink' },
+  slate: { box: 'bg-sunken text-ink-muted', count: 'text-ink-soft' },
 } as const;
 
 /**
@@ -40,14 +40,12 @@ export function AttentionList({ items }: { items: readonly AttentionItem[] }) {
   const t = useTranslator();
 
   return (
-    <section className="flex min-w-0 flex-col rounded-2xl border border-slate-200/90 bg-white p-4 shadow-[0_1px_2px_rgb(16_24_40/0.04)]">
+    <section className="flex min-w-0 flex-col rounded-2xl border border-line/90 bg-surface p-4 shadow-[0_1px_2px_rgb(16_24_40/0.04)]">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <span className="text-slate-300" aria-hidden="true">
+        <span className="text-ink-faint" aria-hidden="true">
           <IconBell width="18" height="18" />
         </span>
-        <h2 className="text-[15px] font-bold text-slate-900">
-          {t('dashboard.needsYourAttention')}
-        </h2>
+        <h2 className="text-[15px] font-bold text-ink">{t('dashboard.needsYourAttention')}</h2>
       </div>
 
       <ul className="flex flex-1 flex-col gap-2">
@@ -57,7 +55,7 @@ export function AttentionList({ items }: { items: readonly AttentionItem[] }) {
             <li key={item.key}>
               <Link
                 href={item.href}
-                className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white p-3 transition hover:border-slate-200 hover:bg-slate-50/70"
+                className="flex items-center gap-3 rounded-xl border border-line-soft bg-surface p-3 transition hover:border-line hover:bg-subtle/70"
               >
                 <span
                   className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${palette.box}`}
@@ -66,11 +64,11 @@ export function AttentionList({ items }: { items: readonly AttentionItem[] }) {
                 </span>
 
                 <span className="min-w-0 flex-1 text-end">
-                  <span className="block truncate text-[13px] font-semibold text-slate-800">
+                  <span className="block truncate text-[13px] font-semibold text-ink">
                     {item.label}
                   </span>
                   {item.amount ? (
-                    <span className="mt-0.5 block truncate text-[11px] text-slate-400 tabular-nums">
+                    <span className="mt-0.5 block truncate text-[11px] text-ink-muted tabular-nums">
                       {t('dashboard.totalAmount')} {item.amount}
                     </span>
                   ) : null}
@@ -87,7 +85,7 @@ export function AttentionList({ items }: { items: readonly AttentionItem[] }) {
 
       <Link
         href="/notifications"
-        className="mt-3 flex h-10 items-center justify-center gap-1 rounded-xl border border-slate-200 text-[13px] font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+        className="mt-3 flex h-10 items-center justify-center gap-1 rounded-xl border border-line text-[13px] font-semibold text-ink-soft transition hover:border-line-strong hover:bg-subtle"
       >
         {t('dashboard.viewAllAlerts')}
         <IconChevronEnd width="15" height="15" />

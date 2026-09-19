@@ -63,7 +63,7 @@ export function RowActions({ label, actions }: { label: string; actions: RowActi
         // 3000001", not just "actions".
         aria-label={`${t('common.actions')} — ${label}`}
         onClick={() => setOpen((value) => !value)}
-        className="flex size-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+        className="flex size-9 items-center justify-center rounded-lg border border-line text-ink-muted hover:bg-subtle hover:text-ink"
       >
         <IconDots width="18" height="18" />
       </button>
@@ -71,7 +71,7 @@ export function RowActions({ label, actions }: { label: string; actions: RowActi
       {open ? (
         <div
           role="menu"
-          className="absolute end-0 top-11 z-30 w-48 overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-lg"
+          className="absolute end-0 top-11 z-30 w-48 overflow-hidden rounded-xl border border-line bg-surface p-1 shadow-lg"
         >
           {plain.map((action) =>
             action.href ? (
@@ -80,7 +80,7 @@ export function RowActions({ label, actions }: { label: string; actions: RowActi
                 role="menuitem"
                 href={action.href}
                 onClick={() => setOpen(false)}
-                className="block rounded-lg px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
+                className="block rounded-lg px-3 py-2.5 text-sm text-ink-soft hover:bg-subtle"
               >
                 {action.label}
               </Link>
@@ -93,14 +93,14 @@ export function RowActions({ label, actions }: { label: string; actions: RowActi
                   action.onSelect?.();
                   setOpen(false);
                 }}
-                className="block w-full rounded-lg px-3 py-2.5 text-start text-sm text-slate-700 hover:bg-slate-50"
+                className="block w-full rounded-lg px-3 py-2.5 text-start text-sm text-ink-soft hover:bg-subtle"
               >
                 {action.label}
               </button>
             ),
           )}
 
-          {destructive.length > 0 ? <div className="my-1 border-t border-slate-100" /> : null}
+          {destructive.length > 0 ? <div className="my-1 border-t border-line-soft" /> : null}
 
           {destructive.map((action) => (
             <button
@@ -111,7 +111,7 @@ export function RowActions({ label, actions }: { label: string; actions: RowActi
                 action.onSelect?.();
                 setOpen(false);
               }}
-              className="block w-full rounded-lg px-3 py-2.5 text-start text-sm text-red-600 hover:bg-red-50"
+              className="block w-full rounded-lg px-3 py-2.5 text-start text-sm text-danger hover:bg-danger-soft"
             >
               {action.label}
             </button>

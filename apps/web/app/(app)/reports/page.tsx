@@ -168,13 +168,13 @@ function ReportsPageBody() {
         {
           label: t('reports.inflow'),
           values: inflow,
-          color: '#0B7C6B',
+          color: 'var(--app-primary)',
           ...(futureFrom >= 0 ? { dashedFrom: futureFrom } : {}),
         },
         {
           label: t('reports.outflow'),
           values: outflow,
-          color: '#C43D42',
+          color: 'var(--app-danger-solid)',
           ...(futureFrom >= 0 ? { dashedFrom: futureFrom } : {}),
         },
       ],
@@ -200,10 +200,10 @@ function ReportsPageBody() {
           />
         </div>
 
-        <label className="inline-flex h-11 w-40 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 hover:border-slate-300">
-          <span className="text-xs font-medium text-slate-400">{t('reports.granularity')}</span>
+        <label className="inline-flex h-11 w-40 items-center gap-2 rounded-xl border border-line bg-surface px-3 hover:border-line-strong">
+          <span className="text-xs font-medium text-ink-muted">{t('reports.granularity')}</span>
           <select
-            className="min-w-0 flex-1 truncate bg-transparent text-sm font-semibold text-slate-700 outline-none"
+            className="min-w-0 flex-1 truncate bg-transparent text-sm font-semibold text-ink-soft outline-none"
             value={grain}
             onChange={(event) => setGrain(event.target.value as typeof grain)}
           >
@@ -216,7 +216,7 @@ function ReportsPageBody() {
         </label>
 
         {currencies.length > 1 ? (
-          <div className="inline-flex rounded-xl bg-slate-100/80 p-1" role="group">
+          <div className="inline-flex rounded-xl bg-sunken/80 p-1" role="group">
             {currencies.map((code) => (
               <button
                 key={code}
@@ -225,8 +225,8 @@ function ReportsPageBody() {
                 aria-pressed={code === shown}
                 className={`h-9 rounded-lg px-4 text-sm font-semibold transition-colors ${
                   code === shown
-                    ? 'bg-white text-slate-950 shadow-sm ring-1 ring-slate-200'
-                    : 'text-slate-500 hover:text-slate-900'
+                    ? 'bg-surface text-ink shadow-sm ring-1 ring-line'
+                    : 'text-ink-muted hover:text-ink'
                 }`}
               >
                 {code}
@@ -236,13 +236,13 @@ function ReportsPageBody() {
         ) : null}
       </div>
 
-      <p className="text-xs text-slate-400">
+      <p className="text-xs text-ink-muted">
         {formatDate(locale, from)} — {formatDate(locale, to)} · {t('reports.perCurrencyNote')}
       </p>
 
       {/* ── Cash flow ─────────────────────────────────────────────────── */}
       <Panel title={`${t('reports.cashFlowTitle')}${shown ? ` — ${shown}` : ''}`}>
-        <p className="-mt-1 mb-3 text-sm text-slate-500">{t('reports.cashFlowHint')}</p>
+        <p className="-mt-1 mb-3 text-sm text-ink-muted">{t('reports.cashFlowHint')}</p>
 
         {cashFlow.isPending ? <LoadingState label={t('common.loading')} /> : null}
         {cashFlow.isError ? (
@@ -259,12 +259,12 @@ function ReportsPageBody() {
         {chart ? (
           <>
             {chart.empty ? (
-              <p className="mb-3 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-500">
+              <p className="mb-3 rounded-xl bg-subtle px-4 py-3 text-sm text-ink-muted">
                 {t('reports.noCurrencyData')}
               </p>
             ) : null}
 
-            <div className="flex flex-wrap items-center gap-4 text-[11px] text-slate-500">
+            <div className="flex flex-wrap items-center gap-4 text-[11px] text-ink-muted">
               {chart.series.map((entry) => (
                 <span key={entry.label} className="inline-flex items-center gap-1.5">
                   <span
@@ -285,21 +285,21 @@ function ReportsPageBody() {
               labelEvery={Math.max(1, Math.round(chart.labels.length / 7))}
             />
 
-            <div className="mt-4 grid grid-cols-1 gap-px overflow-hidden rounded-xl bg-slate-200/70 sm:grid-cols-3">
+            <div className="mt-4 grid grid-cols-1 gap-px overflow-hidden rounded-xl bg-line/70 sm:grid-cols-3">
               <Figure
                 label={t('reports.inflow')}
                 value={money(locale, chart.totals.inflow.toFixed(2), shown!)}
-                tone="text-teal-700"
+                tone="text-primary-ink"
               />
               <Figure
                 label={t('reports.outflow')}
                 value={money(locale, chart.totals.outflow.toFixed(2), shown!)}
-                tone="text-red-600"
+                tone="text-danger"
               />
               <Figure
                 label={t('reports.net')}
                 value={money(locale, chart.totals.net.toFixed(2), shown!)}
-                tone={chart.totals.net < 0 ? 'text-red-600' : 'text-teal-700'}
+                tone={chart.totals.net < 0 ? 'text-danger' : 'text-primary-ink'}
               />
             </div>
           </>
@@ -308,7 +308,7 @@ function ReportsPageBody() {
 
       {/* ── Due in the window ─────────────────────────────────────────── */}
       <Panel title={t('reports.dueTitle')}>
-        <p className="-mt-1 mb-3 text-sm text-slate-500">{t('reports.dueHint')}</p>
+        <p className="-mt-1 mb-3 text-sm text-ink-muted">{t('reports.dueHint')}</p>
 
         {due.isPending ? <LoadingState label={t('common.loading')} /> : null}
 
@@ -338,7 +338,7 @@ function ReportsPageBody() {
 
       {/* ── Custody ───────────────────────────────────────────────────── */}
       <Panel title={t('reports.custodyTitle')}>
-        <p className="-mt-1 mb-3 text-sm text-slate-500">{t('reports.custodyHint')}</p>
+        <p className="-mt-1 mb-3 text-sm text-ink-muted">{t('reports.custodyHint')}</p>
 
         {custody.isPending ? <LoadingState label={t('common.loading')} /> : null}
         {custody.isError ? (
@@ -360,25 +360,25 @@ function ReportsPageBody() {
             return (
               <div key={index} className="flex flex-col gap-1.5">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <span className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-                    <IconSafe width="16" height="16" className="text-slate-400" />
+                  <span className="flex items-center gap-2 text-sm font-semibold text-ink">
+                    <IconSafe width="16" height="16" className="text-ink-muted" />
                     {entry.locationName ?? entry.holderName ?? t('common.unknown')}
                   </span>
-                  <span className="text-xs text-slate-500 tabular-nums">
+                  <span className="text-xs text-ink-muted tabular-nums">
                     {entry.count} · {Math.round(share * 100)}% {t('reports.ofTotal')}
                   </span>
                 </div>
 
                 {/* A bar, not just a number. "Twenty in the safe" means little
                     until you can see it is most of them. */}
-                <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                <div className="h-2 overflow-hidden rounded-full bg-sunken">
                   <div
-                    className="h-full rounded-full bg-teal-600"
+                    className="h-full rounded-full bg-primary"
                     style={{ width: `${Math.max(share * 100, 2)}%` }}
                   />
                 </div>
 
-                <p className="text-xs text-slate-500 tabular-nums">
+                <p className="text-xs text-ink-muted tabular-nums">
                   {entry.byCurrency
                     .map((row) => money(locale, row.total, row.currency))
                     .join(' · ')}
@@ -394,16 +394,16 @@ function ReportsPageBody() {
 
 function Figure({ label, value, tone }: { label: string; value: string; tone: string }) {
   return (
-    <div className="bg-white px-4 py-3 text-center">
-      <p className="text-[11px] font-medium text-slate-400">{label}</p>
+    <div className="bg-surface px-4 py-3 text-center">
+      <p className="text-[11px] font-medium text-ink-muted">{label}</p>
       <p className={`mt-1 text-[15px] font-bold tabular-nums ${tone}`}>{value}</p>
     </div>
   );
 }
 
 const CALLOUT_TONES = {
-  teal: 'bg-teal-50 text-teal-700',
-  red: 'bg-red-50 text-red-600',
+  teal: 'bg-primary-soft text-primary-ink',
+  red: 'bg-danger-soft text-danger',
 } as const;
 
 function Callout({
@@ -420,18 +420,18 @@ function Callout({
   lines: string[];
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-slate-200/90 p-4">
+    <div className="flex items-start gap-3 rounded-xl border border-line/90 p-4">
       <span
         className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${CALLOUT_TONES[tone]}`}
       >
         <Icon width="20" height="20" />
       </span>
       <div className="min-w-0">
-        <p className="text-2xl font-bold text-slate-900 tabular-nums">{count}</p>
-        <p className="text-sm text-slate-500">{label}</p>
+        <p className="text-2xl font-bold text-ink tabular-nums">{count}</p>
+        <p className="text-sm text-ink-muted">{label}</p>
         {/* One line per currency. Never summed. */}
         {lines.length > 0 ? (
-          <p className="mt-1 text-xs text-slate-500 tabular-nums">{lines.join(' · ')}</p>
+          <p className="mt-1 text-xs text-ink-muted tabular-nums">{lines.join(' · ')}</p>
         ) : null}
       </div>
     </div>

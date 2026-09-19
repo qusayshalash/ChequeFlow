@@ -32,27 +32,27 @@ export default function BranchesPage() {
           {query.data.map((branch) => (
             <Card
               key={branch.id}
-              className="group p-0 transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+              className="group p-0 transition hover:-translate-y-0.5 hover:border-line-strong hover:shadow-md"
             >
               <div className="flex items-start gap-4 p-5">
-                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-700 ring-1 ring-teal-100">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary-ink ring-1 ring-primary-soft">
                   <IconBranch />
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-base font-bold text-slate-950">{branch.name}</p>
+                    <p className="text-base font-bold text-ink">{branch.name}</p>
                     <span
-                      className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 font-mono text-[11px] font-semibold text-slate-500"
+                      className="rounded-lg border border-line bg-subtle px-2 py-1 font-mono text-[11px] font-semibold text-ink-muted"
                       dir="ltr"
                     >
                       {branch.code}
                     </span>
                   </div>
                   {branch.address ? (
-                    <p className="mt-2 text-sm leading-6 text-slate-500">{branch.address}</p>
+                    <p className="mt-2 text-sm leading-6 text-ink-muted">{branch.address}</p>
                   ) : null}
                   {branch.phone ? (
-                    <p className="mt-1 text-sm font-medium text-slate-600 tabular-nums" dir="ltr">
+                    <p className="mt-1 text-sm font-medium text-ink-soft tabular-nums" dir="ltr">
                       {branch.phone}
                     </p>
                   ) : null}

@@ -45,17 +45,17 @@ export function Pagination({
 
   return (
     <nav
-      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/90 bg-white p-3"
+      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line/90 bg-surface p-3"
       aria-label={t('common.page')}
     >
       {/* What the list contains, and how much of it is shown at a time. */}
-      <span className="flex min-w-0 items-center gap-3 text-sm text-slate-500 tabular-nums">
+      <span className="flex min-w-0 items-center gap-3 text-sm text-ink-muted tabular-nums">
         {t('common.showingOf', { shown, total: meta.total })}
 
         {onPageSizeChange ? (
           <select
             aria-label={t('common.rowsPerPage')}
-            className="h-11 rounded-lg border border-slate-200 bg-white px-2 text-sm font-semibold text-slate-700 outline-none hover:border-slate-300"
+            className="h-11 rounded-lg border border-line bg-surface px-2 text-sm font-semibold text-ink-soft outline-none hover:border-line-strong"
             value={meta.pageSize}
             onChange={(event) => onPageSizeChange(Number(event.target.value))}
           >
@@ -89,7 +89,7 @@ export function Pagination({
             {pages.map((page, index) => (
               <span key={page} className="contents">
                 {index > 0 && page - pages[index - 1]! > 1 ? (
-                  <span className="px-1 text-slate-400" aria-hidden="true">
+                  <span className="px-1 text-ink-muted" aria-hidden="true">
                     …
                   </span>
                 ) : null}
@@ -102,8 +102,8 @@ export function Pagination({
                   // their 44 the numbers read as a different, lesser control.
                   className={`size-11 rounded-lg text-sm font-semibold tabular-nums transition-colors ${
                     page === meta.page
-                      ? 'bg-teal-700 text-white'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
+                      ? 'bg-primary text-on-primary'
+                      : 'text-ink-soft hover:bg-sunken hover:text-ink'
                   }`}
                 >
                   {page}

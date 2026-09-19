@@ -15,37 +15,178 @@
   --font-sans:
     'IBM Plex Sans Arabic', 'Noto Sans Arabic', 'Segoe UI', 'Helvetica Neue', system-ui,
     -apple-system, sans-serif;
-  --color-brand: #087f6d;
-  --color-brand-dark: #075f54;
-  --color-brand-light: #e8f7f3;
+}
+
+/*
+ * Every colour in the dashboard has a name here and nowhere else.
+ *
+ * Each one is `var(--app-…)`, resolved where it is used rather than where it
+ * is declared, which is the whole mechanism behind the dark theme: the values
+ * below change on the root element and every `bg-surface` in the product
+ * follows, with no class rewritten and no JavaScript involved.
+ *
+ * A raw palette class — `bg-white`, `text-slate-500` — is therefore a fault,
+ * not a shortcut: it is a colour that cannot follow the theme, and one of them
+ * in a card is a white rectangle in a dark room.
+ */
+@theme {
+  --color-page: var(--app-bg);
+  --color-surface: var(--app-surface);
+  --color-subtle: var(--app-surface-subtle);
+  --color-sunken: var(--app-surface-sunken);
+  --color-raised: var(--app-surface-raised);
+  --color-line: var(--app-border);
+  --color-line-soft: var(--app-border-soft);
+  --color-line-strong: var(--app-border-strong);
+  --color-ink: var(--app-text);
+  --color-ink-soft: var(--app-text-secondary);
+  --color-ink-muted: var(--app-text-muted);
+  --color-ink-faint: var(--app-text-faint);
+  --color-primary: var(--app-primary);
+  --color-primary-hover: var(--app-primary-hover);
+  --color-primary-soft: var(--app-primary-soft);
+  --color-primary-ink: var(--app-primary-ink);
+  --color-on-primary: var(--app-on-primary);
+  --color-danger: var(--app-danger);
+  --color-danger-soft: var(--app-danger-soft);
+  --color-danger-line: var(--app-danger-line);
+  --color-danger-solid: var(--app-danger-solid);
+  --color-on-danger: var(--app-on-danger);
+  --color-warning: var(--app-warning);
+  --color-warning-soft: var(--app-warning-soft);
+  --color-warning-line: var(--app-warning-line);
+  --color-success: var(--app-success);
+  --color-success-soft: var(--app-success-soft);
+  --color-success-line: var(--app-success-line);
+  --color-on-success: var(--app-on-success);
+  --color-info: var(--app-info);
+  --color-info-soft: var(--app-info-soft);
+  --color-info-line: var(--app-info-line);
+  --color-scrim: var(--app-scrim);
+  --color-hero: var(--app-hero);
+  --color-hero-ink: var(--app-hero-ink);
+  --color-hero-accent: var(--app-hero-accent);
+  --color-hero-glow: var(--app-hero-glow);
+  --color-sidebar: var(--app-sidebar);
+  --color-sidebar-text: var(--app-sidebar-text);
+  --color-sidebar-muted: var(--app-sidebar-muted);
+  --color-sidebar-section: var(--app-sidebar-section);
+  --color-sidebar-line: var(--app-sidebar-line);
+  --color-sidebar-hover: var(--app-sidebar-hover);
+  --color-sidebar-active-bg: var(--app-sidebar-active-bg);
+  --color-sidebar-active-text: var(--app-sidebar-active-text);
+  --color-mark-teal: var(--app-mark-teal);
+  --color-mark-teal-ink: var(--app-mark-teal-ink);
+  --color-mark-indigo: var(--app-mark-indigo);
+  --color-mark-indigo-ink: var(--app-mark-indigo-ink);
+  --color-mark-orange: var(--app-mark-orange);
+  --color-mark-orange-ink: var(--app-mark-orange-ink);
+  --color-mark-fuchsia: var(--app-mark-fuchsia);
+  --color-mark-fuchsia-ink: var(--app-mark-fuchsia-ink);
+  --color-mark-cyan: var(--app-mark-cyan);
+  --color-mark-cyan-ink: var(--app-mark-cyan-ink);
+  --color-mark-sky: var(--app-mark-sky);
+  --color-mark-sky-ink: var(--app-mark-sky-ink);
+  --color-mark-violet: var(--app-mark-violet);
+  --color-mark-violet-ink: var(--app-mark-violet-ink);
+  --color-mark-emerald: var(--app-mark-emerald);
+  --color-mark-emerald-ink: var(--app-mark-emerald-ink);
+  --color-mark-amber: var(--app-mark-amber);
+  --color-mark-amber-ink: var(--app-mark-amber-ink);
+  --color-mark-rose: var(--app-mark-rose);
+  --color-mark-rose-ink: var(--app-mark-rose-ink);
+  --color-mark-neutral: var(--app-mark-neutral);
+  --color-mark-neutral-ink: var(--app-mark-neutral-ink);
 }
 
 :root {
   color-scheme: light;
+
+  /* Surfaces, from the page up to a raised card */
   --app-bg: #f4f6f8;
   --app-surface: #ffffff;
   --app-surface-subtle: #f8fafb;
+  --app-surface-sunken: #eef2f4;
   --app-surface-raised: #ffffff;
+
+  /* Lines: a hairline, the ordinary rule, and a deliberate edge */
+  --app-border-soft: #eef2f5;
   --app-border: #e2e7eb;
   --app-border-strong: #d1d9df;
+
+  /* Ink, from the heading down to what the eye may skip */
   --app-text: #15211f;
-  --app-text-secondary: #53625f;
-  --app-text-muted: #84918e;
+  --app-text-secondary: #485754;
+  --app-text-muted: #64716e;
+  --app-text-faint: #7c8986;
+
+  /* The brand, and what may be written on top of it */
   --app-primary: #087f6d;
   --app-primary-hover: #066d5f;
   --app-primary-soft: #e8f7f3;
+  --app-primary-ink: #0a6a5b;
+  --app-on-primary: #ffffff;
+
+  /* The four things the product has to say about a state */
+  --app-danger: #b4262c;
+  --app-danger-soft: #fdf1f1;
+  --app-danger-line: #f3d2d3;
+  --app-danger-solid: #b4262c;
+  --app-on-danger: #ffffff;
+  --app-warning: #8a5206;
+  --app-warning-soft: #fdf6e8;
+  --app-warning-line: #f0dfba;
+  --app-success: #0f6f50;
+  --app-success-soft: #e9f7f1;
+  --app-success-line: #c3e6d8;
+  --app-on-success: #ffffff;
+  --app-info: #1f62a4;
+  --app-info-soft: #eaf3fb;
+  --app-info-line: #c8ddf2;
+
+  /* What a dialog is pushed forward from */
+  --app-scrim: #0f1a18;
+
+  /* The sign-in slab, dark by design rather than by setting */
+  --app-hero: #111c1b;
+  --app-hero-ink: #ffffff;
+  --app-hero-accent: #6ee7b7;
+  --app-hero-glow: #34d399;
+
+  /* The sidebar, which is its own surface in both themes */
   --app-sidebar: #ffffff;
   --app-sidebar-text: #16211f;
-  --app-sidebar-muted: #5b6b68;
-  --app-sidebar-section: #687572;
+  --app-sidebar-muted: #54625f;
+  --app-sidebar-section: #5f6d6a;
   --app-sidebar-line: #e6ebea;
   --app-sidebar-hover: #f3f6f5;
   --app-sidebar-active-bg: #e8f7f3;
   --app-sidebar-active-text: #05564a;
-  --app-danger: #c43d42;
-  --app-warning: #b56a0b;
-  --app-success: #12805c;
-  --app-info: #2773bd;
+
+  /* Identity marks — a name always gets the same hue */
+  --app-mark-teal: #ccfbf1;
+  --app-mark-teal-ink: #115e59;
+  --app-mark-indigo: #e0e7ff;
+  --app-mark-indigo-ink: #3730a3;
+  --app-mark-orange: #ffedd5;
+  --app-mark-orange-ink: #7c2d12;
+  --app-mark-fuchsia: #fae8ff;
+  --app-mark-fuchsia-ink: #86198f;
+  --app-mark-cyan: #cffafe;
+  --app-mark-cyan-ink: #155e75;
+  --app-mark-sky: #e0f2fe;
+  --app-mark-sky-ink: #075985;
+  --app-mark-violet: #ede9fe;
+  --app-mark-violet-ink: #5b21b6;
+  --app-mark-emerald: #d1fae5;
+  --app-mark-emerald-ink: #065f46;
+  --app-mark-amber: #fef3c7;
+  --app-mark-amber-ink: #78350f;
+  --app-mark-rose: #ffe4e6;
+  --app-mark-rose-ink: #9f1239;
+  --app-mark-neutral: #e2e8f0;
+  --app-mark-neutral-ink: #1e293b;
+
   --app-radius-sm: 8px;
   --app-radius-md: 12px;
   --app-radius-lg: 16px;
@@ -54,22 +195,163 @@
   --app-shadow-md: 0 12px 30px -18px rgb(16 24 40 / 24%);
 }
 
-/* The product is light today, but every semantic token has a dark counterpart.
-   Enabling the mode later is a single attribute change instead of a redesign. */
-[data-theme='dark'] {
+/*
+ * The dark theme, declared twice on purpose.
+ *
+ * The first block follows the operating system, which is where the answer
+ * already is: someone who wants dark at night has said so once, for every app
+ * on the machine. The second lets `data-theme` override it, so a switch can be
+ * added later without touching a single colour. The `:not([data-theme='light'])`
+ * guard is what keeps that override working in both directions.
+ *
+ * The two lists are identical, and a test fails if they ever drift.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    /* Surfaces, from the page up to a raised card */
+    --app-bg: #0d1414;
+    --app-surface: #131d1c;
+    --app-surface-subtle: #172321;
+    --app-surface-sunken: #101a19;
+    --app-surface-raised: #1a2725;
+
+    /* Lines: a hairline, the ordinary rule, and a deliberate edge */
+    --app-border-soft: #1e2c2a;
+    --app-border: #2a3836;
+    --app-border-strong: #3a4a47;
+
+    /* Ink, from the heading down to what the eye may skip */
+    --app-text: #edf4f2;
+    --app-text-secondary: #b4c1be;
+    --app-text-muted: #94a3a0;
+    --app-text-faint: #7d8b87;
+
+    /* The brand, and what may be written on top of it */
+    --app-primary: #42b9a3;
+    --app-primary-hover: #58c7b2;
+    --app-primary-soft: #153e37;
+    --app-primary-ink: #6fd8bf;
+    --app-on-primary: #04211c;
+
+    /* The four things the product has to say about a state */
+    --app-danger: #f5989b;
+    --app-danger-soft: #35191b;
+    --app-danger-line: #50272a;
+    --app-danger-solid: #e2686c;
+    --app-on-danger: #1a0b0c;
+    --app-warning: #e5b263;
+    --app-warning-soft: #322413;
+    --app-warning-line: #4b381c;
+    --app-success: #5bcda2;
+    --app-success-soft: #0f2f25;
+    --app-success-line: #1d4a3a;
+    --app-on-success: #04211c;
+    --app-info: #7cb8ec;
+    --app-info-soft: #12283d;
+    --app-info-line: #1f4160;
+
+    /* What a dialog is pushed forward from */
+    --app-scrim: #000000;
+
+    /* The sign-in slab, dark by design rather than by setting */
+    --app-hero: #0a1211;
+    --app-hero-ink: #edf4f2;
+    --app-hero-accent: #6ee7b7;
+    --app-hero-glow: #34d399;
+
+    /* The sidebar, which is its own surface in both themes */
+    --app-sidebar: #0d1514;
+    --app-sidebar-text: #edf4f2;
+    --app-sidebar-muted: #a7b6b3;
+    --app-sidebar-section: #93a29f;
+    --app-sidebar-line: #223230;
+    --app-sidebar-hover: #16211f;
+    --app-sidebar-active-bg: #14332d;
+    --app-sidebar-active-text: #6fd8bf;
+
+    /* Identity marks — a name always gets the same hue */
+    --app-mark-teal: #123c36;
+    --app-mark-teal-ink: #6fd8c2;
+    --app-mark-indigo: #1e2148;
+    --app-mark-indigo-ink: #a9b0f5;
+    --app-mark-orange: #3a2413;
+    --app-mark-orange-ink: #efab72;
+    --app-mark-fuchsia: #361538;
+    --app-mark-fuchsia-ink: #e7a1ec;
+    --app-mark-cyan: #0d3239;
+    --app-mark-cyan-ink: #71c8db;
+    --app-mark-sky: #11293b;
+    --app-mark-sky-ink: #82bce4;
+    --app-mark-violet: #241a42;
+    --app-mark-violet-ink: #b9a6f2;
+    --app-mark-emerald: #0d3325;
+    --app-mark-emerald-ink: #66cb9f;
+    --app-mark-amber: #33260f;
+    --app-mark-amber-ink: #e0b268;
+    --app-mark-rose: #3a171d;
+    --app-mark-rose-ink: #eda0b0;
+    --app-mark-neutral: #232f2d;
+    --app-mark-neutral-ink: #aebab7;
+  }
+}
+
+:root[data-theme='dark'] {
   color-scheme: dark;
+
+  /* Surfaces, from the page up to a raised card */
   --app-bg: #0d1414;
   --app-surface: #131d1c;
   --app-surface-subtle: #172321;
+  --app-surface-sunken: #101a19;
   --app-surface-raised: #1a2725;
+
+  /* Lines: a hairline, the ordinary rule, and a deliberate edge */
+  --app-border-soft: #1e2c2a;
   --app-border: #2a3836;
   --app-border-strong: #3a4a47;
+
+  /* Ink, from the heading down to what the eye may skip */
   --app-text: #edf4f2;
   --app-text-secondary: #b4c1be;
-  --app-text-muted: #82918e;
+  --app-text-muted: #94a3a0;
+  --app-text-faint: #7d8b87;
+
+  /* The brand, and what may be written on top of it */
   --app-primary: #42b9a3;
   --app-primary-hover: #58c7b2;
   --app-primary-soft: #153e37;
+  --app-primary-ink: #6fd8bf;
+  --app-on-primary: #04211c;
+
+  /* The four things the product has to say about a state */
+  --app-danger: #f5989b;
+  --app-danger-soft: #35191b;
+  --app-danger-line: #50272a;
+  --app-danger-solid: #e2686c;
+  --app-on-danger: #1a0b0c;
+  --app-warning: #e5b263;
+  --app-warning-soft: #322413;
+  --app-warning-line: #4b381c;
+  --app-success: #5bcda2;
+  --app-success-soft: #0f2f25;
+  --app-success-line: #1d4a3a;
+  --app-on-success: #04211c;
+  --app-info: #7cb8ec;
+  --app-info-soft: #12283d;
+  --app-info-line: #1f4160;
+
+  /* What a dialog is pushed forward from */
+  --app-scrim: #000000;
+
+  /* The sign-in slab, dark by design rather than by setting */
+  --app-hero: #0a1211;
+  --app-hero-ink: #edf4f2;
+  --app-hero-accent: #6ee7b7;
+  --app-hero-glow: #34d399;
+
+  /* The sidebar, which is its own surface in both themes */
   --app-sidebar: #0d1514;
   --app-sidebar-text: #edf4f2;
   --app-sidebar-muted: #a7b6b3;
@@ -78,6 +360,30 @@
   --app-sidebar-hover: #16211f;
   --app-sidebar-active-bg: #14332d;
   --app-sidebar-active-text: #6fd8bf;
+
+  /* Identity marks — a name always gets the same hue */
+  --app-mark-teal: #123c36;
+  --app-mark-teal-ink: #6fd8c2;
+  --app-mark-indigo: #1e2148;
+  --app-mark-indigo-ink: #a9b0f5;
+  --app-mark-orange: #3a2413;
+  --app-mark-orange-ink: #efab72;
+  --app-mark-fuchsia: #361538;
+  --app-mark-fuchsia-ink: #e7a1ec;
+  --app-mark-cyan: #0d3239;
+  --app-mark-cyan-ink: #71c8db;
+  --app-mark-sky: #11293b;
+  --app-mark-sky-ink: #82bce4;
+  --app-mark-violet: #241a42;
+  --app-mark-violet-ink: #b9a6f2;
+  --app-mark-emerald: #0d3325;
+  --app-mark-emerald-ink: #66cb9f;
+  --app-mark-amber: #33260f;
+  --app-mark-amber-ink: #e0b268;
+  --app-mark-rose: #3a171d;
+  --app-mark-rose-ink: #eda0b0;
+  --app-mark-neutral: #232f2d;
+  --app-mark-neutral-ink: #aebab7;
 }
 
 html {
@@ -97,13 +403,16 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* A focus ring is the keyboard's cursor: it is derived from the brand so it
+   stays visible against both themes rather than fading into the dark one. */
 :focus-visible {
-  outline: 3px solid rgb(8 127 109 / 24%);
+  outline: 3px solid color-mix(in srgb, var(--app-primary) 60%, transparent);
   outline-offset: 2px;
 }
 
 ::selection {
-  background: rgb(8 127 109 / 18%);
+  background: color-mix(in srgb, var(--app-primary) 28%, transparent);
+  color: var(--app-text);
 }
 
 button,
@@ -123,7 +432,7 @@ a {
 
 input::placeholder,
 textarea::placeholder {
-  color: #98a4a1;
+  color: var(--app-text-muted);
 }
 
 @keyframes app-skeleton {
@@ -137,7 +446,12 @@ textarea::placeholder {
 
 .app-skeleton {
   animation: app-skeleton 1.5s ease-in-out infinite;
-  background: linear-gradient(90deg, #eef2f3 25%, #f8fafb 50%, #eef2f3 75%);
+  background: linear-gradient(
+    90deg,
+    var(--app-surface-sunken) 25%,
+    var(--app-surface-subtle) 50%,
+    var(--app-surface-sunken) 75%
+  );
   background-size: 200% 100%;
 }
 

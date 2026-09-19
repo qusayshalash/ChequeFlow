@@ -94,7 +94,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
           canManage ? (
             <Button
               variant="secondary"
-              className="border-red-200 text-red-700 hover:border-red-300 hover:bg-red-50"
+              className="border-danger-line text-danger hover:border-danger-line hover:bg-danger-soft"
               onClick={() => setConfirmDelete(true)}
             >
               {t('common.delete')}
@@ -111,16 +111,16 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
           role="dialog"
           aria-modal="true"
           aria-labelledby="delete-contact-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-[2px]"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-scrim/40 p-4 backdrop-blur-[2px]"
         >
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
-            <div className="flex size-11 items-center justify-center rounded-xl bg-red-50 text-red-600">
+          <div className="w-full max-w-md rounded-2xl border border-line bg-surface p-6 shadow-2xl">
+            <div className="flex size-11 items-center justify-center rounded-xl bg-danger-soft text-danger">
               !
             </div>
-            <h2 id="delete-contact-title" className="mt-4 text-xl font-bold text-slate-950">
+            <h2 id="delete-contact-title" className="mt-4 text-xl font-bold text-ink">
               {t('common.confirmDelete')}
             </h2>
-            <p className="mt-2 text-sm leading-6 text-slate-500">{contact.name}</p>
+            <p className="mt-2 text-sm leading-6 text-ink-muted">{contact.name}</p>
             <div className="mt-6 flex justify-end gap-3">
               <Button variant="secondary" onClick={() => setConfirmDelete(false)}>
                 {t('common.cancel')}
@@ -140,7 +140,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
         </div>
       ) : null}
       {!contact.isActive ? (
-        <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        <p className="rounded-xl border border-line bg-subtle px-4 py-3 text-sm text-ink-soft">
           {t('userStatus.DISABLED')}
         </p>
       ) : null}
@@ -181,17 +181,17 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
         title={t('contact.editTitle')}
         width="2xl"
       >
-            <div className="min-h-0 flex-1 overflow-y-auto p-6">
-              <ContactEditForm
-                contact={contact}
-                onCancel={() => setEditing(false)}
-                onDone={() => {
-                  setEditing(false);
-                  setNotice(t('contact.updateSuccess'));
-                  void statement.refetch();
-                }}
-              />
-            </div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-6">
+          <ContactEditForm
+            contact={contact}
+            onCancel={() => setEditing(false)}
+            onDone={() => {
+              setEditing(false);
+              setNotice(t('contact.updateSuccess'));
+              void statement.refetch();
+            }}
+          />
+        </div>
       </Drawer>
 
       {/* Above the statement on purpose: whether this customer is already
@@ -199,33 +199,33 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
           another cheque, not after reading the whole history. */}
       <Panel title={t('contact.creditLimit')}>
         {creditLimit === null ? (
-          <p className="text-sm text-slate-500">{t('contact.creditNotSet')}</p>
+          <p className="text-sm text-ink-muted">{t('contact.creditNotSet')}</p>
         ) : (
           <div className="flex flex-col gap-3">
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-xl border border-slate-200 p-3">
-                <p className="text-xs text-slate-500">{t('contact.creditLimit')}</p>
-                <p className="mt-1 text-sm font-bold text-slate-900 tabular-nums">
+              <div className="rounded-xl border border-line p-3">
+                <p className="text-xs text-ink-muted">{t('contact.creditLimit')}</p>
+                <p className="mt-1 text-sm font-bold text-ink tabular-nums">
                   {money(locale, creditLimit.limit, creditLimit.currency)}
                 </p>
               </div>
-              <div className="rounded-xl border border-slate-200 p-3">
-                <p className="text-xs text-slate-500">{t('contact.creditUsed')}</p>
-                <p className="mt-1 text-sm font-bold text-amber-600 tabular-nums">
+              <div className="rounded-xl border border-line p-3">
+                <p className="text-xs text-ink-muted">{t('contact.creditUsed')}</p>
+                <p className="mt-1 text-sm font-bold text-warning tabular-nums">
                   {money(locale, creditLimit.used, creditLimit.currency)}
                 </p>
               </div>
               <div
                 className={`rounded-xl border p-3 ${
-                  creditLimit.exceeded ? 'border-red-200 bg-red-50' : 'border-slate-200'
+                  creditLimit.exceeded ? 'border-danger-line bg-danger-soft' : 'border-line'
                 }`}
               >
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-ink-muted">
                   {creditLimit.exceeded ? t('contact.creditExceeded') : t('contact.creditHeadroom')}
                 </p>
                 <p
                   className={`mt-1 text-sm font-bold tabular-nums ${
-                    creditLimit.exceeded ? 'text-red-700' : 'text-teal-700'
+                    creditLimit.exceeded ? 'text-danger' : 'text-primary-ink'
                   }`}
                 >
                   {money(locale, creditLimit.headroom, creditLimit.currency)}
@@ -236,7 +236,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
             {/* Named rather than folded in: converting them at today's rate
                 would make the headroom move on days when nothing happened. */}
             {creditLimit.otherCurrencies.length > 0 ? (
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-ink-muted">
                 {t('contact.creditOther')}:{' '}
                 {creditLimit.otherCurrencies
                   .map((entry) => money(locale, entry.total, entry.currency))
@@ -260,10 +260,10 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
 
               return (
                 <div key={entry.currency}>
-                  <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2 rounded-xl bg-slate-50 px-4 py-3">
+                  <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2 rounded-xl bg-subtle px-4 py-3">
                     <div>
-                      <p className="text-sm font-bold text-slate-900">{entry.currency}</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-sm font-bold text-ink">{entry.currency}</p>
+                      <p className="text-xs text-ink-muted">
                         {settled
                           ? t('contact.settled')
                           : owed
@@ -274,7 +274,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                     <p
                       dir="ltr"
                       className={`text-xl font-bold tabular-nums ${
-                        settled ? 'text-slate-500' : owed ? 'text-emerald-700' : 'text-red-700'
+                        settled ? 'text-ink-muted' : owed ? 'text-success' : 'text-danger'
                       }`}
                     >
                       {money(locale, entry.net, entry.currency)}
@@ -284,15 +284,15 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                     {(
                       [
-                        ['contact.pending', entry.pending, 'text-amber-600'],
-                        ['contact.collected', entry.collected, 'text-teal-700'],
-                        ['contact.bounced', entry.bounced, 'text-red-600'],
-                        ['contact.returned', entry.returned, 'text-slate-600'],
-                        ['contact.unconfirmed', entry.unconfirmed, 'text-slate-500'],
+                        ['contact.pending', entry.pending, 'text-warning'],
+                        ['contact.collected', entry.collected, 'text-primary-ink'],
+                        ['contact.bounced', entry.bounced, 'text-danger'],
+                        ['contact.returned', entry.returned, 'text-ink-soft'],
+                        ['contact.unconfirmed', entry.unconfirmed, 'text-ink-muted'],
                       ] as const
                     ).map(([labelKey, bucket, tone]) => (
-                      <div key={labelKey} className="rounded-xl border border-slate-200 p-3">
-                        <p className="text-xs text-slate-500">
+                      <div key={labelKey} className="rounded-xl border border-line p-3">
+                        <p className="text-xs text-ink-muted">
                           {t(labelKey)} ({bucket.count})
                         </p>
                         <p className={`mt-1 text-sm font-bold tabular-nums ${tone}`}>
@@ -306,7 +306,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                       cheques sitting in the list but not in the balance look
                       like a missing number. */}
                   {entry.unconfirmed.count > 0 ? (
-                    <p className="mt-2 text-xs text-slate-500">{t('contact.unconfirmedHint')}</p>
+                    <p className="mt-2 text-xs text-ink-muted">{t('contact.unconfirmedHint')}</p>
                   ) : null}
                 </div>
               );
@@ -319,9 +319,9 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
         <Panel title={t('contact.merge')}>
           <div className="flex flex-wrap items-end gap-3">
             <label className="flex flex-col gap-1.5 text-sm">
-              <span className="text-slate-600">{t('contact.mergeInto')}</span>
+              <span className="text-ink-soft">{t('contact.mergeInto')}</span>
               <select
-                className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm"
+                className="min-h-11 rounded-xl border border-line bg-surface px-3 text-sm"
                 value={mergeTarget}
                 onChange={(event) => setMergeTarget(event.target.value)}
               >
@@ -346,7 +346,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
               {t('common.confirm')}
             </Button>
           </div>
-          <p className="mt-3 text-sm text-slate-500">
+          <p className="mt-3 text-sm text-ink-muted">
             {t('contact.mergeConfirm', {
               source: contact.name,
               target:

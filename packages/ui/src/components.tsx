@@ -11,11 +11,11 @@ import { toneFor, type StatusTone } from './tokens.js';
  */
 
 const TONE_CLASSES: Record<StatusTone, string> = {
-  neutral: 'border-slate-200 bg-slate-50 text-slate-600',
-  info: 'border-sky-100 bg-sky-50 text-sky-700',
-  success: 'border-emerald-100 bg-emerald-50 text-emerald-700',
-  warning: 'border-amber-100 bg-amber-50 text-amber-700',
-  danger: 'border-red-100 bg-red-50 text-red-700',
+  neutral: 'border-line bg-subtle text-ink-soft',
+  info: 'border-info-line bg-info-soft text-info',
+  success: 'border-success-line bg-success-soft text-success',
+  warning: 'border-warning-line bg-warning-soft text-warning',
+  danger: 'border-danger-line bg-danger-soft text-danger',
 };
 
 export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
@@ -48,15 +48,15 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const BUTTON_VARIANTS: Record<NonNullable<ButtonProps['variant']>, string> = {
   primary:
-    'border border-teal-700 bg-teal-700 text-white shadow-sm hover:border-teal-800 hover:bg-teal-800 focus-visible:outline-teal-700',
+    'border border-primary bg-primary text-on-primary shadow-sm hover:border-primary hover:bg-primary-hover focus-visible:outline-primary',
   secondary:
-    'border border-slate-200 bg-white text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-slate-400',
+    'border border-line bg-surface text-ink-soft shadow-sm hover:border-line-strong hover:bg-subtle focus-visible:outline-line-strong',
   outline:
-    'border border-teal-200 bg-white text-teal-800 hover:border-teal-300 hover:bg-teal-50 focus-visible:outline-teal-700',
+    'border border-primary-soft bg-surface text-primary-ink hover:border-primary-soft hover:bg-primary-soft focus-visible:outline-primary',
   ghost:
-    'border border-transparent bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-slate-400',
+    'border border-transparent bg-transparent text-ink-soft hover:bg-sunken hover:text-ink focus-visible:outline-line-strong',
   danger:
-    'border border-red-600 bg-red-600 text-white shadow-sm hover:border-red-700 hover:bg-red-700 focus-visible:outline-red-600',
+    'border border-danger-solid bg-danger-solid text-on-danger shadow-sm hover:border-danger-solid hover:bg-danger-solid focus-visible:outline-danger-solid',
 };
 
 const BUTTON_SIZES: Record<NonNullable<ButtonProps['size']>, string> = {
@@ -112,7 +112,7 @@ export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={clsx(
-        'rounded-2xl border border-slate-200/90 bg-white p-5 shadow-[0_1px_2px_rgb(16_24_40/0.035)]',
+        'rounded-2xl border border-line/90 bg-surface p-5 shadow-[0_1px_2px_rgb(16_24_40/0.035)]',
         className,
       )}
       {...props}
@@ -129,10 +129,10 @@ export interface StatCardProps {
 
 export function StatCard({ label, value, hint, tone = 'neutral' }: StatCardProps) {
   return (
-    <Card className={clsx('flex flex-col gap-1', tone === 'danger' && 'border-red-200')}>
-      <span className="text-sm text-slate-600">{label}</span>
-      <span className="text-2xl font-semibold tabular-nums text-slate-900">{value}</span>
-      {hint ? <span className="text-xs text-slate-500">{hint}</span> : null}
+    <Card className={clsx('flex flex-col gap-1', tone === 'danger' && 'border-danger-line')}>
+      <span className="text-sm text-ink-soft">{label}</span>
+      <span className="text-2xl font-semibold tabular-nums text-ink">{value}</span>
+      {hint ? <span className="text-xs text-ink-muted">{hint}</span> : null}
     </Card>
   );
 }
@@ -161,7 +161,7 @@ export function EmptyState({
 }) {
   return (
     <div className="flex min-h-56 flex-col items-center justify-center gap-3 px-6 py-12 text-center">
-      <span className="flex size-12 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-400">
+      <span className="flex size-12 items-center justify-center rounded-2xl border border-line bg-subtle text-ink-muted">
         <svg
           width="22"
           height="22"
@@ -175,9 +175,9 @@ export function EmptyState({
           <path d="M7 4.5h10l2 3H5zM8 12h8" />
         </svg>
       </span>
-      <p className="text-sm font-semibold text-slate-800">{title}</p>
+      <p className="text-sm font-semibold text-ink">{title}</p>
       {description ? (
-        <p className="max-w-md text-sm leading-6 text-slate-500">{description}</p>
+        <p className="max-w-md text-sm leading-6 text-ink-muted">{description}</p>
       ) : null}
       {action}
     </div>
@@ -198,10 +198,10 @@ export function ErrorState({
   return (
     <div
       role="alert"
-      className="flex flex-col items-start gap-3 rounded-2xl border border-red-100 bg-red-50/80 p-5"
+      className="flex flex-col items-start gap-3 rounded-2xl border border-danger-line bg-danger-soft/80 p-5"
     >
-      <p className="font-semibold text-red-700">{title}</p>
-      {requestId ? <p className="text-xs text-red-700">request-id: {requestId}</p> : null}
+      <p className="font-semibold text-danger">{title}</p>
+      {requestId ? <p className="text-xs text-danger">request-id: {requestId}</p> : null}
       {onRetry && retryLabel ? (
         <Button variant="secondary" onClick={onRetry}>
           {retryLabel}
@@ -215,9 +215,9 @@ export function SuccessBanner({ message }: { message: string }) {
   return (
     <div
       role="status"
-      className="flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800"
+      className="flex items-center gap-2 rounded-xl border border-success-line bg-success-soft px-4 py-3 text-sm font-medium text-success"
     >
-      <span className="flex size-5 items-center justify-center rounded-full bg-emerald-600 text-xs text-white">
+      <span className="flex size-5 items-center justify-center rounded-full bg-success text-xs text-on-success">
         ✓
       </span>
       <span>{message}</span>
@@ -237,19 +237,19 @@ export interface FieldProps {
 export function Field({ label, htmlFor, error, hint, required, children }: FieldProps) {
   return (
     <div className="flex min-w-0 flex-col gap-2">
-      <label htmlFor={htmlFor} className="text-sm font-semibold text-slate-700">
+      <label htmlFor={htmlFor} className="text-sm font-semibold text-ink-soft">
         {label}
         {required ? (
-          <span aria-hidden="true" className="text-red-700">
+          <span aria-hidden="true" className="text-danger">
             {' '}
             *
           </span>
         ) : null}
       </label>
       {children}
-      {hint && !error ? <span className="text-xs text-slate-500">{hint}</span> : null}
+      {hint && !error ? <span className="text-xs text-ink-muted">{hint}</span> : null}
       {error ? (
-        <span role="alert" className="text-xs text-red-700">
+        <span role="alert" className="text-xs text-danger">
           {error}
         </span>
       ) : null}
@@ -258,6 +258,6 @@ export function Field({ label, htmlFor, error, hint, required, children }: Field
 }
 
 export const inputClassName =
-  'min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm text-slate-900 shadow-[0_1px_1px_rgb(16_24_40/0.02)] ' +
-  'placeholder:text-slate-400 hover:border-slate-300 focus:border-teal-500 focus:outline-none focus:ring-4 ' +
-  'focus:ring-teal-500/10 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 aria-[invalid=true]:border-red-400 aria-[invalid=true]:ring-red-500/10';
+  'min-h-11 w-full rounded-xl border border-line bg-surface px-3.5 text-sm text-ink shadow-[0_1px_1px_rgb(16_24_40/0.02)] ' +
+  'placeholder:text-ink-muted hover:border-line-strong focus:border-primary focus:outline-none focus:ring-4 ' +
+  'focus:ring-primary/10 disabled:cursor-not-allowed disabled:bg-subtle disabled:text-ink-muted aria-[invalid=true]:border-danger aria-[invalid=true]:ring-danger-solid/10';

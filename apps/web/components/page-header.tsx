@@ -28,13 +28,11 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="mb-4 flex flex-col gap-3 border-b border-slate-200/80 pb-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mb-4 flex flex-col gap-3 border-b border-line/80 pb-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0 max-w-2xl">
-        <h1 className="text-xl font-bold tracking-[-0.02em] text-slate-950 sm:text-[1.4rem]">
-          {title}
-        </h1>
+        <h1 className="text-xl font-bold tracking-[-0.02em] text-ink sm:text-[1.4rem]">{title}</h1>
         {subtitle ? (
-          <p className="mt-0.5 truncate text-sm text-slate-500" title={subtitle}>
+          <p className="mt-0.5 truncate text-sm text-ink-muted" title={subtitle}>
             {subtitle}
           </p>
         ) : null}

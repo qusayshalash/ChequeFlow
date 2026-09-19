@@ -79,7 +79,7 @@ export function LineChart({
                 x2={width - padding.end}
                 y1={lineY}
                 y2={lineY}
-                stroke="#EEF1F4"
+                stroke="var(--app-border)"
                 strokeWidth="1"
               />
               <text
@@ -146,7 +146,7 @@ export function LineChart({
                       cx={x(index)}
                       cy={y(value)}
                       r="3.5"
-                      fill="#FFFFFF"
+                      fill="var(--app-surface)"
                       stroke={entry.color}
                       strokeWidth="2"
                     />

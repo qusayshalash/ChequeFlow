@@ -20,11 +20,11 @@ export function Panel({
   bodyClassName?: string;
 }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_1px_2px_rgb(16_24_40/0.035)]">
+    <section className="overflow-hidden rounded-2xl border border-line/90 bg-surface shadow-[0_1px_2px_rgb(16_24_40/0.035)]">
       {title || action ? (
-        <div className="flex min-h-[66px] items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+        <div className="flex min-h-[66px] items-center justify-between gap-3 border-b border-line-soft px-5 py-4">
           {title ? (
-            <h2 className="text-[15px] font-bold tracking-[-0.01em] text-slate-900">{title}</h2>
+            <h2 className="text-[15px] font-bold tracking-[-0.01em] text-ink">{title}</h2>
           ) : (
             <span />
           )}

@@ -307,7 +307,7 @@ export default function ChequesPage() {
             </Button>
 
             <details className="group relative">
-              <summary className="flex h-11 cursor-pointer list-none items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50">
+              <summary className="flex h-11 cursor-pointer list-none items-center gap-2 rounded-xl border border-line bg-surface px-4 text-sm font-semibold text-ink-soft shadow-sm hover:border-line-strong hover:bg-subtle">
                 <IconColumns width="18" height="18" />
                 {t('common.columns')}
               </summary>
@@ -316,7 +316,7 @@ export default function ChequesPage() {
                   of the window — 95px past the edge on a phone, which is where
                   the page's sideways scroll came from. Anchored at the inline
                   start it opens inwards, away from the edge. */}
-              <div className="absolute start-0 z-20 mt-2 w-56 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
+              <div className="absolute start-0 z-20 mt-2 w-56 rounded-2xl border border-line bg-surface p-2 shadow-xl">
                 {CHEQUE_COLUMN_KEYS.map((key) => {
                   const labelKey =
                     key === 'number'
@@ -335,7 +335,7 @@ export default function ChequesPage() {
                   return (
                     <label
                       key={key}
-                      className="flex min-h-10 cursor-pointer items-center gap-3 rounded-lg px-2.5 text-sm text-slate-700 hover:bg-slate-50"
+                      className="flex min-h-10 cursor-pointer items-center gap-3 rounded-lg px-2.5 text-sm text-ink-soft hover:bg-subtle"
                     >
                       <input
                         type="checkbox"
@@ -362,17 +362,17 @@ export default function ChequesPage() {
             let "from" and "to" land on separate lines with a gap between them
             — a pair of bounds is one control. */}
         {filtersOpen ? (
-          <div className="mt-3 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200/90 bg-white p-3">
+          <div className="mt-3 flex flex-wrap items-center gap-3 rounded-2xl border border-line/90 bg-surface p-3">
             {/* Sorting was reachable only by clicking a column header, so the
                 orders on offer were whichever columns were switched on, and an
                 arrow on the due date left the reader to work out which end it
                 meant. Each option here names the answer it gives — "due
                 soonest" — and the shared list is the same one the phone
                 shows. */}
-            <label className="inline-flex h-11 w-full items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 hover:border-slate-300 sm:w-44 xl:w-56">
-              <span className="text-xs font-medium text-slate-400">{t('common.sort')}</span>
+            <label className="inline-flex h-11 w-full items-center gap-2 rounded-xl border border-line bg-surface px-3 hover:border-line-strong sm:w-44 xl:w-56">
+              <span className="text-xs font-medium text-ink-muted">{t('common.sort')}</span>
               <select
-                className="min-w-0 flex-1 truncate bg-transparent text-sm font-semibold text-slate-700 outline-none"
+                className="min-w-0 flex-1 truncate bg-transparent text-sm font-semibold text-ink-soft outline-none"
                 value={chequeSortOption(sortBy, sortOrder)?.id ?? ''}
                 onChange={(event) => {
                   const chosen = CHEQUE_SORTS.find((option) => option.id === event.target.value);
@@ -396,10 +396,10 @@ export default function ChequesPage() {
               </select>
             </label>
 
-            <label className="inline-flex h-11 w-full items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 hover:border-slate-300 sm:w-36 xl:w-44">
-              <span className="text-xs font-medium text-slate-400">{t('cheque.status')}</span>
+            <label className="inline-flex h-11 w-full items-center gap-2 rounded-xl border border-line bg-surface px-3 hover:border-line-strong sm:w-36 xl:w-44">
+              <span className="text-xs font-medium text-ink-muted">{t('cheque.status')}</span>
               <select
-                className="min-w-0 flex-1 truncate bg-transparent text-sm font-semibold text-slate-700 outline-none"
+                className="min-w-0 flex-1 truncate bg-transparent text-sm font-semibold text-ink-soft outline-none"
                 value={status}
                 onChange={(event) => {
                   setStatus(event.target.value);
@@ -415,10 +415,10 @@ export default function ChequesPage() {
               </select>
             </label>
 
-            <label className="inline-flex h-11 w-full items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 hover:border-slate-300 sm:w-36 xl:w-44">
-              <span className="text-xs font-medium text-slate-400">{t('cheque.bank')}</span>
+            <label className="inline-flex h-11 w-full items-center gap-2 rounded-xl border border-line bg-surface px-3 hover:border-line-strong sm:w-36 xl:w-44">
+              <span className="text-xs font-medium text-ink-muted">{t('cheque.bank')}</span>
               <select
-                className="min-w-0 flex-1 truncate bg-transparent text-sm font-semibold text-slate-700 outline-none"
+                className="min-w-0 flex-1 truncate bg-transparent text-sm font-semibold text-ink-soft outline-none"
                 value={bankId}
                 onChange={(event) => {
                   setBankId(event.target.value);
@@ -445,8 +445,8 @@ export default function ChequesPage() {
             {/* One box holding both bounds. Each input still carries its own
                 name for a screen reader, since "0.00" twice says nothing about
                 which end is which. */}
-            <div className="inline-flex h-11 w-full items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 hover:border-slate-300 sm:w-auto">
-              <span className="shrink-0 text-xs font-medium text-slate-400">
+            <div className="inline-flex h-11 w-full items-center gap-2 rounded-xl border border-line bg-surface px-3 hover:border-line-strong sm:w-auto">
+              <span className="shrink-0 text-xs font-medium text-ink-muted">
                 {t('common.amount')}
               </span>
               <input
@@ -459,9 +459,9 @@ export default function ChequesPage() {
                   setAmountMin(event.target.value);
                   setPage(1);
                 }}
-                className="w-20 bg-transparent text-sm font-semibold tabular-nums text-slate-700 outline-none"
+                className="w-20 bg-transparent text-sm font-semibold tabular-nums text-ink-soft outline-none"
               />
-              <span aria-hidden="true" className="text-slate-300">
+              <span aria-hidden="true" className="text-ink-faint">
                 —
               </span>
               <input
@@ -474,7 +474,7 @@ export default function ChequesPage() {
                   setAmountMax(event.target.value);
                   setPage(1);
                 }}
-                className="w-20 bg-transparent text-sm font-semibold tabular-nums text-slate-700 outline-none"
+                className="w-20 bg-transparent text-sm font-semibold tabular-nums text-ink-soft outline-none"
               />
             </div>
           </div>
@@ -501,7 +501,7 @@ export default function ChequesPage() {
             emptyAction={
               <Link
                 href="/cheques/new"
-                className="inline-flex h-11 items-center gap-2 rounded-xl bg-teal-700 px-4 text-sm font-semibold text-white hover:bg-teal-800"
+                className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-on-primary hover:bg-primary-hover"
               >
                 <IconPlus />
                 {t('cheque.newTitle')}

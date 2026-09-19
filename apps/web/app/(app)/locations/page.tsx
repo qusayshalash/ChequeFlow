@@ -32,19 +32,19 @@ export default function LocationsPage() {
           {query.data.map((location) => (
             <Card
               key={location.id}
-              className="group p-0 transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+              className="group p-0 transition hover:-translate-y-0.5 hover:border-line-strong hover:shadow-md"
             >
               <div className="flex items-start gap-4 p-5">
-                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-700 ring-1 ring-sky-100">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-info-soft text-info ring-1 ring-info-line">
                   <IconSafe />
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-base font-bold text-slate-950">{location.name}</p>
+                    <p className="text-base font-bold text-ink">{location.name}</p>
                     <Badge tone="info">{t(`locationType.${location.type}`)}</Badge>
                   </div>
                   {location.description ? (
-                    <p className="mt-2 text-sm leading-6 text-slate-500">{location.description}</p>
+                    <p className="mt-2 text-sm leading-6 text-ink-muted">{location.description}</p>
                   ) : null}
                 </div>
               </div>

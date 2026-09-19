@@ -41,8 +41,8 @@ export function CustodyStrip({ cheque }: { cheque: ChequeDetailView }) {
   ];
 
   return (
-    <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-[0_1px_2px_rgb(16_24_40/0.035)]">
-      <h2 className="mb-4 text-base font-bold text-slate-900">{t('cheque.journey')}</h2>
+    <section className="rounded-2xl border border-line/90 bg-surface p-5 shadow-[0_1px_2px_rgb(16_24_40/0.035)]">
+      <h2 className="mb-4 text-base font-bold text-ink">{t('cheque.journey')}</h2>
 
       {/* Vertical, so the card sits in a column beside the fact groups and the
           three stages read top to bottom in the order they happen. The rule
@@ -55,10 +55,10 @@ export function CustodyStrip({ cheque }: { cheque: ChequeDetailView }) {
               <span
                 className={`flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
                   step.current
-                    ? 'bg-teal-700 text-white ring-4 ring-teal-700/15'
+                    ? 'bg-primary text-on-primary ring-4 ring-primary/15'
                     : step.done
-                      ? 'bg-teal-700 text-white'
-                      : 'border border-dashed border-slate-300 bg-white text-slate-300'
+                      ? 'bg-primary text-on-primary'
+                      : 'border border-dashed border-line-strong bg-surface text-ink-faint'
                 }`}
               >
                 {/* A tick only where the stage actually happened; an empty
@@ -69,7 +69,7 @@ export function CustodyStrip({ cheque }: { cheque: ChequeDetailView }) {
                 <span
                   aria-hidden="true"
                   className={`my-1 w-0.5 flex-1 rounded-full ${
-                    step.done ? 'bg-teal-700/30' : 'bg-slate-200'
+                    step.done ? 'bg-primary/30' : 'bg-line'
                   }`}
                 />
               ) : null}
@@ -78,14 +78,14 @@ export function CustodyStrip({ cheque }: { cheque: ChequeDetailView }) {
             <div className={`min-w-0 flex-1 ${index < steps.length - 1 ? 'pb-5' : ''}`}>
               <p
                 className={`text-xs font-semibold ${
-                  step.current ? 'text-teal-700' : 'text-slate-500'
+                  step.current ? 'text-primary-ink' : 'text-ink-muted'
                 }`}
               >
                 {step.label}
               </p>
               <p
                 className={`mt-0.5 truncate text-sm ${
-                  step.done ? 'font-semibold text-slate-900' : 'text-slate-400'
+                  step.done ? 'font-semibold text-ink' : 'text-ink-muted'
                 }`}
                 title={step.value ?? undefined}
               >

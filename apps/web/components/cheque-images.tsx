@@ -75,8 +75,8 @@ export function ChequeImagesPanel({
               aria-pressed={side === value}
               className={`h-9 rounded-lg px-3 text-sm font-semibold transition-colors ${
                 side === value
-                  ? 'bg-teal-800 text-white'
-                  : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
+                  ? 'bg-primary-hover text-on-primary'
+                  : 'border border-line text-ink-soft hover:bg-subtle'
               }`}
             >
               {value === 'FRONT' ? t('cheque.frontImage') : t('cheque.backImage')}
@@ -88,7 +88,7 @@ export function ChequeImagesPanel({
             hidden one: browsers render "Choose File" in their own language and
             their own look, which in an Arabic interface reads as a bug. */}
         <label
-          className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 px-4 py-5 text-sm font-semibold text-slate-600 transition-colors hover:border-teal-400 hover:bg-teal-50 hover:text-teal-700 ${
+          className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-line-strong px-4 py-5 text-sm font-semibold text-ink-soft transition-colors hover:border-primary hover:bg-primary-soft hover:text-primary-ink ${
             upload.isPending ? 'pointer-events-none opacity-60' : ''
           }`}
         >
@@ -108,7 +108,7 @@ export function ChequeImagesPanel({
         </label>
 
         {error ? (
-          <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
+          <p role="alert" className="rounded-xl bg-danger-soft p-3 text-sm text-danger">
             {error}
           </p>
         ) : null}
@@ -118,13 +118,13 @@ export function ChequeImagesPanel({
             {images.data.map((image) => (
               <li
                 key={image.id}
-                className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3"
+                className="flex items-center justify-between gap-3 rounded-xl border border-line p-3"
               >
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-slate-800">
+                  <span className="block text-sm font-semibold text-ink">
                     {image.side === 'FRONT' ? t('cheque.frontImage') : t('cheque.backImage')}
                   </span>
-                  <span className="block text-xs text-slate-500 tabular-nums">
+                  <span className="block text-xs text-ink-muted tabular-nums">
                     {image.fileSize < 1024
                       ? `${image.fileSize} B`
                       : `${Math.round(image.fileSize / 1024)} KB`}
@@ -141,7 +141,7 @@ export function ChequeImagesPanel({
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-slate-400">{t('cheque.noImages')}</p>
+          <p className="text-sm text-ink-muted">{t('cheque.noImages')}</p>
         )}
 
         {openedUrl ? (
@@ -150,7 +150,7 @@ export function ChequeImagesPanel({
             <img
               src={openedUrl}
               alt={t('cheque.images')}
-              className="w-full rounded-xl border border-slate-200"
+              className="w-full rounded-xl border border-line"
             />
             <Button variant="ghost" onClick={() => setOpenedUrl(null)}>
               {t('common.close')}

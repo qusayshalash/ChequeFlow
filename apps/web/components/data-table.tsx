@@ -94,10 +94,10 @@ export function DataTable<Row>({
   return (
     <div className="max-h-[70vh] overflow-auto">
       <table className="w-full min-w-[760px] border-separate border-spacing-0 text-sm">
-        <thead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-sm">
-          <tr className="text-slate-500">
+        <thead className="sticky top-0 z-10 bg-subtle/95 backdrop-blur-sm">
+          <tr className="text-ink-muted">
             {selection ? (
-              <th scope="col" className="w-12 border-b border-slate-200 px-2 py-1.5">
+              <th scope="col" className="w-12 border-b border-line px-2 py-1.5">
                 {/* The box stays 16px; the label around it is what you hit. */}
                 <label className="flex size-11 cursor-pointer items-center justify-center">
                   <input
@@ -123,13 +123,13 @@ export function DataTable<Row>({
                         : 'descending'
                       : undefined
                   }
-                  className="whitespace-nowrap border-b border-slate-200 px-4 py-3.5 text-start text-[11px] font-bold tracking-wide text-slate-500"
+                  className="whitespace-nowrap border-b border-line px-4 py-3.5 text-start text-[11px] font-bold tracking-wide text-ink-muted"
                 >
                   {sort && column.sortKey ? (
                     <button
                       type="button"
-                      className={`inline-flex items-center gap-1.5 rounded-md py-1 hover:text-slate-900 ${
-                        activeSort ? 'text-teal-700' : ''
+                      className={`inline-flex items-center gap-1.5 rounded-md py-1 hover:text-ink ${
+                        activeSort ? 'text-primary-ink' : ''
                       }`}
                       onClick={() =>
                         sort.onChange(
@@ -163,11 +163,11 @@ export function DataTable<Row>({
               <tr
                 key={key}
                 className={`group transition-colors ${
-                  isSelected ? 'bg-teal-50/80' : 'bg-white hover:bg-slate-50/80'
+                  isSelected ? 'bg-primary-soft/80' : 'bg-surface hover:bg-subtle/80'
                 }`}
               >
                 {selection ? (
-                  <td className="border-b border-slate-100 px-2 py-1.5">
+                  <td className="border-b border-line-soft px-2 py-1.5">
                     {/* The visible box is 16px, which is under the 24px WCAG 2.2
                         asks of a pointer target and is a poor thing to hit on a
                         touch screen — and it is the only way into the whole bulk
@@ -193,7 +193,7 @@ export function DataTable<Row>({
                 {columns.map((column) => (
                   <td
                     key={column.key}
-                    className={`whitespace-nowrap border-b border-slate-100 px-4 py-3.5 text-slate-700 ${
+                    className={`whitespace-nowrap border-b border-line-soft px-4 py-3.5 text-ink-soft ${
                       column.numeric ? 'tabular-nums' : ''
                     }`}
                   >

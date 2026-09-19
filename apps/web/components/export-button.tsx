@@ -55,7 +55,7 @@ export function ExportButton({ query = {} }: { query?: Partial<ListChequesQuery>
         {t('reports.export')}
       </Button>
       {error ? (
-        <p role="alert" className="text-xs text-red-600">
+        <p role="alert" className="text-xs text-danger">
           {error}
         </p>
       ) : null}

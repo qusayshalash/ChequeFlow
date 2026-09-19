@@ -13,14 +13,18 @@
  * apart from a bank at a glance.
  */
 
-/** Six pairs that all clear 4.5:1 between the letter and its own background. */
+/**
+ * Six pairs that clear 4.5:1 between the letter and its own background — in
+ * both themes, since each hue is a token with a light and a dark value rather
+ * than a fixed colour.
+ */
 const MARKS = [
-  'bg-teal-100 text-teal-800',
-  'bg-indigo-100 text-indigo-800',
-  'bg-orange-100 text-orange-900',
-  'bg-fuchsia-100 text-fuchsia-800',
-  'bg-cyan-100 text-cyan-900',
-  'bg-slate-200 text-slate-800',
+  'bg-mark-teal text-mark-teal-ink',
+  'bg-mark-indigo text-mark-indigo-ink',
+  'bg-mark-orange text-mark-orange-ink',
+  'bg-mark-fuchsia text-mark-fuchsia-ink',
+  'bg-mark-cyan text-mark-cyan-ink',
+  'bg-mark-neutral text-mark-neutral-ink',
 ] as const;
 
 function markFor(name: string): string {

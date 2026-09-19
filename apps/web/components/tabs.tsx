@@ -17,11 +17,11 @@ export interface TabDefinition {
 
 /** Count colours. Neutral unless the tab stands for a status. */
 const TONES = {
-  slate: 'bg-slate-100 text-slate-600',
-  violet: 'bg-violet-100 text-violet-700',
-  amber: 'bg-amber-100 text-amber-700',
-  red: 'bg-red-100 text-red-700',
-  emerald: 'bg-emerald-100 text-emerald-700',
+  slate: 'bg-sunken text-ink-soft',
+  violet: 'bg-mark-violet text-mark-violet-ink',
+  amber: 'bg-warning-soft text-warning',
+  red: 'bg-danger-soft text-danger',
+  emerald: 'bg-success-soft text-success',
 } as const;
 
 /**
@@ -65,7 +65,7 @@ export function Tabs({
       // Underlined text on a rule, not pills in a box. A boxed strip of pills
       // is a second card competing with the content below it; the underline
       // says "you are here" with one line and no chrome.
-      className="-mb-px flex gap-6 overflow-x-auto border-b border-slate-200"
+      className="-mb-px flex gap-6 overflow-x-auto border-b border-line"
     >
       {tabs.map((tab) => {
         const selected = tab.key === active;
@@ -79,12 +79,12 @@ export function Tabs({
             onClick={() => onChange(tab.key)}
             className={`inline-flex h-11 shrink-0 items-center gap-2 border-b-2 text-sm font-semibold transition-colors ${
               selected
-                ? 'border-teal-700 text-slate-950'
-                : 'border-transparent text-slate-500 hover:text-slate-900'
+                ? 'border-primary text-ink'
+                : 'border-transparent text-ink-muted hover:text-ink'
             }`}
           >
             {tab.icon ? (
-              <span className={selected ? 'text-teal-700' : 'text-slate-400'} aria-hidden>
+              <span className={selected ? 'text-primary-ink' : 'text-ink-muted'} aria-hidden>
                 {tab.icon}
               </span>
             ) : null}

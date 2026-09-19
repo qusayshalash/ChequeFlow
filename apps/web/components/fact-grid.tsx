@@ -29,10 +29,10 @@ export function FactGrid({
   return (
     <dl className={`grid gap-x-8 gap-y-5 ${columns === 1 ? '' : 'sm:grid-cols-2 lg:grid-cols-3'}`}>
       {facts.map((fact) => (
-        <div key={fact.label} className="min-w-0 border-s-2 border-slate-100 ps-3">
-          <dt className="text-[11px] font-semibold tracking-wide text-slate-400">{fact.label}</dt>
+        <div key={fact.label} className="min-w-0 border-s-2 border-line-soft ps-3">
+          <dt className="text-[11px] font-semibold tracking-wide text-ink-muted">{fact.label}</dt>
           <dd
-            className={`mt-1.5 truncate text-sm font-semibold text-slate-900 ${
+            className={`mt-1.5 truncate text-sm font-semibold text-ink ${
               fact.ltr ? 'tabular-nums' : ''
             }`}
             dir={fact.ltr ? 'ltr' : undefined}

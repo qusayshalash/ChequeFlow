@@ -15,18 +15,18 @@
  */
 
 /**
- * Six colours that all clear 4.5:1 against their own background.
+ * Six colours that clear 4.5:1 against their own background, in both themes.
  *
  * Deliberately not the status palette: a bank is not a state, and a mark that
  * borrows the red of a bounced cheque would read as an alarm.
  */
 const MARKS = [
-  'bg-sky-100 text-sky-800',
-  'bg-violet-100 text-violet-800',
-  'bg-emerald-100 text-emerald-800',
-  'bg-amber-100 text-amber-900',
-  'bg-rose-100 text-rose-800',
-  'bg-slate-200 text-slate-800',
+  'bg-mark-sky text-mark-sky-ink',
+  'bg-mark-violet text-mark-violet-ink',
+  'bg-mark-emerald text-mark-emerald-ink',
+  'bg-mark-amber text-mark-amber-ink',
+  'bg-mark-rose text-mark-rose-ink',
+  'bg-mark-neutral text-mark-neutral-ink',
 ] as const;
 
 /**
@@ -58,7 +58,7 @@ export function BankMark({
     return (
       <span
         aria-hidden
-        className={`flex ${box} shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-300`}
+        className={`flex ${box} shrink-0 items-center justify-center rounded-lg bg-sunken text-ink-faint`}
       >
         —
       </span>

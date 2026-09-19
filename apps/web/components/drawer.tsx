@@ -108,7 +108,7 @@ export function Drawer({
       <button
         type="button"
         aria-label={t('common.close')}
-        className="fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-[2px]"
+        className="fixed inset-0 z-40 bg-scrim/35 backdrop-blur-[2px]"
         onClick={onClose}
       />
       <aside
@@ -117,21 +117,21 @@ export function Drawer({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`fixed inset-y-0 end-0 z-50 flex w-full flex-col bg-white shadow-2xl outline-none ${
+        className={`fixed inset-y-0 end-0 z-50 flex w-full flex-col bg-surface shadow-2xl outline-none ${
           width === '2xl' ? 'max-w-2xl' : 'max-w-lg'
         }`}
       >
-        <div className="flex h-20 shrink-0 items-center justify-between border-b border-slate-200 px-6">
+        <div className="flex h-20 shrink-0 items-center justify-between border-b border-line px-6">
           <div className="min-w-0">
-            <p className="truncate text-xs font-semibold text-teal-700">{eyebrow}</p>
-            <h2 id={titleId} className="mt-1 truncate text-xl font-bold text-slate-950">
+            <p className="truncate text-xs font-semibold text-primary-ink">{eyebrow}</p>
+            <h2 id={titleId} className="mt-1 truncate text-xl font-bold text-ink">
               {title}
             </h2>
           </div>
           <button
             type="button"
             aria-label={t('common.close')}
-            className="flex size-10 shrink-0 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+            className="flex size-10 shrink-0 items-center justify-center rounded-xl text-ink-muted hover:bg-sunken hover:text-ink"
             onClick={onClose}
           >
             <IconClose />

@@ -160,85 +160,84 @@ function UsersManager() {
         eyebrow={t('user.title')}
         title={t('user.newTitle')}
       >
+        <form
+          className="flex min-h-0 flex-1 flex-col"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setFormError(null);
+            create.mutate();
+          }}
+        >
+          <div className="flex-1 space-y-5 overflow-y-auto p-6">
+            {formError ? <ErrorState title={formError} /> : null}
+            <Field label={t('user.name')} htmlFor="name" required error={fieldErrors.name}>
+              <input
+                id="name"
+                className={inputClassName}
+                value={form.name}
+                onChange={(event) => setForm((f) => ({ ...f, name: event.target.value }))}
+              />
+            </Field>
 
-            <form
-              className="flex min-h-0 flex-1 flex-col"
-              onSubmit={(event) => {
-                event.preventDefault();
-                setFormError(null);
-                create.mutate();
-              }}
+            <Field
+              label={t('auth.username')}
+              htmlFor="email"
+              required
+              hint={t('auth.usernameHint')}
+              error={fieldErrors.email}
             >
-              <div className="flex-1 space-y-5 overflow-y-auto p-6">
-                {formError ? <ErrorState title={formError} /> : null}
-                <Field label={t('user.name')} htmlFor="name" required error={fieldErrors.name}>
-                  <input
-                    id="name"
-                    className={inputClassName}
-                    value={form.name}
-                    onChange={(event) => setForm((f) => ({ ...f, name: event.target.value }))}
-                  />
-                </Field>
+              <input
+                id="email"
+                dir="ltr"
+                autoComplete="off"
+                className={inputClassName}
+                value={form.email}
+                onChange={(event) => setForm((f) => ({ ...f, email: event.target.value }))}
+              />
+            </Field>
 
-                <Field
-                  label={t('auth.username')}
-                  htmlFor="email"
-                  required
-                  hint={t('auth.usernameHint')}
-                  error={fieldErrors.email}
-                >
-                  <input
-                    id="email"
-                    dir="ltr"
-                    autoComplete="off"
-                    className={inputClassName}
-                    value={form.email}
-                    onChange={(event) => setForm((f) => ({ ...f, email: event.target.value }))}
-                  />
-                </Field>
+            <Field
+              label={t('auth.password')}
+              htmlFor="password"
+              required
+              hint={t('auth.passwordHint')}
+              error={fieldErrors.password}
+            >
+              <input
+                id="password"
+                type="password"
+                dir="ltr"
+                autoComplete="new-password"
+                className={inputClassName}
+                value={form.password}
+                onChange={(event) => setForm((f) => ({ ...f, password: event.target.value }))}
+              />
+            </Field>
 
-                <Field
-                  label={t('auth.password')}
-                  htmlFor="password"
-                  required
-                  hint={t('auth.passwordHint')}
-                  error={fieldErrors.password}
-                >
-                  <input
-                    id="password"
-                    type="password"
-                    dir="ltr"
-                    autoComplete="new-password"
-                    className={inputClassName}
-                    value={form.password}
-                    onChange={(event) => setForm((f) => ({ ...f, password: event.target.value }))}
-                  />
-                </Field>
-
-                <Field label={t('user.roles')} htmlFor="role" required error={fieldErrors.roles}>
-                  <select
-                    id="role"
-                    className={inputClassName}
-                    value={form.role}
-                    onChange={(event) => setForm((f) => ({ ...f, role: event.target.value }))}
-                  >
-                    {Object.values(SystemRole).map((role) => (
-                      <option key={role} value={role}>
-                        {t(`role.${role}`)}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              </div>
-              <div className="flex shrink-0 items-center justify-end gap-3 border-t border-slate-200 bg-slate-50/70 p-4">
-                <Button type="button" variant="secondary" onClick={() => setCreateOpen(false)}>
-                  {t('common.cancel')}
-                </Button>
-                <Button type="submit" loading={create.isPending}>
-                  {t('common.add')}
-                </Button>
-              </div>
-            </form>
+            <Field label={t('user.roles')} htmlFor="role" required error={fieldErrors.roles}>
+              <select
+                id="role"
+                className={inputClassName}
+                value={form.role}
+                onChange={(event) => setForm((f) => ({ ...f, role: event.target.value }))}
+              >
+                {Object.values(SystemRole).map((role) => (
+                  <option key={role} value={role}>
+                    {t(`role.${role}`)}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
+          <div className="flex shrink-0 items-center justify-end gap-3 border-t border-line bg-subtle/70 p-4">
+            <Button type="button" variant="secondary" onClick={() => setCreateOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button type="submit" loading={create.isPending}>
+              {t('common.add')}
+            </Button>
+          </div>
+        </form>
       </Drawer>
 
       {users.isError ? (
@@ -275,10 +274,10 @@ function UsersManager() {
                 key: 'name',
                 header: t('user.name'),
                 cell: (user) => (
-                  <span className="font-semibold text-slate-900">
+                  <span className="font-semibold text-ink">
                     {user.name}
                     {user.id === session?.id ? (
-                      <span className="ms-2 text-xs font-normal text-slate-400">
+                      <span className="ms-2 text-xs font-normal text-ink-muted">
                         ({t('common.yes')})
                       </span>
                     ) : null}

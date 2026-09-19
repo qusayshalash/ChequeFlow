@@ -31,7 +31,7 @@ export function Stepper({
   onSelect: (step: number) => void;
 }) {
   return (
-    <ol className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:gap-0">
+    <ol className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4 sm:flex-row sm:items-center sm:gap-0">
       {steps.map((step, index) => {
         const done = step.number < current;
         const active = step.number === current;
@@ -45,16 +45,16 @@ export function Stepper({
               aria-current={active ? 'step' : undefined}
               onClick={() => onSelect(step.number)}
               className={`flex min-w-0 items-center gap-3 rounded-xl p-1.5 text-start ${
-                reachable ? 'hover:bg-slate-50' : 'cursor-default'
+                reachable ? 'hover:bg-subtle' : 'cursor-default'
               }`}
             >
               <span
                 className={`flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
                   done
-                    ? 'bg-teal-800 text-white'
+                    ? 'bg-primary-hover text-on-primary'
                     : active
-                      ? 'bg-teal-800 text-white ring-4 ring-teal-800/15'
-                      : 'bg-slate-100 text-slate-400'
+                      ? 'bg-primary-hover text-on-primary ring-4 ring-primary/15'
+                      : 'bg-sunken text-ink-muted'
                 }`}
               >
                 {/* A tick, not the number, once a step is behind you — the
@@ -64,12 +64,12 @@ export function Stepper({
               <span className="min-w-0 leading-tight">
                 <span
                   className={`block truncate text-sm font-bold ${
-                    active || done ? 'text-slate-900' : 'text-slate-400'
+                    active || done ? 'text-ink' : 'text-ink-muted'
                   }`}
                 >
                   {step.title}
                 </span>
-                <span className="block truncate text-xs text-slate-400">{step.hint}</span>
+                <span className="block truncate text-xs text-ink-muted">{step.hint}</span>
               </span>
             </button>
 
@@ -77,7 +77,7 @@ export function Stepper({
               <span
                 aria-hidden
                 className={`hidden h-0.5 flex-1 rounded-full sm:block ${
-                  done ? 'bg-teal-800' : 'bg-slate-200'
+                  done ? 'bg-primary-hover' : 'bg-line'
                 }`}
               />
             ) : null}

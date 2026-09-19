@@ -90,10 +90,10 @@ export function TopBar({ onOpenMenu }: { onOpenMenu: () => void }) {
   const initial = (user?.name ?? '؟').trim().charAt(0);
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-slate-200/80 bg-white/90 px-4 backdrop-blur-xl lg:px-7">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-line/80 bg-surface/90 px-4 backdrop-blur-xl lg:px-7">
       <button
         type="button"
-        className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm lg:hidden"
+        className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-line bg-surface text-ink-soft shadow-sm lg:hidden"
         aria-label={t('common.more')}
         onClick={onOpenMenu}
       >
@@ -102,7 +102,7 @@ export function TopBar({ onOpenMenu }: { onOpenMenu: () => void }) {
 
       <form onSubmit={submitSearch} className="mx-auto min-w-0 flex-1 lg:max-w-xl">
         <label className="relative flex items-center">
-          <span className="pointer-events-none absolute start-3 text-slate-400">
+          <span className="pointer-events-none absolute start-3 text-ink-muted">
             <IconSearch width="18" height="18" />
           </span>
           <input
@@ -112,9 +112,9 @@ export function TopBar({ onOpenMenu }: { onOpenMenu: () => void }) {
             onChange={(event) => setSearch(event.target.value)}
             placeholder={t('dashboard.searchPlaceholder')}
             aria-label={t('common.search')}
-            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/80 ps-10 pe-16 text-sm text-slate-800 outline-none placeholder:text-slate-400 hover:border-slate-300 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-500/10"
+            className="h-11 w-full rounded-xl border border-line bg-subtle/80 ps-10 pe-16 text-sm text-ink outline-none placeholder:text-ink-muted hover:border-line-strong focus:border-primary focus:bg-surface focus:ring-4 focus:ring-primary/10"
           />
-          <kbd className="pointer-events-none absolute end-3 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[11px] font-medium text-slate-400">
+          <kbd className="pointer-events-none absolute end-3 rounded-md border border-line bg-surface px-1.5 py-0.5 text-[11px] font-medium text-ink-muted">
             {t('common.searchShortcut')}
           </kbd>
         </label>
@@ -123,10 +123,10 @@ export function TopBar({ onOpenMenu }: { onOpenMenu: () => void }) {
       {/* A split button: the common case is one cheque, but a whole book is one
           menu item away rather than a different screen to go and find. */}
       <div ref={createRef} className="relative hidden sm:block">
-        <div className="flex h-11 items-center overflow-hidden rounded-xl bg-teal-800 text-sm font-semibold text-white shadow-sm">
+        <div className="flex h-11 items-center overflow-hidden rounded-xl bg-primary-hover text-sm font-semibold text-on-primary shadow-sm">
           <Link
             href="/cheques/new"
-            className="flex h-full items-center gap-2 px-4 hover:bg-teal-900"
+            className="flex h-full items-center gap-2 px-4 hover:bg-primary-hover"
           >
             <IconPlus width="18" height="18" />
             <span>{t('cheque.newTitle')}</span>
@@ -137,7 +137,7 @@ export function TopBar({ onOpenMenu }: { onOpenMenu: () => void }) {
             aria-expanded={createOpen}
             aria-label={t('cheque.batchMode')}
             onClick={() => setCreateOpen((open) => !open)}
-            className="flex h-full items-center border-s border-white/20 px-2 hover:bg-teal-900"
+            className="flex h-full items-center border-s border-surface/20 px-2 hover:bg-primary-hover"
           >
             <IconChevronDown width="16" height="16" />
           </button>
@@ -146,24 +146,24 @@ export function TopBar({ onOpenMenu }: { onOpenMenu: () => void }) {
         {createOpen ? (
           <div
             role="menu"
-            className="absolute end-0 top-13 z-40 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-lg"
+            className="absolute end-0 top-13 z-40 w-56 overflow-hidden rounded-xl border border-line bg-surface p-1 shadow-lg"
           >
             <Link
               role="menuitem"
               href="/cheques/new"
               onClick={() => setCreateOpen(false)}
-              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-ink-soft hover:bg-subtle"
             >
-              <IconCheque width="18" height="18" className="text-slate-400" />
+              <IconCheque width="18" height="18" className="text-ink-muted" />
               {t('common.singleCheque')}
             </Link>
             <Link
               role="menuitem"
               href="/cheques/new?mode=batch"
               onClick={() => setCreateOpen(false)}
-              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-ink-soft hover:bg-subtle"
             >
-              <IconLayers width="18" height="18" className="text-slate-400" />
+              <IconLayers width="18" height="18" className="text-ink-muted" />
               {t('common.chequeBatch')}
             </Link>
           </div>
@@ -180,28 +180,28 @@ export function TopBar({ onOpenMenu }: { onOpenMenu: () => void }) {
           aria-haspopup="menu"
           aria-expanded={accountOpen}
           onClick={() => setAccountOpen((open) => !open)}
-          className="flex h-11 items-center gap-2.5 rounded-xl px-1.5 hover:bg-slate-50"
+          className="flex h-11 items-center gap-2.5 rounded-xl px-1.5 hover:bg-subtle"
         >
-          <span className="flex size-9 items-center justify-center rounded-full bg-teal-100 text-sm font-bold text-teal-900">
+          <span className="flex size-9 items-center justify-center rounded-full bg-primary-soft text-sm font-bold text-primary-ink">
             {initial}
           </span>
           <span className="hidden text-start leading-tight md:block">
-            <span className="block text-sm font-semibold text-slate-900">{user?.name ?? ''}</span>
-            <span className="block text-xs text-slate-500">
+            <span className="block text-sm font-semibold text-ink">{user?.name ?? ''}</span>
+            <span className="block text-xs text-ink-muted">
               {(user?.roles ?? []).map((role) => t(`role.${role}`)).join('، ')}
             </span>
           </span>
-          <IconChevronDown width="16" height="16" className="hidden text-slate-400 md:block" />
+          <IconChevronDown width="16" height="16" className="hidden text-ink-muted md:block" />
         </button>
 
         {accountOpen ? (
           <div
             role="menu"
-            className="absolute end-0 top-13 z-40 w-60 overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-lg"
+            className="absolute end-0 top-13 z-40 w-60 overflow-hidden rounded-xl border border-line bg-surface p-1 shadow-lg"
           >
-            <p className="px-3 py-2 text-xs text-slate-500">
+            <p className="px-3 py-2 text-xs text-ink-muted">
               {t('common.signedInAs')}
-              <span className="mt-0.5 block truncate font-medium text-slate-700">
+              <span className="mt-0.5 block truncate font-medium text-ink-soft">
                 {user?.email ?? ''}
               </span>
             </p>
@@ -209,19 +209,19 @@ export function TopBar({ onOpenMenu }: { onOpenMenu: () => void }) {
               role="menuitem"
               href="/settings"
               onClick={() => setAccountOpen(false)}
-              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-ink-soft hover:bg-subtle"
             >
-              <IconSettings width="18" height="18" className="text-slate-400" />
+              <IconSettings width="18" height="18" className="text-ink-muted" />
               {t('nav.settings')}
             </Link>
             {/* Kept apart from the rest by a rule: signing out is not a
                 navigation item, and it should not sit a mis-click away. */}
-            <div className="my-1 border-t border-slate-100" />
+            <div className="my-1 border-t border-line-soft" />
             <button
               type="button"
               role="menuitem"
               onClick={() => void logout()}
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-start text-sm text-red-600 hover:bg-red-50"
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-start text-sm text-danger hover:bg-danger-soft"
             >
               <IconLogout width="18" height="18" />
               {t('common.logout')}

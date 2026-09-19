@@ -57,9 +57,9 @@ export function RequirePermission({
   if (!data?.permissions.includes(permission)) {
     return (
       <div className="mx-auto max-w-[1440px]">
-        <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center">
-          <p className="text-base font-semibold text-slate-800">{t('errors.FORBIDDEN')}</p>
-          <p className="mt-2 text-sm text-slate-500">{t('errors.forbiddenHint')}</p>
+        <div className="rounded-2xl border border-line bg-surface p-10 text-center">
+          <p className="text-base font-semibold text-ink">{t('errors.FORBIDDEN')}</p>
+          <p className="mt-2 text-sm text-ink-muted">{t('errors.forbiddenHint')}</p>
         </div>
       </div>
     );

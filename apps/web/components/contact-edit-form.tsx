@@ -245,7 +245,7 @@ export function ContactEditForm({
         />
       </Field>
 
-      <label className="flex items-center gap-2 text-sm text-slate-700">
+      <label className="flex items-center gap-2 text-sm text-ink-soft">
         <input
           type="checkbox"
           className="size-4 accent-teal-800"
@@ -256,7 +256,7 @@ export function ContactEditForm({
       </label>
 
       {formError ? (
-        <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
+        <p role="alert" className="rounded-xl bg-danger-soft p-3 text-sm text-danger">
           {formError}
         </p>
       ) : null}

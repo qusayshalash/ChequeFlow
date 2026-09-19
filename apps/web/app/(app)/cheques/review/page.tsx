@@ -31,8 +31,8 @@ export default function ReviewQueuePage() {
   return (
     <div className="mx-auto flex max-w-[1440px] flex-col gap-5">
       <PageHeader title={t('nav.review')} subtitle={t('pageDescription.review')} />
-      <Card className="flex items-start gap-3 border-amber-200 bg-amber-50/70 text-sm leading-6 text-amber-900">
-        <span className="mt-1 size-2 shrink-0 rounded-full bg-amber-500" aria-hidden="true" />
+      <Card className="flex items-start gap-3 border-warning-line bg-warning-soft/70 text-sm leading-6 text-warning">
+        <span className="mt-1 size-2 shrink-0 rounded-full bg-warning" aria-hidden="true" />
         {t('ocr.suggestionNotice')}
       </Card>
       {query.isPending ? <LoadingState label={t('common.loading')} /> : null}

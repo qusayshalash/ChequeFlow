@@ -61,7 +61,7 @@ export function ChequeTable({
       cell: (cheque) => (
         <Link
           href={`/cheques/${cheque.id}`}
-          className="font-semibold text-slate-950 tabular-nums hover:text-teal-700"
+          className="font-semibold text-ink tabular-nums hover:text-primary-ink"
           dir="ltr"
         >
           {cheque.chequeNumber}
@@ -80,7 +80,7 @@ export function ChequeTable({
       sortKey: 'amount',
       numeric: true,
       cell: (cheque) => (
-        <span className="font-semibold text-slate-950">
+        <span className="font-semibold text-ink">
           {money(locale, cheque.amount, cheque.currency)}
         </span>
       ),
@@ -98,8 +98,8 @@ export function ChequeTable({
           <span
             className={
               cheque.isOverdue
-                ? 'inline-flex items-center gap-1.5 font-semibold text-red-600'
-                : 'font-medium text-slate-700'
+                ? 'inline-flex items-center gap-1.5 font-semibold text-danger'
+                : 'font-medium text-ink-soft'
             }
           >
             {cheque.isOverdue ? (
@@ -112,7 +112,7 @@ export function ChequeTable({
           </span>
           <span
             className={`mt-0.5 block text-xs ${
-              cheque.isOverdue ? 'font-semibold text-red-500' : 'text-slate-400'
+              cheque.isOverdue ? 'font-semibold text-danger' : 'text-ink-muted'
             }`}
           >
             {formatDueDistance(locale, cheque.dueDate, today)}
