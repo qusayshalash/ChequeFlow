@@ -713,6 +713,7 @@
     "title": "Reports"
   },
   "settings": {
+    "appearanceTitle": "Appearance",
     "branchId": "Branch identifier",
     "languageHint": "The interface language and local formatting used across the product",
     "organizationId": "Organization identifier",
@@ -727,6 +728,13 @@
     "DATA_ENTRY": "Data entry",
     "OWNER": "Owner",
     "VIEWER": "View only"
+  },
+  "theme": {
+    "label": "Theme",
+    "hint": "Dark follows your device unless you choose otherwise here.",
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
   },
   "status": {
     "BOUNCED": "Bounced",

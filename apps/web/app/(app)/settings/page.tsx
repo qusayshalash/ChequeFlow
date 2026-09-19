@@ -9,6 +9,7 @@ import { BackupPanel } from '@/components/backup-panel';
 import { IconBranch, IconReports, IconSettings, IconShield } from '@/components/icons';
 import { PageHeader } from '@/components/page-header';
 import { SystemStatus } from '@/components/system-status';
+import { ThemeChoiceControl } from '@/components/theme-choice';
 import { useApp, useTranslator } from '@/components/providers';
 import { useSession, RequirePermission } from '@/components/session';
 
@@ -45,7 +46,7 @@ function SettingsPageBody() {
             { href: '#system', label: t('diagnostics.title'), Icon: IconShield },
             { href: '#backup', label: t('backup.title'), Icon: IconReports },
             { href: '#organization', label: t('settings.organizationTitle'), Icon: IconBranch },
-            { href: '#appearance', label: t('common.language'), Icon: IconSettings },
+            { href: '#appearance', label: t('settings.appearanceTitle'), Icon: IconSettings },
           ].map(({ href, label, Icon }) => (
             <a
               key={href}
@@ -91,9 +92,17 @@ function SettingsPageBody() {
 
           <Card id="appearance" className="scroll-mt-24 p-0">
             <div className="border-b border-line-soft px-5 py-4">
-              <h2 className="text-[15px] font-bold text-ink">{t('common.language')}</h2>
+              <h2 className="text-[15px] font-bold text-ink">{t('settings.appearanceTitle')}</h2>
             </div>
-            <div className="p-5">
+            <div className="flex flex-col gap-4 p-5">
+              <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-line p-4">
+                <div>
+                  <p className="font-semibold text-ink">{t('theme.label')}</p>
+                  <p className="mt-1 text-sm text-ink-muted">{t('theme.hint')}</p>
+                </div>
+                <ThemeChoiceControl />
+              </div>
+
               <div className="flex items-center justify-between gap-4 rounded-xl border border-line p-4">
                 <div>
                   <p className="font-semibold text-ink">{LOCALE_LABELS[locale]}</p>

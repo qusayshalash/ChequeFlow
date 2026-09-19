@@ -3,6 +3,8 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { DEFAULT_THEME_CHOICE, THEME_CHOICES, applyThemeChoice, isThemeChoice } from './theme';
+
 /**
  * The dashboard in the dark.
  *
@@ -188,4 +190,91 @@ describe('each theme is readable on its own terms', () => {
       }
     });
   }
+});
+
+/**
+ * The manual switch.
+ *
+ * Following the system is the right default and stays the default. This is for
+ * the cases the system setting cannot express — a shared machine set to light,
+ * a screen being photographed — so the one thing it must never do is become a
+ * one-way door: "system" has to remain reachable after someone has tried dark.
+ */
+
+const LIB = readFileSync(join(WEB, 'lib', 'theme.ts'), 'utf8');
+const LAYOUT = readFileSync(join(WEB, 'app', 'layout.tsx'), 'utf8');
+const CONTROL = readFileSync(join(WEB, 'components', 'theme-choice.tsx'), 'utf8');
+
+/** Enough of an element for `applyThemeChoice`, which only needs two methods. */
+function fakeRoot() {
+  let attribute: string | null = null;
+  return {
+    get value() {
+      return attribute;
+    },
+    setAttribute: (_: string, next: string) => {
+      attribute = next;
+    },
+    removeAttribute: () => {
+      attribute = null;
+    },
+  };
+}
+
+describe('choosing a theme by hand', () => {
+  it('offers the system as an answer, not as the absence of one', () => {
+    expect(THEME_CHOICES).toEqual(['system', 'light', 'dark']);
+    expect(DEFAULT_THEME_CHOICE).toBe('system');
+  });
+
+  it('hands the question back to the stylesheet for "system"', () => {
+    // Writing data-theme="system" would match neither selector, so the page
+    // would keep whatever it had and the choice would look ignored.
+    const root = fakeRoot();
+    applyThemeChoice('dark', root as unknown as HTMLElement);
+    expect(root.value).toBe('dark');
+    applyThemeChoice('system', root as unknown as HTMLElement);
+    expect(root.value).toBeNull();
+  });
+
+  it('writes an explicit light, which the stylesheet lets win', () => {
+    const root = fakeRoot();
+    applyThemeChoice('light', root as unknown as HTMLElement);
+    expect(root.value).toBe('light');
+    // The guard in globals.css is what makes that override a dark system.
+    expect(CSS).toContain(":root:not([data-theme='light'])");
+  });
+
+  it('refuses a stored value it does not recognise', () => {
+    // Storage is shared with anything else on the origin and survives a
+    // rename; a stale value must fall back rather than be written to the root.
+    expect(isThemeChoice('dark')).toBe(true);
+    expect(isThemeChoice('sepia')).toBe(false);
+    expect(isThemeChoice(null)).toBe(false);
+  });
+
+  it('applies the choice before the first paint', () => {
+    // From an effect it arrives after the browser has drawn: the person sees
+    // the system's theme flash before their own replaces it.
+    expect(LAYOUT).toContain('THEME_BOOT_SCRIPT');
+    expect(LAYOUT).toMatch(/<head>[\s\S]*THEME_BOOT_SCRIPT[\s\S]*<\/head>/);
+    expect(LIB).toContain('const THEME_BOOT_SCRIPT');
+    expect(LIB).toMatch(/THEME_BOOT_SCRIPT = `try\{/);
+  });
+
+  it('survives a browser that refuses storage', () => {
+    // A private window throws on read and on write. A theme is not worth
+    // failing a page load over, and the boot script runs before any handler.
+    const guarded = LIB.match(/try \{[\s\S]*?\} catch/g) ?? [];
+    expect(guarded.length).toBeGreaterThanOrEqual(2);
+    expect(LIB).toContain('catch');
+  });
+
+  it('is one question with one answer', () => {
+    // Three buttons that happen to sit together are announced as three
+    // controls; a radio group is announced as "2 of 3" and moves on arrows.
+    expect(CONTROL).toContain('role="radiogroup"');
+    expect(CONTROL).toContain('role="radio"');
+    expect(CONTROL).toContain('aria-checked={selected}');
+  });
 });
