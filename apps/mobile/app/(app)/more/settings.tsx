@@ -9,6 +9,7 @@ import { CALENDARS, CALENDAR_LABELS, LOCALES, LOCALE_LABELS } from '@cheque-flow
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { Banner, Body, Button, InfoRow, Picker, Section } from '@/components/ui';
 import { clearDrafts, listDrafts, type CaptureDraft } from '@/lib/draft-store';
+import { forgetCachedAnswers } from '@/lib/query-persistence';
 import { syncDrafts } from '@/lib/draft-sync';
 import { useStyles } from '@/theme-context';
 import { elevation, fontFamily, radius, space, type, type Palette } from '@/theme';
@@ -113,6 +114,9 @@ export default function SettingsScreen() {
       await api.logout();
     } finally {
       queryClient.clear();
+      // The cache is kept on disk so the app works without a signal. That
+      // makes clearing it part of signing out, not an optimisation.
+      await forgetCachedAnswers();
       router.replace('/login');
     }
   }

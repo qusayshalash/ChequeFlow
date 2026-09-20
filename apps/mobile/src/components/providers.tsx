@@ -1,4 +1,5 @@
-import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query';
+import { QueryClient, onlineManager } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { useRouter } from 'expo-router';
 import {
   createContext,
@@ -26,6 +27,7 @@ import {
 import { API_URL, defaultLocale } from '@/lib/config';
 import { DEFAULT_SETTINGS, loadSettings, saveSettings, type AppSettings } from '@/lib/app-settings';
 import { syncDrafts } from '@/lib/draft-sync';
+import { forgetCachedAnswers, persistOptions } from '@/lib/query-persistence';
 import { SecureTokenStore } from '@/lib/secure-token-store';
 
 /** How often the app re-checks whether the API is reachable. */
@@ -87,6 +89,10 @@ export function Providers({ children }: { children: ReactNode }) {
         defaultOptions: {
           queries: {
             staleTime: 30_000,
+            // Longer than the persisted cache's own age limit: a query that
+            // has been collected from memory cannot be restored from disk, so
+            // a shorter lifetime here would quietly empty the offline cache.
+            gcTime: 24 * 60 * 60 * 1000,
             // Mobile networks fail often; retry transient errors only.
             retry: (failureCount, error) =>
               error instanceof ApiClientError && error.status > 0 && error.status < 500
@@ -104,6 +110,9 @@ export function Providers({ children }: { children: ReactNode }) {
         tokenStore: storeRef.current as SecureTokenStore,
         onSessionExpired: () => {
           queryClient.clear();
+          // The cache is on disk now. Leaving it there would show the next
+          // person to hold the phone the last person's ledger.
+          void forgetCachedAnswers();
           router.replace('/login');
         },
       }),
@@ -200,8 +209,8 @@ export function Providers({ children }: { children: ReactNode }) {
   }, [api, settings, ready, online, checkConnection, setLocale, setCalendar, setBiometricLock]);
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
       <AppContext.Provider value={value}>{children}</AppContext.Provider>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }

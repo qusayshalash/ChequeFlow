@@ -2,6 +2,7 @@
   "expo": {
     "name": "شيك فلو",
     "slug": "cheque-flow",
+    "owner": "qusayshalash",
     "version": "0.1.0",
     "orientation": "portrait",
     "scheme": "chequeflow",

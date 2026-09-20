@@ -60,3 +60,12 @@ export function defaultLocale(): Locale {
   const configured = readEnv('EXPO_PUBLIC_DEFAULT_LOCALE');
   return configured && isLocale(configured) ? configured : DEFAULT_LOCALE;
 }
+
+/**
+ * The shipped version, as `app.json` declares it.
+ *
+ * Used where a stored artefact has to be tied to the build that wrote it — a
+ * persisted cache holding last version's response shape is worse than no
+ * cache, because the screens it feeds have already moved on.
+ */
+export const APP_VERSION = Constants.expoConfig?.version ?? '0.0.0';
