@@ -20,7 +20,11 @@ const ROOT = process.cwd();
 const config = JSON.parse(readFileSync(join(ROOT, 'app.json'), 'utf8')).expo as {
   icon?: string;
   ios?: { buildNumber?: string };
-  android?: { versionCode?: number; adaptiveIcon?: { foregroundImage?: string } };
+  android?: {
+    versionCode?: number;
+    permissions?: string[];
+    adaptiveIcon?: { foregroundImage?: string };
+  };
   plugins?: Array<string | [string, Record<string, unknown>]>;
 };
 
@@ -79,5 +83,35 @@ describe('app identity', () => {
     for (const asset of ['assets/icon.png', 'assets/adaptive-icon.png', 'assets/splash-icon.png']) {
       expect(statSync(join(ROOT, asset)).size).toBeLessThan(1_000_000);
     }
+  });
+});
+
+/**
+ * What the app asks the phone for.
+ *
+ * `eas init` rewrote this list from the camera plugin's defaults and added the
+ * microphone with it. A cheque app that asks to record audio is a question
+ * nobody can answer, and a flag on an app review — and it arrived without
+ * anybody choosing it, which is exactly the kind of change a test should be
+ * the one to notice.
+ */
+describe('permissions', () => {
+  const requested = config.android?.permissions ?? [];
+
+  it('never asks for the microphone', () => {
+    const audio = requested.filter((name) => /RECORD_AUDIO|MICROPHONE/i.test(name));
+    expect(audio).toEqual([]);
+
+    const camera = config.plugins?.find(
+      (plugin): plugin is [string, Record<string, unknown>] =>
+        Array.isArray(plugin) && plugin[0] === 'expo-camera',
+    );
+    // The plugin puts it back on the next prebuild unless it is told not to.
+    expect(camera?.[1].microphonePermission).toBe(false);
+    expect(camera?.[1].recordAudioAndroidPermission).toBe(false);
+  });
+
+  it('asks only for what the app actually does', () => {
+    expect([...requested].sort()).toEqual(['CAMERA', 'USE_BIOMETRIC', 'USE_FINGERPRINT']);
   });
 });

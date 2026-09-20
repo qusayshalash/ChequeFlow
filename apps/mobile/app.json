@@ -38,7 +38,9 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "يستخدم التطبيق الكاميرا لتصوير الشيكات."
+          "cameraPermission": "يستخدم التطبيق الكاميرا لتصوير الشيكات.",
+          "microphonePermission": false,
+          "recordAudioAndroidPermission": false
         }
       ],
       [
@@ -69,7 +71,10 @@
       "typedRoutes": true
     },
     "extra": {
-      "router": {}
+      "router": {},
+      "eas": {
+        "projectId": "1dc49cc3-a100-4e81-ac08-51842f555856"
+      }
     },
     "icon": "./assets/icon.png"
   }
