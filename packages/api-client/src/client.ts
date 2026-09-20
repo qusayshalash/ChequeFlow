@@ -25,6 +25,7 @@ import type {
   CreateChequeBatchInput,
   CreateChequeInput,
   CreateContactInput,
+  AuditLogQuery,
   CreateReminderInput,
   RegisterDeviceInput,
   CreateUserInput,
@@ -80,6 +81,27 @@ export interface CurrencyTotal {
   currency: string;
   count: number;
   total: string;
+}
+
+/**
+ * One entry in the audit trail.
+ *
+ * `before` and `after` are whatever the server recorded for that action, which
+ * differs per entity and is deliberately not narrowed: the trail's value is
+ * that it kept what actually changed, not that it fits a type.
+ */
+export interface AuditLogRow {
+  id: string;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  userName: string | null;
+  userEmail: string | null;
+  ipAddress: string | null;
+  deviceInfo: string | null;
+  before: unknown;
+  after: unknown;
+  createdAt: string;
 }
 
 export interface ReminderRow {
@@ -522,6 +544,17 @@ export class ChequeFlowApiClient {
       count: number;
       byCurrency: CurrencyTotal[];
     }>('/reports/custody', { query });
+  }
+
+  /**
+   * The audit trail.
+   *
+   * The endpoint and its permission have existed since the beginning with no
+   * client able to call them, which made an append-only record that nobody
+   * could read.
+   */
+  auditLogs(query: AuditLogQuery) {
+    return this.request<Paginated<AuditLogRow>>('/audit-logs', { query });
   }
 
   listNotifications(limit = 50) {

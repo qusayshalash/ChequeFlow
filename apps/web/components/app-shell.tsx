@@ -88,6 +88,12 @@ const SETTINGS_NAV: NavItem[] = [
     permission: Permission.USER_MANAGE,
   },
   {
+    href: '/audit',
+    labelKey: 'nav.auditLogs',
+    Icon: IconShield,
+    permission: Permission.AUDIT_VIEW,
+  },
+  {
     href: '/settings',
     labelKey: 'nav.settings',
     Icon: IconSettings,

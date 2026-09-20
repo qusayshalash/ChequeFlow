@@ -16,6 +16,16 @@
     "REVIEW": "Approve review",
     "SUBMIT_FOR_REVIEW": "Submit for review"
   },
+  "audit": {
+    "action": "Action",
+    "actionHint": "e.g. CHEQUE_DEPOSITED",
+    "empty": "No matching activity",
+    "emptyHint": "The audit trail records every change to the data. An empty list means nothing matched the search.",
+    "entity": "Record",
+    "origin": "Origin",
+    "when": "When",
+    "who": "User"
+  },
   "auth": {
     "biometricEnable": "Enable biometric unlock",
     "biometricHint": "Asks for your fingerprint each time the app opens and after it returns from the background",
@@ -585,6 +595,7 @@
     "suggestionNotice": "These values are automatic suggestions and are not confirmed yet"
   },
   "pageDescription": {
+    "auditLogs": "Every change to the data, by whom and from where — a record that cannot be edited or deleted",
     "bounced": "Follow returned cheques and the actions required to resolve them",
     "branches": "A unified view of organization branches and their contact details",
     "cheques": "Search, filter, and manage every cheque from one operational workspace",
