@@ -639,6 +639,7 @@
     "to": "To"
   },
   "reminders": {
+    "pushBody": "Cheque {number} for {amount}",
     "acknowledge": "Done",
     "addCustom": "Custom reminder",
     "added": "Reminder added",

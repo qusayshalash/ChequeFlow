@@ -34,3 +34,27 @@ export const createWhatsAppReminderSchema = z.object({
   note: longTextSchema.optional(),
 });
 export type CreateWhatsAppReminderInput = z.infer<typeof createWhatsAppReminderSchema>;
+
+/**
+ * Registering a phone to be told about cheques.
+ *
+ * The token is checked for shape, not merely for being a string. Expo issues
+ * `ExponentPushToken[…]` (and `ExpoPushToken[…]` on some clients); anything
+ * else is a client bug or a probe, and storing it would mean every sweep pays
+ * to send to an address that cannot exist.
+ */
+export const registerDeviceSchema = z.object({
+  token: z
+    .string()
+    .trim()
+    .min(1)
+    .max(255)
+    .regex(/^Expo(nent)?PushToken\[[^\]\s]+\]$/, {
+      message: 'token must be an Expo push token',
+    }),
+  platform: z.enum(['IOS', 'ANDROID']),
+});
+export type RegisterDeviceInput = z.infer<typeof registerDeviceSchema>;
+
+export const forgetDeviceSchema = registerDeviceSchema.pick({ token: true });
+export type ForgetDeviceInput = z.infer<typeof forgetDeviceSchema>;

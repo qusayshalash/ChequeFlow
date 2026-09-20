@@ -639,6 +639,7 @@
     "to": "إلى"
   },
   "reminders": {
+    "pushBody": "شيك رقم {number} بمبلغ {amount}",
     "acknowledge": "تم التعامل معه",
     "addCustom": "تنبيه خاص",
     "added": "تمت إضافة التنبيه",

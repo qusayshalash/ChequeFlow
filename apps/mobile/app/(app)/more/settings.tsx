@@ -9,6 +9,7 @@ import { CALENDARS, CALENDAR_LABELS, LOCALES, LOCALE_LABELS } from '@cheque-flow
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { Banner, Body, Button, InfoRow, Picker, Section } from '@/components/ui';
 import { clearDrafts, listDrafts, type CaptureDraft } from '@/lib/draft-store';
+import { forgetThisDevice } from '@/lib/push';
 import { forgetCachedAnswers } from '@/lib/query-persistence';
 import { syncDrafts } from '@/lib/draft-sync';
 import { useStyles } from '@/theme-context';
@@ -111,6 +112,9 @@ export default function SettingsScreen() {
     }
 
     try {
+      // Before the session goes, while the call can still be authorised: the
+      // next person to hold this phone must not be told about these cheques.
+      await forgetThisDevice(api);
       await api.logout();
     } finally {
       queryClient.clear();

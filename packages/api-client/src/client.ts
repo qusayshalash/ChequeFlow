@@ -26,6 +26,7 @@ import type {
   CreateChequeInput,
   CreateContactInput,
   CreateReminderInput,
+  RegisterDeviceInput,
   CreateUserInput,
   DepositChequeInput,
   HandoverChequeInput,
@@ -532,6 +533,22 @@ export class ChequeFlowApiClient {
       method: 'POST',
       body: { minutes },
     });
+  }
+
+  /**
+   * Tells the server where to send this phone's reminders.
+   *
+   * Called on every sign-in and every cold start, not once at install: the
+   * timestamp it refreshes is the only evidence the app is still there, and a
+   * token can be reissued by the operating system at any time.
+   */
+  registerDevice(input: RegisterDeviceInput) {
+    return this.request<void>('/devices', { method: 'POST', body: input });
+  }
+
+  /** Stops reminders reaching this phone — part of signing out, not a setting. */
+  forgetDevice(token: string) {
+    return this.request<void>('/devices', { method: 'DELETE', body: { token } });
   }
 
   acknowledgeReminder(id: string) {

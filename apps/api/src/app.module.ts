@@ -20,6 +20,7 @@ import { DiagnosticsModule } from './modules/diagnostics/diagnostics.module';
 import { HealthModule } from './modules/health/health.module';
 import { OcrModule } from './modules/ocr/ocr.module';
 import { ReferenceModule } from './modules/reference/reference.module';
+import { PushModule } from './modules/push/push.module';
 import { RemindersModule } from './modules/reminders/reminders.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { StorageModule } from './modules/storage/storage.module';
@@ -70,6 +71,7 @@ import { UsersModule } from './modules/users/users.module';
     OcrModule,
     ReferenceModule,
     ReportsModule,
+    PushModule,
     RemindersModule,
     UsersModule,
     DiagnosticsModule,

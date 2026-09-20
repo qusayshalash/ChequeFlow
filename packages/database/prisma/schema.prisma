@@ -107,6 +107,11 @@ enum ReminderChannel {
   WHATSAPP
 }
 
+enum DevicePlatform {
+  IOS
+  ANDROID
+}
+
 enum ReminderStatus {
   SCHEDULED
   SENT
@@ -194,6 +199,7 @@ model User {
 
   uploadedImages ChequeImage[] @relation("ImageUploadedBy")
   reminders      Reminder[]
+  devices        DeviceToken[]
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -558,6 +564,29 @@ model Reminder {
   @@index([status, remindAt])
   @@index([recipientUserId, status])
   @@map("reminders")
+}
+
+/// A phone that has asked to be told when a cheque comes due.
+///
+/// Keyed by the push token rather than by the user, because the token is what
+/// the device owns: a phone that is handed to a colleague signs in as someone
+/// else and must start delivering to them, not keep delivering to whoever
+/// registered it first. `lastSeenAt` is what lets a token that has not been
+/// confirmed in months be dropped without guessing.
+model DeviceToken {
+  id             String         @id @default(uuid()) @db.Uuid
+  organizationId String         @map("organization_id") @db.Uuid
+  userId         String         @map("user_id") @db.Uuid
+  token          String         @unique
+  platform       DevicePlatform
+  lastSeenAt     DateTime       @default(now()) @map("last_seen_at") @db.Timestamptz(3)
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([organizationId])
+  @@map("device_tokens")
 }
 
 /// Append-only audit trail. UPDATE and DELETE are blocked by a trigger.

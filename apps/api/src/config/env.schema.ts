@@ -79,6 +79,23 @@ export const envSchema = z
         message: 'REMINDER_OFFSET_DAYS must be a comma separated list of whole days',
       }),
     REMINDER_OVERDUE_DAYS: z.coerce.number().int().min(0).default(1),
+
+    /**
+     * Delivering a reminder to a phone.
+     *
+     * Off by default, and deliberately so: a development machine sharing a
+     * database with someone's real device would otherwise buzz their phone at
+     * seven in the morning about test data.
+     */
+    PUSH_ENABLED: z
+      .string()
+      .default('false')
+      .transform((value) => value === 'true'),
+    PUSH_ENDPOINT: z.string().url().default('https://exp.host/--/api/v2/push/send'),
+    /** How often the dispatcher looks for reminders whose moment has come. */
+    PUSH_SWEEP_SECONDS: z.coerce.number().int().min(15).max(3600).default(60),
+    /** A token silent this long is assumed to belong to a phone long gone. */
+    PUSH_TOKEN_TTL_DAYS: z.coerce.number().int().min(1).default(90),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== 'production') {

@@ -103,4 +103,13 @@ export class AppConfigService {
       overdueDays: this.get('REMINDER_OVERDUE_DAYS'),
     };
   }
+
+  get push() {
+    return {
+      enabled: this.get('PUSH_ENABLED'),
+      endpoint: this.get('PUSH_ENDPOINT'),
+      sweepSeconds: this.get('PUSH_SWEEP_SECONDS'),
+      tokenTtlDays: this.get('PUSH_TOKEN_TTL_DAYS'),
+    };
+  }
 }

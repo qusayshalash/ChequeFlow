@@ -16,6 +16,7 @@ import {
   type IconProps,
 } from '@/components/icons';
 import { useApi, useApp, useTranslator } from '@/components/providers';
+import { ReminderNotifications } from '@/components/reminder-notifications';
 import { LoadingView } from '@/components/ui';
 import { fontFamily } from '@/theme';
 import { useTheme } from '@/theme-context';
@@ -59,6 +60,7 @@ export default function AppLayout() {
 
   return (
     <BiometricGate>
+      <ReminderNotifications />
       {/* The sign-in screen's mint field, painted once behind every tab rather
           than repeated in nineteen screens. `sceneContainerStyle` is
           transparent so this shows through; each screen keeps its own padding

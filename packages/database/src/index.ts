@@ -8,6 +8,7 @@ export type {
   ChequeEvent,
   ChequeImage,
   Contact,
+  DeviceToken,
   Location,
   OcrExtraction,
   Organization,

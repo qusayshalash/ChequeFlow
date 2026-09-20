@@ -106,6 +106,13 @@ export const ReminderType = {
 } as const;
 export type ReminderType = (typeof ReminderType)[keyof typeof ReminderType];
 
+/** The two kinds of phone the app is built for. */
+export const DevicePlatform = {
+  IOS: 'IOS',
+  ANDROID: 'ANDROID',
+} as const;
+export type DevicePlatform = (typeof DevicePlatform)[keyof typeof DevicePlatform];
+
 export const ReminderChannel = {
   IN_APP: 'IN_APP',
   PUSH: 'PUSH',
