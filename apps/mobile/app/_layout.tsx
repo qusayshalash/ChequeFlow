@@ -5,7 +5,7 @@ import {
   IBMPlexSansArabic_700Bold,
   useFonts,
 } from '@expo-google-fonts/ibm-plex-sans-arabic';
-import { Stack } from 'expo-router';
+import { Stack, type ErrorBoundaryProps } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -13,6 +13,7 @@ import { I18nManager } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Providers } from '@/components/providers';
+import { CrashScreen } from '@/components/crash-screen';
 import { ThemeProvider } from '@/theme-context';
 
 // Held until the typeface is in memory. Without this the first frame paints in
@@ -68,4 +69,13 @@ export default function RootLayout() {
       </ThemeProvider>
     </SafeAreaProvider>
   );
+}
+
+/**
+ * expo-router renders this instead of the segment when its tree throws.
+ *
+ * Exported by name — the router looks for `ErrorBoundary`, not a default.
+ */
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  return <CrashScreen error={error} retry={retry} />;
 }

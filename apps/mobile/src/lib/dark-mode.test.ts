@@ -35,6 +35,18 @@ function screens(): Array<{ file: string; text: string }> {
   }));
 }
 
+/**
+ * The one component that may build its styles by hand, and why.
+ *
+ * The crash screen is what renders when a layout throws — including the layout
+ * that mounts `ThemeProvider`. Reading the palette through `useStyles` there
+ * would mean throwing while handling a throw, and React's answer to that is
+ * the blank screen the crash screen exists to prevent. It still follows the
+ * phone: it takes the palette from `useColorScheme` instead of from context,
+ * which its own test asserts.
+ */
+const BUILDS_ITS_OWN = '/src/components/crash-screen.tsx';
+
 describe('dark mode', () => {
   it('builds every stylesheet from the palette', () => {
     const frozen = screens().filter((entry) =>
@@ -48,7 +60,9 @@ describe('dark mode', () => {
   it('gives every stylesheet to a component that can read the theme', () => {
     const orphans = screens().filter(
       (entry) =>
-        entry.text.includes('const makeStyles') && !entry.text.includes('useStyles(makeStyles)'),
+        entry.file !== BUILDS_ITS_OWN &&
+        entry.text.includes('const makeStyles') &&
+        !entry.text.includes('useStyles(makeStyles)'),
     );
     expect(orphans.map((entry) => entry.file)).toEqual([]);
   });

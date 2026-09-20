@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Redirect, Tabs } from 'expo-router';
+import { Redirect, Tabs, type ErrorBoundaryProps } from 'expo-router';
 import { Platform, StyleSheet, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -17,6 +17,7 @@ import {
 } from '@/components/icons';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { ReminderNotifications } from '@/components/reminder-notifications';
+import { CrashScreen } from '@/components/crash-screen';
 import { LoadingView } from '@/components/ui';
 import { fontFamily } from '@/theme';
 import { useTheme } from '@/theme-context';
@@ -141,4 +142,13 @@ export default function AppLayout() {
       </Tabs>
     </BiometricGate>
   );
+}
+
+/**
+ * expo-router renders this instead of the segment when its tree throws.
+ *
+ * Exported by name — the router looks for `ErrorBoundary`, not a default.
+ */
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  return <CrashScreen error={error} retry={retry} />;
 }

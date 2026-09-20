@@ -40,6 +40,17 @@ function sources(): Array<{ file: string; text: string }> {
 const PALETTE =
   'white|black|slate|gray|neutral|zinc|stone|red|rose|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink';
 
+/**
+ * The one file that may not use a token, and why.
+ *
+ * `global-error.tsx` replaces the whole document, including the root layout
+ * that imports the stylesheet — so by the time it renders there is nothing
+ * left for `var(--app-…)` to resolve against. Its own test asserts that it
+ * imports nothing at all, which is what keeps this exemption from becoming a
+ * place to hide colours.
+ */
+const EXEMPT = new Set(['/app/global-error.tsx']);
+
 describe('every colour is a token', () => {
   it('uses no raw palette class', () => {
     // `bg-white` in a card is a white rectangle in a dark room: the class names
@@ -56,6 +67,7 @@ describe('every colour is a token', () => {
     // the same fault one layer down: the line stayed dark green on a dark page.
     const literal = /(?:#[0-9a-fA-F]{6}\b|\brgba?\(\s*\d)/;
     const offenders = sources().filter((entry) => {
+      if (EXEMPT.has(entry.file)) return false;
       const withoutShadows = entry.text.replace(/shadow-\[[^\]]*\]/g, '');
       return literal.test(withoutShadows);
     });

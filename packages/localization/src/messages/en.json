@@ -468,6 +468,11 @@
     "yesterday": "1 day late"
   },
   "errors": {
+    "crashTitle": "This part stopped working",
+    "crashBody": "Nothing you saved was lost. Try again, and go home if it keeps happening.",
+    "crashReference": "Reference",
+    "notFoundTitle": "This page does not exist",
+    "notFoundBody": "The address may have changed, or what was here was removed.",
     "CONFLICT": "Conflicting data",
     "DUPLICATE_CHEQUE": "This cheque already exists",
     "FORBIDDEN": "You do not have permission for this action",
