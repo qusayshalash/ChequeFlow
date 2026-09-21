@@ -47,6 +47,20 @@ function screens(): Array<{ file: string; text: string }> {
  */
 const BUILDS_ITS_OWN = '/src/components/crash-screen.tsx';
 
+/**
+ * The one screen that is the same colour in both themes, and why.
+ *
+ * A photograph is judged against what surrounds it. The cheque viewer puts
+ * the image on black in the light theme as well as the dark one, because a
+ * pale frame around a pale cheque washes the paper out and the handwriting
+ * with it — which is the whole reason the screen exists. Every other colour
+ * on it is white text on that black, for the same reason.
+ *
+ * Narrow on purpose: only this file, and only because its colours are about
+ * the photograph rather than about the product's surface.
+ */
+const ALWAYS_BLACK = '/src/components/image-viewer.tsx';
+
 describe('dark mode', () => {
   it('builds every stylesheet from the palette', () => {
     const frozen = screens().filter((entry) =>
@@ -71,6 +85,7 @@ describe('dark mode', () => {
     const literals: string[] = [];
 
     for (const { file, text } of screens()) {
+      if (file === ALWAYS_BLACK) continue;
       for (const match of text.matchAll(/#[0-9A-Fa-f]{6}/g)) {
         // Shadows are the exception: a shadow is the same near-black in both
         // themes, and in the dark it is barely drawn at all.

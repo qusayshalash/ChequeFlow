@@ -112,6 +112,10 @@
     "usePhoto": "استخدام الصورة"
   },
   "cheque": {
+    "imageZoomHintWeb": "اضغط الصورة للتكبير، واسحبها للتنقل — Esc للإغلاق",
+    "imageZoomHint": "اضغط ضغطتين للتكبير، أو باعد بإصبعيك",
+    "imageTapHint": "اضغط ضغطتين للتكبير",
+    "imageOpen": "فتح الصورة بالحجم الكامل",
     "accountNumber": "رقم الحساب",
     "addManually": "إضافة يدوية",
     "amountBase": "بالعملة الرئيسية",

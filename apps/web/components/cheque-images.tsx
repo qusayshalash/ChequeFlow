@@ -9,6 +9,7 @@ import { Button } from '@cheque-flow/ui';
 
 import { IconCamera } from '@/components/icons';
 import { Panel } from '@/components/panel';
+import { ImageLightbox } from '@/components/image-lightbox';
 import { useApi, useTranslator } from '@/components/providers';
 
 /** Upload and view cheque images. Images are fetched through signed URLs. */
@@ -144,19 +145,15 @@ export function ChequeImagesPanel({
           <p className="text-sm text-ink-muted">{t('cheque.noImages')}</p>
         )}
 
-        {openedUrl ? (
-          <div className="flex flex-col gap-2">
-            {/* Signed URLs are short lived; the image is fetched straight from storage. */}
-            <img
-              src={openedUrl}
-              alt={t('cheque.images')}
-              className="w-full rounded-xl border border-line"
-            />
-            <Button variant="ghost" onClick={() => setOpenedUrl(null)}>
-              {t('common.close')}
-            </Button>
-          </div>
-        ) : null}
+        {/* The whole window rather than the remains of a side column: a
+            cheque scaled into a panel cannot be read, which is the only
+            reason anyone opens it. Signed URLs are short lived and the
+            image is fetched straight from storage. */}
+        <ImageLightbox
+          url={openedUrl}
+          label={t('cheque.images')}
+          onClose={() => setOpenedUrl(null)}
+        />
       </div>
     </Panel>
   );

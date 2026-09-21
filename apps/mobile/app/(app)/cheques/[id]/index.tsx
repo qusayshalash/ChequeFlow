@@ -7,6 +7,7 @@ import { ChequeAction, utcToday, type ChequeDetailView } from '@cheque-flow/shar
 
 import { IconAlert, IconCalendar } from '@/components/icons';
 import { ChequeJourney } from '@/components/journey';
+import { ImageViewer } from '@/components/image-viewer';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import {
   Amount,
@@ -251,7 +252,9 @@ function ChequeImages({
   const styles = useStyles(makeStyles);
   const api = useApi();
   const t = useTranslator();
-  const [expanded, setExpanded] = useState<string | null>(null);
+  // Which image is open full-screen. A thumbnail that merely grew was the
+  // old answer, and 320 points is not enough to read a signature.
+  const [opened, setOpened] = useState<string | null>(null);
 
   const urls = useQuery({
     queryKey: ['cheque-image-urls', chequeId, images.map((image) => image.id).join(',')],
@@ -288,7 +291,6 @@ function ChequeImages({
       >
         {images.map((image) => {
           const url = urls.data?.[image.id];
-          const isExpanded = expanded === image.id;
           return (
             <Pressable
               key={image.id}
@@ -296,12 +298,13 @@ function ChequeImages({
               accessibilityLabel={t(
                 image.side === 'FRONT' ? 'cheque.frontImage' : 'cheque.backImage',
               )}
-              onPress={() => setExpanded(isExpanded ? null : image.id)}
+              accessibilityHint={t('cheque.imageOpen')}
+              onPress={() => setOpened(image.id)}
             >
               {url ? (
                 <Image
                   source={{ uri: url }}
-                  style={isExpanded ? styles.imageLarge : styles.imageThumb}
+                  style={styles.imageThumb}
                   resizeMode="contain"
                   accessible
                 />
@@ -319,6 +322,16 @@ function ChequeImages({
           );
         })}
       </ScrollView>
+
+      <ImageViewer
+        url={opened ? (urls.data?.[opened] ?? null) : null}
+        label={t(
+          images.find((image) => image.id === opened)?.side === 'BACK'
+            ? 'cheque.backImage'
+            : 'cheque.frontImage',
+        )}
+        onClose={() => setOpened(null)}
+      />
     </Card>
   );
 }
@@ -383,12 +396,6 @@ const makeStyles = (c: Palette) =>
       backgroundColor: c.surface.sunken,
       alignItems: 'center',
       justifyContent: 'center',
-    },
-    imageLarge: {
-      width: 320,
-      height: 200,
-      borderRadius: radius.sm,
-      backgroundColor: c.surface.sunken,
     },
     imagePlaceholder: { fontFamily: fontFamily.regular, fontSize: 12, color: c.text.secondary },
     imageCaption: {

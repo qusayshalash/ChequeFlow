@@ -112,6 +112,10 @@
     "usePhoto": "Use photo"
   },
   "cheque": {
+    "imageZoomHintWeb": "Click the image to magnify, drag to move — Esc to close",
+    "imageZoomHint": "Double-tap to magnify, or pinch",
+    "imageTapHint": "Double-tap to magnify",
+    "imageOpen": "Open the image full size",
     "accountNumber": "Account number",
     "addManually": "Add manually",
     "amountBase": "In base currency",

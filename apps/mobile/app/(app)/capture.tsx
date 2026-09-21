@@ -9,6 +9,7 @@ import * as haptics from '@/lib/haptics';
 import { useApi, useTranslator } from '@/components/providers';
 import { Body, Button, Card, Heading, Screen, ScreenHeader } from '@/components/ui';
 import { checkCaptureQuality } from '@/lib/image-quality';
+import { shrinkForUpload } from '@/lib/shrink-image';
 import { uploadCapturedCheque } from '@/lib/cheque-upload';
 import { saveDraft } from '@/lib/draft-store';
 import { useStyles } from '@/theme-context';
@@ -83,10 +84,17 @@ export default function CaptureScreen() {
       setWarning(quality.messageKeys.map((key) => t(key)).join(' · '));
     }
 
-    setShots((current) => ({
-      ...current,
-      [side]: { uri: photo.uri, width: photo.width, height: photo.height },
-    }));
+    // Shrunk here rather than at upload, so the thumbnail, the offline draft
+    // queue and the upload all carry the same smaller file — and so a capture
+    // taken with no signal is not sitting on the phone at full size until it
+    // can be sent.
+    const kept = await shrinkForUpload({
+      uri: photo.uri,
+      width: photo.width,
+      height: photo.height,
+    });
+
+    setShots((current) => ({ ...current, [side]: kept }));
     setSide(side === 'FRONT' ? 'BACK' : 'FRONT');
   }
 
