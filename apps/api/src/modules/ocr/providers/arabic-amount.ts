@@ -38,6 +38,9 @@ const MISREADINGS: Readonly<Record<string, string>> = {
 };
 
 /** Standalone number words, before any multiplier is applied. */
+// One number per line with every spelling of it beside it. Laid out one key
+// per line, as the formatter would, the table stops reading as a table.
+// prettier-ignore
 const UNITS: Readonly<Record<string, number>> = {
   صفر: 0,
   واحد: 1, احد: 1, أحد: 1, إحدى: 1, احدى: 1,
@@ -66,6 +69,9 @@ const UNITS: Readonly<Record<string, number>> = {
 };
 
 /** Words that multiply what came before them rather than adding to it. */
+// One number per line with every spelling of it beside it. Laid out one key
+// per line, as the formatter would, the table stops reading as a table.
+// prettier-ignore
 const MULTIPLIERS: Readonly<Record<string, number>> = {
   آلاف: 1000, الاف: 1000, ألاف: 1000,
   ملايين: 1_000_000, مليون: 1_000_000,
@@ -78,6 +84,9 @@ const MULTIPLIERS: Readonly<Record<string, number>> = {
  * Held as a list, not just a test, because it is also the vocabulary a
  * truncated word is matched back against.
  */
+// Grouped by what the words name — a currency, a unit, a filler — which the
+// formatter's one-per-line layout would erase.
+// prettier-ignore
 const FILLER: readonly string[] = [
   'دولار', 'دولارا', 'دولارات',
   'شيكل', 'شيقل', 'شواقل',
@@ -131,7 +140,10 @@ export function repairArabicAmountWords(text: string): string {
  * from half a sentence corroborates nothing.
  */
 export function parseArabicAmountWords(text: string): number | null {
-  const words = text.split(/[\s،,.-]+/).map(fold).filter(Boolean);
+  const words = text
+    .split(/[\s،,.-]+/)
+    .map(fold)
+    .filter(Boolean);
   if (words.length === 0) return null;
 
   let total = 0;
@@ -140,9 +152,13 @@ export function parseArabicAmountWords(text: string): number | null {
 
   for (const raw of words) {
     // `و` is written joined to what follows — `ومئتان` is "and two hundred".
-    const word = raw.length > 1 && raw.startsWith('و') && !FOLDED_UNITS.has(raw) && !FOLDED_MULTIPLIERS.has(raw)
-      ? raw.slice(1)
-      : raw;
+    const word =
+      raw.length > 1 &&
+      raw.startsWith('و') &&
+      !FOLDED_UNITS.has(raw) &&
+      !FOLDED_MULTIPLIERS.has(raw)
+        ? raw.slice(1)
+        : raw;
     if (IGNORED.test(word)) continue;
 
     const multiplier = FOLDED_MULTIPLIERS.get(word);

@@ -37,7 +37,9 @@ test.describe('permissions are enforced by the server', () => {
     expect(res.status()).toBe(403);
   });
 
-  test('a valid, legal cheque action is still refused without the permission', async ({ request }) => {
+  test('a valid, legal cheque action is still refused without the permission', async ({
+    request,
+  }) => {
     const owner = await apiLogin(request, 'owner');
     const viewer = await apiLogin(request, 'viewer');
     const auth = (t: string) => ({ Authorization: `Bearer ${t}` });
@@ -65,7 +67,9 @@ test.describe('permissions are enforced by the server', () => {
     });
     expect(res.status(), 'a complete, legal request must still fail on permission alone').toBe(403);
 
-    const after = await (await request.get(`${API}/cheques/${cheque.id}`, { headers: auth(owner.accessToken) })).json();
+    const after = await (
+      await request.get(`${API}/cheques/${cheque.id}`, { headers: auth(owner.accessToken) })
+    ).json();
     expect(after.status, 'the refused request must not have changed anything').toBe(cheque.status);
   });
 
@@ -83,8 +87,12 @@ test.describe('permissions are enforced by the server', () => {
     // The body has to be valid, or the request never reaches the permission
     // check: the payload schema runs first and answers 422 either way, which
     // would make this pass without testing anything.
-    const locations = await (await request.get(`${API}/locations`, { headers: auth(owner.accessToken) })).json();
-    const contacts = await (await request.get(`${API}/contacts?pageSize=1`, { headers: auth(owner.accessToken) })).json();
+    const locations = await (
+      await request.get(`${API}/locations`, { headers: auth(owner.accessToken) })
+    ).json();
+    const contacts = await (
+      await request.get(`${API}/contacts?pageSize=1`, { headers: auth(owner.accessToken) })
+    ).json();
     const body = { toLocationId: locations[0]?.id, fromContactId: contacts.data[0]?.id };
 
     // Two requests differing only in the cheque behind the id: one in the wrong

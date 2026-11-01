@@ -14,20 +14,30 @@ test.describe('cheque lifecycle', () => {
 
     const created = await request.post(`${API}/cheques`, {
       headers: auth,
-      data: { direction: 'INCOMING', chequeNumber: number(), amount: '123.45',
-        currency: 'USD', dueDate: '2027-07-07', notes: 'QA_TEST lifecycle' },
+      data: {
+        direction: 'INCOMING',
+        chequeNumber: number(),
+        amount: '123.45',
+        currency: 'USD',
+        dueDate: '2027-07-07',
+        notes: 'QA_TEST lifecycle',
+      },
     });
     expect(created.status()).toBe(201);
     const cheque = (await created.json()).cheque;
 
     // An illegal jump must be refused rather than quietly applied.
     const illegal = await request.post(`${API}/cheques/${cheque.id}/clear`, {
-      headers: auth, data: {}, failOnStatusCode: false,
+      headers: auth,
+      data: {},
+      failOnStatusCode: false,
     });
     expect(illegal.status()).toBe(409);
 
     const locations = await (await request.get(`${API}/locations`, { headers: auth })).json();
-    const contacts = await (await request.get(`${API}/contacts?pageSize=1`, { headers: auth })).json();
+    const contacts = await (
+      await request.get(`${API}/contacts?pageSize=1`, { headers: auth })
+    ).json();
     const received = await request.post(`${API}/cheques/${cheque.id}/receive`, {
       headers: auth,
       data: { toLocationId: locations[0]?.id, fromContactId: contacts.data[0]?.id },
@@ -35,7 +45,9 @@ test.describe('cheque lifecycle', () => {
     expect(received.status()).toBe(200);
     expect((await received.json()).status).toBe('IN_HAND');
 
-    const events = await (await request.get(`${API}/cheques/${cheque.id}/events`, { headers: auth })).json();
+    const events = await (
+      await request.get(`${API}/cheques/${cheque.id}/events`, { headers: auth })
+    ).json();
     const rows = Array.isArray(events) ? events : events.data;
     expect(rows.length, 'the movement ledger records the transition').toBeGreaterThan(1);
   });
@@ -46,16 +58,23 @@ test.describe('cheque lifecycle', () => {
 
     const created = await request.post(`${API}/cheques`, {
       headers: auth,
-      data: { direction: 'INCOMING', chequeNumber: number(), amount: '10.00',
-        currency: 'USD', dueDate: '2027-07-07' },
+      data: {
+        direction: 'INCOMING',
+        chequeNumber: number(),
+        amount: '10.00',
+        currency: 'USD',
+        dueDate: '2027-07-07',
+      },
     });
     const cheque = (await created.json()).cheque;
 
     await request.patch(`${API}/cheques/${cheque.id}`, {
-      headers: auth, data: { notes: 'QA_TEST first', version: cheque.version },
+      headers: auth,
+      data: { notes: 'QA_TEST first', version: cheque.version },
     });
     const stale = await request.patch(`${API}/cheques/${cheque.id}`, {
-      headers: auth, data: { notes: 'QA_TEST second' , version: cheque.version },
+      headers: auth,
+      data: { notes: 'QA_TEST second', version: cheque.version },
       failOnStatusCode: false,
     });
     expect(stale.status()).toBe(409);
@@ -67,17 +86,32 @@ test.describe('cheque lifecycle', () => {
 
     const created = await request.post(`${API}/cheques`, {
       headers: auth,
-      data: { direction: 'INCOMING', chequeNumber: number(), amount: '20.00',
-        currency: 'USD', dueDate: '2027-07-07' },
+      data: {
+        direction: 'INCOMING',
+        chequeNumber: number(),
+        amount: '20.00',
+        currency: 'USD',
+        dueDate: '2027-07-07',
+      },
     });
     const cheque = (await created.json()).cheque;
     const locations = await (await request.get(`${API}/locations`, { headers: auth })).json();
-    const contacts = await (await request.get(`${API}/contacts?pageSize=1`, { headers: auth })).json();
+    const contacts = await (
+      await request.get(`${API}/contacts?pageSize=1`, { headers: auth })
+    ).json();
     const body = { toLocationId: locations[0]?.id, fromContactId: contacts.data[0]?.id };
 
     const [a, b] = await Promise.all([
-      request.post(`${API}/cheques/${cheque.id}/receive`, { headers: auth, data: body, failOnStatusCode: false }),
-      request.post(`${API}/cheques/${cheque.id}/receive`, { headers: auth, data: body, failOnStatusCode: false }),
+      request.post(`${API}/cheques/${cheque.id}/receive`, {
+        headers: auth,
+        data: body,
+        failOnStatusCode: false,
+      }),
+      request.post(`${API}/cheques/${cheque.id}/receive`, {
+        headers: auth,
+        data: body,
+        failOnStatusCode: false,
+      }),
     ]);
     const applied = [a.status(), b.status()].filter((s) => s === 200).length;
     expect(applied, `statuses ${a.status()} and ${b.status()}`).toBe(1);

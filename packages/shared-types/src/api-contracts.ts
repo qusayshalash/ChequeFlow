@@ -52,12 +52,7 @@ export interface ApiFieldError {
  * shape it must take to cross the wire.
  */
 export type ApiErrorDetail =
-  | string
-  | number
-  | boolean
-  | null
-  | ApiErrorDetail[]
-  | { [key: string]: ApiErrorDetail };
+  string | number | boolean | null | ApiErrorDetail[] | { [key: string]: ApiErrorDetail };
 
 export interface ApiErrorBody {
   error: {

@@ -304,26 +304,28 @@ export type UploadImageMetadataInput = z.infer<typeof uploadImageMetadataSchema>
  */
 export const reviewChequeSchema = z.object({
   extractionId: uuidSchema.optional(),
-  confirmed: z.object({
-    chequeNumber: chequeNumberSchema.optional(),
-    amount: moneySchema.optional(),
-    amountInWords: optionalText(255).optional(),
-    currency: currencySchema.optional(),
-    issueDate: isoDateSchema.nullish(),
-    dueDate: isoDateSchema.optional(),
-    bankId: uuidSchema.nullish(),
-    bankNameRaw: optionalText(255).optional(),
-    bankBranchRaw: optionalText(255).optional(),
-    accountNumber: optionalText(64).optional(),
-    drawerName: optionalText(255).optional(),
-    originalPayeeName: optionalText(255).optional(),
-    // Strict, because the names here are not the names the extraction uses:
-    // it reports `numericAmount`, `payeeName` and `bankName`, and this takes
-    // `amount`, `originalPayeeName` and `bankNameRaw`. Both clients translate
-    // between the two, but a payload that does not was being accepted with a
-    // 200 and quietly stripped — a confirmed reading of 4,250 left the cheque
-    // at its old amount and nothing said so. A wrong key is now a 422.
-  }).strict(),
+  confirmed: z
+    .object({
+      chequeNumber: chequeNumberSchema.optional(),
+      amount: moneySchema.optional(),
+      amountInWords: optionalText(255).optional(),
+      currency: currencySchema.optional(),
+      issueDate: isoDateSchema.nullish(),
+      dueDate: isoDateSchema.optional(),
+      bankId: uuidSchema.nullish(),
+      bankNameRaw: optionalText(255).optional(),
+      bankBranchRaw: optionalText(255).optional(),
+      accountNumber: optionalText(64).optional(),
+      drawerName: optionalText(255).optional(),
+      originalPayeeName: optionalText(255).optional(),
+      // Strict, because the names here are not the names the extraction uses:
+      // it reports `numericAmount`, `payeeName` and `bankName`, and this takes
+      // `amount`, `originalPayeeName` and `bankNameRaw`. Both clients translate
+      // between the two, but a payload that does not was being accepted with a
+      // 200 and quietly stripped — a confirmed reading of 4,250 left the cheque
+      // at its old amount and nothing said so. A wrong key is now a 422.
+    })
+    .strict(),
   /** Fields the reviewer explicitly rejected, for OCR quality metrics. */
   rejectedFields: z.array(z.enum(CHEQUE_EXTRACTED_FIELD_NAMES)).default([]),
   notes: longTextSchema.optional(),

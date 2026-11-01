@@ -13,10 +13,17 @@ export function credentials(role: 'owner' | 'viewer') {
         'export the seeded development password before running it.',
     );
   }
-  return { email: role === 'owner' ? (process.env.E2E_OWNER ?? 'admin') : (process.env.E2E_VIEWER ?? 'viewer'), password };
+  return {
+    email:
+      role === 'owner' ? (process.env.E2E_OWNER ?? 'admin') : (process.env.E2E_VIEWER ?? 'viewer'),
+    password,
+  };
 }
 
-interface Session { accessToken: string; refreshToken: string }
+interface Session {
+  accessToken: string;
+  refreshToken: string;
+}
 
 /**
  * One sign-in per role for the whole run.
@@ -27,7 +34,10 @@ interface Session { accessToken: string; refreshToken: string }
  */
 const sessions = new Map<string, Promise<Session>>();
 
-export function apiLogin(request: APIRequestContext, role: 'owner' | 'viewer' = 'owner'): Promise<Session> {
+export function apiLogin(
+  request: APIRequestContext,
+  role: 'owner' | 'viewer' = 'owner',
+): Promise<Session> {
   const cached = sessions.get(role);
   if (cached) return cached;
 
@@ -47,7 +57,10 @@ export function apiLogin(request: APIRequestContext, role: 'owner' | 'viewer' = 
  * again, and `/auth/login` allows ten a minute — the suite would fail on 429
  * somewhere unrelated to whatever broke.
  */
-export async function apiLoginDisposable(request: APIRequestContext, role: 'owner' | 'viewer' = 'owner'): Promise<Session> {
+export async function apiLoginDisposable(
+  request: APIRequestContext,
+  role: 'owner' | 'viewer' = 'owner',
+): Promise<Session> {
   const res = await request.post(`${API}/auth/login`, { data: credentials(role) });
   expect(res.status(), signInFailure(res.status())).toBe(200);
   return (await res.json()) as Session;
@@ -63,7 +76,7 @@ export async function apiLoginDisposable(request: APIRequestContext, role: 'owne
 function signInFailure(status: number): string {
   return status === 429
     ? 'sign-in was rate limited. The suite signs in more than ten times a minute; ' +
-      'start the API for testing with RATE_LIMIT_AUTH_PER_MINUTE=1000.'
+        'start the API for testing with RATE_LIMIT_AUTH_PER_MINUTE=1000.'
     : 'sign-in should succeed';
 }
 
@@ -77,7 +90,10 @@ function signInFailure(status: number): string {
 export async function signInThroughStorage(page: Page, role: 'owner' | 'viewer' = 'owner') {
   const tokens = await apiLogin(page.request, role);
   await page.goto('/login');
-  await page.evaluate((session) => {
-    window.localStorage.setItem('chequeflow.session', JSON.stringify(session));
-  }, { ...tokens, expiresIn: 900, tokenType: 'Bearer' });
+  await page.evaluate(
+    (session) => {
+      window.localStorage.setItem('chequeflow.session', JSON.stringify(session));
+    },
+    { ...tokens, expiresIn: 900, tokenType: 'Bearer' },
+  );
 }

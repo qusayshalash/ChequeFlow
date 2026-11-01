@@ -32,14 +32,20 @@ test.describe('the edit dialog', () => {
   });
 
   test('Escape closes it', async ({ page }) => {
-    await page.getByRole('button', { name: /^تعديل$/ }).first().click();
+    await page
+      .getByRole('button', { name: /^تعديل$/ })
+      .first()
+      .click();
     await expect(page.getByRole('dialog')).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toBeHidden();
   });
 
   test('a click on the backdrop closes it', async ({ page }) => {
-    await page.getByRole('button', { name: /^تعديل$/ }).first().click();
+    await page
+      .getByRole('button', { name: /^تعديل$/ })
+      .first()
+      .click();
     await expect(page.getByRole('dialog')).toBeVisible();
     // Somewhere the panel is not. The layout is right-to-left, so `end-0`
     // puts the panel on the *left* — the free backdrop is on the right.
@@ -50,7 +56,10 @@ test.describe('the edit dialog', () => {
   });
 
   test('focus moves into the panel and Tab stays inside it', async ({ page }) => {
-    await page.getByRole('button', { name: /^تعديل$/ }).first().click();
+    await page
+      .getByRole('button', { name: /^تعديل$/ })
+      .first()
+      .click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
 
@@ -81,7 +90,10 @@ test.describe('the edit dialog', () => {
 
   test('the page behind does not scroll while it is open', async ({ page }) => {
     const before = await page.evaluate(() => getComputedStyle(document.body).overflow);
-    await page.getByRole('button', { name: /^تعديل$/ }).first().click();
+    await page
+      .getByRole('button', { name: /^تعديل$/ })
+      .first()
+      .click();
     await expect(page.getByRole('dialog')).toBeVisible();
     expect(await page.evaluate(() => document.body.style.overflow)).toBe('hidden');
 

@@ -48,7 +48,7 @@ const REAL_CHEQUE = [
 describe('a photographed Arab Bank cheque', () => {
   const fields = parseChequeText({ text: REAL_CHEQUE, engineConfidence: 1 });
 
-  it('reads the amount from the figure box, not the holder\'s ID number', () => {
+  it("reads the amount from the figure box, not the holder's ID number", () => {
     // `Id. 850504325` is the largest number on the cheque. "Largest wins" is a
     // rule about digits, not about money.
     expect(fields.numericAmount.value).toBe('3500');
@@ -153,7 +153,7 @@ describe('a Bank of Palestine cheque, photographed in the app', () => {
     expect(fields.currency.value).toBe('USD');
   });
 
-  it('reads the account holder in Arabic, not the bank\'s transliteration', () => {
+  it("reads the account holder in Arabic, not the bank's transliteration", () => {
     // The bank prints both, on consecutive lines. The ledger is Arabic-first,
     // and `عباس اسعد عباس دويك` matches a contact where `ABAS ASAD ABAS DWEIK`
     // does not.

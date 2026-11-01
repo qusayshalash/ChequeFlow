@@ -139,7 +139,9 @@ describe('confirming a reviewed cheque', () => {
     ]);
 
     const caught = await service.review(user, 'cheque-1', input).catch((error: unknown) => error);
-    const details = (caught as AppError).details as { duplicates?: Array<{ chequeNumber: string }> };
+    const details = (caught as AppError).details as {
+      duplicates?: Array<{ chequeNumber: string }>;
+    };
     // A warning panel with nothing in it asks the reader to decide about a
     // cheque it will not name.
     expect(details.duplicates?.[0]?.chequeNumber).toBe('20000013');
@@ -166,11 +168,7 @@ describe('confirming a reviewed cheque', () => {
 
   it('falls back to the stored values for whatever the reviewer left alone', async () => {
     const { service, asked } = build([]);
-    await service.review(
-      user,
-      'cheque-1',
-      { ...input, confirmed: { chequeNumber: '20000013' } },
-    );
+    await service.review(user, 'cheque-1', { ...input, confirmed: { chequeNumber: '20000013' } });
 
     expect(asked[0]).toMatchObject({ amount: '1.00', dueDate: '2026-09-09' });
   });

@@ -16,7 +16,9 @@ import { AppError } from '../../common/errors/app-error';
  */
 describe('an OCR provider failure', () => {
   const failure = new AppError(ApiErrorCode.SERVICE_UNAVAILABLE, 'OCR provider failed', {
-    cause: new Error('7 PERMISSION_DENIED: This API method requires billing to be enabled on project #178524901458'),
+    cause: new Error(
+      '7 PERMISSION_DENIED: This API method requires billing to be enabled on project #178524901458',
+    ),
   });
 
   it('answers 503, not 500', () => {

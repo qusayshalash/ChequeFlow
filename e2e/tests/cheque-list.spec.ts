@@ -16,9 +16,7 @@ test.describe('the cheque list', () => {
     await expect(rows).toHaveCount(0, { timeout: 15_000 });
 
     await page.getByRole('searchbox').last().fill('');
-    await expect
-      .poll(async () => rows.count(), { timeout: 15_000 })
-      .toBe(before);
+    await expect.poll(async () => rows.count(), { timeout: 15_000 }).toBe(before);
   });
 
   test('typing a word is one request, not one per keystroke', async ({ page }) => {
@@ -48,7 +46,10 @@ test.describe('the cheque list', () => {
   });
 
   test('sorting by amount actually orders the rows', async ({ page }) => {
-    await page.getByRole('button', { name: /المبلغ/ }).first().click();
+    await page
+      .getByRole('button', { name: /المبلغ/ })
+      .first()
+      .click();
     await page.waitForTimeout(1200);
     const amounts = await page.locator('tbody tr').allInnerTexts();
     const numbers = amounts

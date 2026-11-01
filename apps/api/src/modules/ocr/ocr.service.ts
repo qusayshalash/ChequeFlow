@@ -273,7 +273,7 @@ export class OcrService {
     const key = {
       chequeNumber: confirmed.chequeNumber ?? cheque.chequeNumber,
       amount: confirmed.amount ?? moneyToString(cheque.amount),
-      dueDate: confirmed.dueDate ?? (toIsoDate(cheque.dueDate) ?? ''),
+      dueDate: confirmed.dueDate ?? toIsoDate(cheque.dueDate) ?? '',
       bankId: confirmed.bankId === undefined ? cheque.bankId : confirmed.bankId,
     };
     const duplicates = await this.duplicates.findByBusinessKey({

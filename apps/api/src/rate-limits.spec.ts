@@ -20,9 +20,9 @@ const MODULE = readFileSync(join(__dirname, 'app.module.ts'), 'utf8');
 
 /** The `{ name: 'x', ttl: …, limit: … }` entries, in order. */
 function throttlers(): { name: string; limit: string }[] {
-  return [...MODULE.matchAll(/\{\s*name:\s*'(\w+)',\s*ttl:\s*[\w_]+,\s*limit:\s*([^}]+?)\s*\}/g)].map(
-    (match) => ({ name: match[1]!, limit: match[2]!.trim() }),
-  );
+  return [
+    ...MODULE.matchAll(/\{\s*name:\s*'(\w+)',\s*ttl:\s*[\w_]+,\s*limit:\s*([^}]+?)\s*\}/g),
+  ].map((match) => ({ name: match[1]!, limit: match[2]!.trim() }));
 }
 
 describe('rate limit registration', () => {
@@ -53,10 +53,10 @@ describe('rate limit registration', () => {
  */
 describe('per-route rate limits', () => {
   const controllers = {
-    'RATE_LIMIT_AUTH_PER_MINUTE': 'modules/auth/auth.controller.ts',
-    'RATE_LIMIT_REFRESH_PER_MINUTE': 'modules/auth/auth.controller.ts',
-    'RATE_LIMIT_UPLOAD_PER_MINUTE': 'modules/cheques/cheque.controller.ts',
-    'RATE_LIMIT_OCR_PER_MINUTE': 'modules/cheques/cheque.controller.ts',
+    RATE_LIMIT_AUTH_PER_MINUTE: 'modules/auth/auth.controller.ts',
+    RATE_LIMIT_REFRESH_PER_MINUTE: 'modules/auth/auth.controller.ts',
+    RATE_LIMIT_UPLOAD_PER_MINUTE: 'modules/cheques/cheque.controller.ts',
+    RATE_LIMIT_OCR_PER_MINUTE: 'modules/cheques/cheque.controller.ts',
   };
 
   for (const [variable, file] of Object.entries(controllers)) {

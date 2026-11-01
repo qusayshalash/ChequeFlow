@@ -16,8 +16,7 @@
  * listening on that network; what this decides is whether a page served from
  * the same network may read it.
  */
-const PRIVATE_IPV4 =
-  /^(10\.|127\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/;
+const PRIVATE_IPV4 = /^(10\.|127\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/;
 
 /** True for a host that only exists inside this machine or this network. */
 export function isLocalHostname(hostname: string): boolean {

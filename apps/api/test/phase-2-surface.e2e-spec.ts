@@ -377,7 +377,7 @@ describeWithDb('phase 2 surface (e2e)', () => {
       expect(Number(sar.bounced.total)).toBeGreaterThan(0);
     });
 
-    it('refuses a review payload written in the extraction\'s vocabulary', async () => {
+    it("refuses a review payload written in the extraction's vocabulary", async () => {
       const { id } = await createCheque({ amount: '1.00' });
       const before = await request(app.getHttpServer())
         .get(`${API}/cheques/${id}`)
@@ -416,9 +416,7 @@ describeWithDb('phase 2 surface (e2e)', () => {
         request(app.getHttpServer()).get(`${API}/contacts`).set(auth()).expect(200),
       ]);
 
-      const row = list.body.data.find(
-        (item: { id: string }) => item.id === fixtures.customerId,
-      );
+      const row = list.body.data.find((item: { id: string }) => item.id === fixtures.customerId);
 
       // The list column and the statement headline answer the same question.
       // They are computed by different queries — a raw lateral unpivot there,

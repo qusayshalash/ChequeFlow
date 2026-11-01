@@ -113,7 +113,8 @@ export function looksLikeMicrLine(line: string): boolean {
  * rule that reaches for the biggest figure finds it first. On the cheque that
  * exposed this, `Id. 850504325` was read as the amount of a 3,500 cheque.
  */
-const IDENTITY_LABELS = /\bid\b|\bi\.?d\.?\b|هوية|الهوية|\btel\b|\bphone\b|هاتف|جوال|\bfax\b|\biban\b|\bswift\b/i;
+const IDENTITY_LABELS =
+  /\bid\b|\bi\.?d\.?\b|هوية|الهوية|\btel\b|\bphone\b|هاتف|جوال|\bfax\b|\biban\b|\bswift\b/i;
 
 /** How a cheque actually prints the account holder, having no "Drawer:" label. */
 const ACCOUNT_HOLDER_PREFIX = /^\s*(mr|mrs|ms|messrs)\.?\s+|^\s*(السيد|السيدة|السادة)\s*\/?\s*/i;
@@ -178,9 +179,7 @@ function found<T>(value: T, confidence: number, rawText?: string): ExtractedFiel
  * cheque for a text engine: a fixed font, digits only, and no handwriting.
  */
 export function findMicrLine(lines: readonly string[]): string | null {
-  const candidates = lines
-    .map((line) => normalizeDigits(line).trim())
-    .filter(looksLikeMicrLine);
+  const candidates = lines.map((line) => normalizeDigits(line).trim()).filter(looksLikeMicrLine);
 
   if (candidates.length === 0) return null;
   // The longest run of digits is the most likely to be the real MICR line.
@@ -515,7 +514,8 @@ function extractDrawerName(lines: readonly string[]): ExtractedField<string> {
     candidate.length >= 4 && (candidate.match(/\d/g) ?? []).length <= candidate.length / 4;
 
   const titled = lines.find(
-    (line) => ACCOUNT_HOLDER_PREFIX.test(line) && nameLike(line.replace(ACCOUNT_HOLDER_PREFIX, '').trim()),
+    (line) =>
+      ACCOUNT_HOLDER_PREFIX.test(line) && nameLike(line.replace(ACCOUNT_HOLDER_PREFIX, '').trim()),
   );
   if (titled) {
     const name = titled.replace(ACCOUNT_HOLDER_PREFIX, '').trim();

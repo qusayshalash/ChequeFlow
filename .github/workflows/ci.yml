@@ -107,44 +107,55 @@ jobs:
       - name: Build workspace packages
         run: pnpm --filter "./packages/*" build
 
-      # MinIO cannot be a `services:` container: it needs the `server /data`
-      # command, which service containers cannot express. Without object
-      # storage the image-upload test fails and takes the rest of the cheque
-      # lifecycle suite down with it.
+      # Object storage for the image-upload tests; without it the upload test
+      # fails and takes the rest of the cheque lifecycle suite down with it.
+      #
+      # This was MinIO, pinned to a release, and it broke with no change on
+      # this side: the images were withdrawn from Docker Hub and the copies on
+      # quay.io now require an account. CI went red on every push for weeks
+      # before anyone looked. RustFS speaks the same S3 API and is published,
+      # and unlike a mock it validates request signatures — so the API's own
+      # signing, presigned image URLs included, is actually exercised here.
+      #
+      # Started with `docker run` rather than as a `services:` container so
+      # that a failure to start is a step that fails, with its logs, rather
+      # than a job that never begins.
       - name: Start object storage
         run: |
-          docker run -d --name minio -p 9000:9000 \
-            -e MINIO_ROOT_USER="$S3_ACCESS_KEY_ID" \
-            -e MINIO_ROOT_PASSWORD="$S3_SECRET_ACCESS_KEY" \
-            minio/minio:RELEASE.2025-07-23T15-54-02Z server /data
+          docker run -d --name storage -p 9000:9000 \
+            -e RUSTFS_ACCESS_KEY="$S3_ACCESS_KEY_ID" \
+            -e RUSTFS_SECRET_KEY="$S3_SECRET_ACCESS_KEY" \
+            -e RUSTFS_ADDRESS=0.0.0.0:9000 \
+            -e RUSTFS_VOLUMES=/data \
+            rustfs/rustfs:1.0.4
 
           for attempt in $(seq 1 30); do
-            if curl -sf http://127.0.0.1:9000/minio/health/live >/dev/null; then
-              echo "MinIO ready after ${attempt} attempt(s)"
+            if curl -sf http://127.0.0.1:9000/health >/dev/null; then
+              echo "Object storage ready after ${attempt} attempt(s)"
               break
             fi
             if [ "$attempt" -eq 30 ]; then
-              echo "MinIO did not become ready" >&2
-              docker logs minio >&2
+              echo "Object storage did not become ready" >&2
+              docker logs storage >&2
               exit 1
             fi
             sleep 2
           done
 
-          # The mc image's entrypoint is `mc` itself, so a shell has to be
-          # requested explicitly to run more than one command.
-          docker run --rm --network host --entrypoint /bin/sh \
-            minio/mc:RELEASE.2025-07-21T05-28-08Z -c "
-              mc alias set ci http://127.0.0.1:9000 '$S3_ACCESS_KEY_ID' '$S3_SECRET_ACCESS_KEY' &&
-              mc mb --ignore-existing ci/$S3_BUCKET &&
-              mc anonymous set none ci/$S3_BUCKET"
+          # Created here rather than left to the API's startup, so a storage
+          # problem fails this step by name instead of surfacing as a test
+          # failure. New buckets are private under the S3 API, which is what
+          # the old `mc anonymous set none` was asserting.
+          AWS_ACCESS_KEY_ID="$S3_ACCESS_KEY_ID" AWS_SECRET_ACCESS_KEY="$S3_SECRET_ACCESS_KEY" \
+            aws --endpoint-url http://127.0.0.1:9000 --region us-east-1 \
+            s3api create-bucket --bucket "$S3_BUCKET"
 
       - name: Run end-to-end tests
         run: pnpm --filter @cheque-flow/api test:e2e
 
       - name: Object storage logs
         if: failure()
-        run: docker logs minio
+        run: docker logs storage
 
   mobile-bundle:
     name: mobile bundle (Metro)

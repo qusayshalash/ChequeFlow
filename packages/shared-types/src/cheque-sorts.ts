@@ -48,11 +48,6 @@ export const DEFAULT_CHEQUE_SORT: ChequeSortOption = CHEQUE_SORTS[0]!;
  * nearest option instead of none would be telling the reader something untrue
  * about what they are looking at.
  */
-export function chequeSortOption(
-  sortBy: string,
-  sortOrder: string,
-): ChequeSortOption | undefined {
-  return CHEQUE_SORTS.find(
-    (option) => option.sortBy === sortBy && option.sortOrder === sortOrder,
-  );
+export function chequeSortOption(sortBy: string, sortOrder: string): ChequeSortOption | undefined {
+  return CHEQUE_SORTS.find((option) => option.sortBy === sortBy && option.sortOrder === sortOrder);
 }
