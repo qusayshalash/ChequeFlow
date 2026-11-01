@@ -276,16 +276,34 @@ export class OcrService {
       dueDate: confirmed.dueDate ?? toIsoDate(cheque.dueDate) ?? '',
       bankId: confirmed.bankId === undefined ? cheque.bankId : confirmed.bankId,
     };
-    const duplicates = await this.duplicates.findByBusinessKey({
-      organizationId: user.organizationId,
-      bankId: key.bankId,
-      chequeNumber: key.chequeNumber,
-      amount: key.amount,
-      dueDate: key.dueDate,
-      // Its own row is not a match for itself.
-      excludeChequeId: chequeId,
-    });
-    DuplicateDetectorService.assertNoDuplicates(duplicates, options.allowDuplicate === true);
+
+    // But only when this review is what settles the key. A capture arrives
+    // under a placeholder number that matched nothing when it was created, so
+    // the number the reviewer confirms has never been compared with anything;
+    // the same is true of any field the reviewer corrects. A cheque entered by
+    // hand and confirmed unchanged is different: its key was checked when it
+    // was created, and if it matched another cheque a person chose to keep
+    // both then. Asking again here refused the reviewer over a pair already
+    // confirmed as two real cheques. Nothing noticed for seven weeks because
+    // CI could not start the integration suite that says so.
+    const settlesKey =
+      key.chequeNumber !== cheque.chequeNumber ||
+      key.amount !== moneyToString(cheque.amount) ||
+      key.dueDate !== (toIsoDate(cheque.dueDate) ?? '') ||
+      key.bankId !== cheque.bankId;
+
+    if (settlesKey) {
+      const duplicates = await this.duplicates.findByBusinessKey({
+        organizationId: user.organizationId,
+        bankId: key.bankId,
+        chequeNumber: key.chequeNumber,
+        amount: key.amount,
+        dueDate: key.dueDate,
+        // Its own row is not a match for itself.
+        excludeChequeId: chequeId,
+      });
+      DuplicateDetectorService.assertNoDuplicates(duplicates, options.allowDuplicate === true);
+    }
 
     // One transaction for both halves.
     //

@@ -42,7 +42,7 @@ describe('confirming a reviewed cheque', () => {
     version: 1,
   } as unknown as ReviewChequeInput;
 
-  function build(matches: unknown[]) {
+  function build(matches: unknown[], record: typeof stored = stored) {
     const asked: unknown[] = [];
     const detector = {
       findByBusinessKey: (key: unknown) => {
@@ -55,15 +55,15 @@ describe('confirming a reviewed cheque', () => {
     // status change was made to join it.
     const tx = {
       cheque: {
-        update: () => Promise.resolve(stored),
-        findUniqueOrThrow: () => Promise.resolve({ ...stored, reviewed: true }),
+        update: () => Promise.resolve(record),
+        findUniqueOrThrow: () => Promise.resolve({ ...record, reviewed: true }),
       },
       ocrExtraction: { updateMany: () => Promise.resolve({ count: 0 }) },
     };
 
     const prisma = {
       db: {
-        cheque: { findFirst: () => Promise.resolve(stored) },
+        cheque: { findFirst: () => Promise.resolve(record) },
         $transaction: async (run: (client: unknown) => Promise<unknown>) => run(tx),
       },
     };
@@ -171,5 +171,45 @@ describe('confirming a reviewed cheque', () => {
     await service.review(user, 'cheque-1', { ...input, confirmed: { chequeNumber: '20000013' } });
 
     expect(asked[0]).toMatchObject({ amount: '1.00', dueDate: '2026-09-09' });
+  });
+
+  it('does not ask again about a cheque whose key it has already checked', async () => {
+    // A cheque entered by hand had its key checked when it was created, and if
+    // it matched another, a person chose to keep both then. Confirming it
+    // unchanged used to run the check a second time and refuse the reviewer
+    // over that same, already-answered pair. The integration suite says so —
+    // it creates a cheque, allows a deliberate duplicate of it, then reviews
+    // the first — and nobody heard it, because CI could not start the suite.
+    const entered = {
+      ...stored,
+      chequeNumber: 'E2E-0001',
+      amount: toMoney('1500.50'),
+      dueDate: new Date('2026-12-31T00:00:00.000Z'),
+    };
+    const { service, asked } = build(
+      [{ chequeId: 'its-allowed-twin', reason: 'BUSINESS_KEY' }],
+      entered,
+    );
+
+    await expect(
+      service.review(user, 'cheque-1', {
+        ...input,
+        confirmed: { chequeNumber: 'E2E-0001', amount: '1500.50', dueDate: '2026-12-31' },
+      }),
+    ).resolves.toBeDefined();
+    expect(asked).toEqual([]);
+  });
+
+  it('still checks when the reviewer corrects any part of the key', async () => {
+    // A corrected amount is a key nobody has compared with anything yet.
+    const entered = { ...stored, chequeNumber: 'E2E-0001', amount: toMoney('1500.50') };
+    const { service } = build([{ chequeId: 'cheque-earlier', reason: 'BUSINESS_KEY' }], entered);
+
+    await expect(
+      service.review(user, 'cheque-1', {
+        ...input,
+        confirmed: { chequeNumber: 'E2E-0001', amount: '1550.50' },
+      }),
+    ).rejects.toMatchObject({ code: ApiErrorCode.DUPLICATE_CHEQUE });
   });
 });
