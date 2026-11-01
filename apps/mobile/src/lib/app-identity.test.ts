@@ -23,6 +23,7 @@ const config = JSON.parse(readFileSync(join(ROOT, 'app.json'), 'utf8')).expo as 
   android?: {
     versionCode?: number;
     permissions?: string[];
+    blockedPermissions?: string[];
     adaptiveIcon?: { foregroundImage?: string };
   };
   plugins?: Array<string | [string, Record<string, unknown>]>;
@@ -97,21 +98,55 @@ describe('app identity', () => {
  */
 describe('permissions', () => {
   const requested = config.android?.permissions ?? [];
+  const blocked = config.android?.blockedPermissions ?? [];
 
-  it('never asks for the microphone', () => {
-    const audio = requested.filter((name) => /RECORD_AUDIO|MICROPHONE/i.test(name));
-    expect(audio).toEqual([]);
+  /**
+   * What the app must never request, whichever library would like to.
+   *
+   * Listing permissions in `app.json` is not what ships: plugins add their own
+   * after it. The camera plugin added the microphone, and the file-system
+   * plugin adds broad storage access unconditionally — for an app that only
+   * ever writes to its own cache. The generated manifest asked for all three
+   * while `app.json` listed none of them, and the previous version of this
+   * test, which read `app.json`, passed.
+   *
+   * `blockedPermissions` strips them from the final manifest no matter who
+   * added them, which is why it is checked here rather than a plugin option.
+   */
+  const NEVER = [
+    'android.permission.RECORD_AUDIO',
+    'android.permission.READ_EXTERNAL_STORAGE',
+    'android.permission.WRITE_EXTERNAL_STORAGE',
+  ];
+
+  it('blocks what no library may add to the manifest', () => {
+    for (const permission of NEVER) {
+      expect(blocked, `${permission} is not blocked`).toContain(permission);
+    }
+  });
+
+  it('tells the camera plugin not to ask for the microphone, by the name it reads', () => {
+    // The option was written as `recordAudioAndroidPermission`, which the
+    // plugin never reads; the microphone stayed in every Android build. So
+    // the name is taken from the installed plugin, not from memory.
+    const plugin = readFileSync(
+      join(ROOT, '..', '..', 'node_modules', 'expo-camera', 'plugin', 'build', 'withCamera.js'),
+      'utf8',
+    );
+    const option = plugin.match(/(recordAudio\w*)\s*=\s*true/)?.[1];
+    expect(option, 'the camera plugin no longer has a record-audio option').toBeDefined();
 
     const camera = config.plugins?.find(
-      (plugin): plugin is [string, Record<string, unknown>] =>
-        Array.isArray(plugin) && plugin[0] === 'expo-camera',
+      (entry): entry is [string, Record<string, unknown>] =>
+        Array.isArray(entry) && entry[0] === 'expo-camera',
     );
-    // The plugin puts it back on the next prebuild unless it is told not to.
+    expect(camera?.[1][option as string]).toBe(false);
+    // iOS: `false` deletes the usage description, so the prompt never exists.
     expect(camera?.[1].microphonePermission).toBe(false);
-    expect(camera?.[1].recordAudioAndroidPermission).toBe(false);
   });
 
   it('asks only for what the app actually does', () => {
     expect([...requested].sort()).toEqual(['CAMERA', 'USE_BIOMETRIC', 'USE_FINGERPRINT']);
+    expect(requested.filter((name) => /RECORD_AUDIO|MICROPHONE/i.test(name))).toEqual([]);
   });
 });
