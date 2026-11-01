@@ -4,9 +4,11 @@ import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
 
 import {
+  changePasswordSchema,
   loginSchema,
   logoutSchema,
   refreshSchema,
+  type ChangePasswordInput,
   type LoginInput,
   type LogoutInput,
   type RefreshInput,
@@ -92,6 +94,26 @@ export class AuthController {
       },
       metaFrom(request),
     );
+  }
+
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  // The same limit as sign-in: this endpoint checks a password too, and a
+  // stolen session must not become a way to guess the account's password.
+  @Throttle({ auth: { limit: LOGIN_PER_MINUTE, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Change your own password; ends every other session' })
+  @ApiResponse({ status: 200, type: AuthTokensDto })
+  @ApiResponse({
+    status: 400,
+    description: 'Current password is incorrect, or the new one is weak',
+  })
+  changePassword(
+    @Body(zodBody(changePasswordSchema)) body: ChangePasswordInput,
+    @CurrentUser() user: RequestUser,
+    @Req() request: Request,
+  ) {
+    return this.auth.changePassword(user, body, metaFrom(request));
   }
 
   @Get('me')

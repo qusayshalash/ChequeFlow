@@ -28,12 +28,19 @@ export function validateForm<T>(
 }
 
 /**
- * Turns an API field-error payload into the same shape, so a server-side
+ * Turns an API error's field errors into the same shape, so a server-side
  * rejection lands on the field that caused it instead of in a generic banner.
+ *
+ * Takes the error itself. Every screen used to pass `error.details`, and the
+ * client keeps field errors in `error.fieldErrors`, beside the details rather
+ * than inside them — so this returned nothing for every server rejection the
+ * app has ever received, and each one fell through to "invalid data" with no
+ * field marked. Nothing failed loudly; the forms simply never said which field
+ * was wrong.
  */
-export function fieldErrorsFrom(details: unknown): FieldErrors {
-  if (typeof details !== 'object' || details === null) return {};
-  const record = details as Record<string, unknown>;
+export function fieldErrorsFrom(error: unknown): FieldErrors {
+  if (typeof error !== 'object' || error === null) return {};
+  const record = error as Record<string, unknown>;
   const list = record.fieldErrors;
   if (!Array.isArray(list)) return {};
 

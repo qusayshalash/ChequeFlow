@@ -73,7 +73,7 @@ export default function UsersScreen() {
     onError: (error: unknown) => {
       if (error instanceof Error && error.message === 'validation') return;
       if (error instanceof ApiClientError) {
-        const serverErrors = fieldErrorsFrom(error.details);
+        const serverErrors = fieldErrorsFrom(error);
         if (Object.keys(serverErrors).length > 0) {
           setErrors(serverErrors);
           return;

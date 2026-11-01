@@ -16,6 +16,15 @@
     "REVIEW": "Approve review",
     "SUBMIT_FOR_REVIEW": "Submit for review"
   },
+  "account": {
+    "confirmPassword": "Confirm the new password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "otherSessionsNote": "Saving signs you out of every other device and keeps you signed in here.",
+    "passwordChanged": "Password changed, and your sessions on other devices were ended.",
+    "passwordTitle": "Change password",
+    "passwordsDiffer": "The two passwords do not match"
+  },
   "audit": {
     "action": "Action",
     "actionHint": "e.g. CHEQUE_DEPOSITED",
@@ -42,7 +51,7 @@
     "loginSubtitle": "Enter your credentials to access ChequeFlow",
     "loginTitle": "Sign in",
     "password": "Password",
-    "passwordHint": "At least 8 characters, with an upper case letter, a lower case letter and a digit",
+    "passwordHint": "At least 10 characters, with an upper case letter, a lower case letter and a digit",
     "productSubtitle": "A secure financial operations platform for the complete cheque lifecycle",
     "productTitle": "Clear control of every cheque, from receipt to collection",
     "sessionExpired": "Your session expired, please sign in again",
@@ -773,6 +782,8 @@
     "TRANSFERRED": "Handed over"
   },
   "user": {
+    "passwordReset": "Password set, and every session for this user was ended.",
+    "resetPasswordHint": "The user is signed out of every device and needs the new password to sign in.",
     "createSuccess": "User added",
     "editTitle": "Edit user",
     "empty": "No users",
@@ -831,6 +842,8 @@
       "positive": "Amount must be greater than zero"
     },
     "password": {
+      "currentIncorrect": "The current password is incorrect",
+      "sameAsCurrent": "Choose a password different from the current one",
       "needsDigit": "Must contain a digit",
       "needsLowercase": "Must contain a lower case letter",
       "needsUppercase": "Must contain an upper case letter",
@@ -844,6 +857,7 @@
     },
     "required": "This field is required",
     "user": {
+      "useChangePassword": "To change your own password, use the change-password page",
       "cannotDisableSelf": "You cannot disable your own account",
       "emailTaken": "That sign-in name is already taken",
       "unknownRole": "Unknown role"

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import argon2 from 'argon2';
 
 import { ApiErrorCode, type AuthTokens } from '@cheque-flow/shared-types';
-import type { LoginInput } from '@cheque-flow/validation';
+import type { ChangePasswordInput, LoginInput } from '@cheque-flow/validation';
 
 import { AppError } from '../../common/errors/app-error';
 import type { RequestUser } from '../../common/types/request-user';
@@ -144,6 +144,86 @@ export class AuthService {
       after: { allDevices: options.allDevices },
       ipAddress: meta.ipAddress,
       deviceInfo: meta.userAgent,
+    });
+  }
+
+  /**
+   * Changing your own password.
+   *
+   * There was no way to do this at all. An administrator could reset someone
+   * else's password through the API, though no screen offered it; nobody could
+   * change their own. So an accountant kept whatever password they were handed
+   * for as long as they had the job, and the owner's account stayed on the one
+   * the seed script set — which that script itself says must never be deployed.
+   *
+   * Every other session is ended. A password changes because it may be known
+   * to someone else, and a session that person already holds would otherwise
+   * outlive the change. This one is ended too and replaced, so the person who
+   * just proved they know both passwords stays signed in where they are.
+   */
+  async changePassword(
+    user: RequestUser,
+    input: ChangePasswordInput,
+    meta: RequestMeta,
+  ): Promise<AuthTokens> {
+    const stored = await this.prisma.db.user.findUnique({
+      where: { id: user.id },
+      select: { passwordHash: true },
+    });
+    if (!stored) throw new AppError(ApiErrorCode.UNAUTHENTICATED, 'User no longer exists');
+
+    const matches = await argon2
+      .verify(stored.passwordHash, input.currentPassword)
+      .catch(() => false);
+
+    if (!matches) {
+      // Recorded, because repeated failures here mean someone is guessing at
+      // an account they already have a session for.
+      await this.audit.record({
+        organizationId: user.organizationId,
+        userId: user.id,
+        action: AuditAction.PASSWORD_CHANGE_FAILED,
+        entityType: 'user',
+        entityId: user.id,
+        ipAddress: meta.ipAddress,
+        deviceInfo: meta.userAgent,
+      });
+      // A field error rather than INVALID_CREDENTIALS: the screen puts it
+      // under the field that is wrong instead of signing the person out.
+      throw new AppError(ApiErrorCode.VALIDATION_ERROR, 'Current password is incorrect', {
+        fieldErrors: [{ path: 'currentPassword', message: 'validation.password.currentIncorrect' }],
+      });
+    }
+
+    const passwordHash = await AuthService.hashPassword(input.newPassword);
+    await this.prisma.db.$transaction([
+      this.prisma.db.user.update({ where: { id: user.id }, data: { passwordHash } }),
+      this.prisma.db.refreshToken.updateMany({
+        where: { userId: user.id, revokedAt: null },
+        data: { revokedAt: new Date() },
+      }),
+    ]);
+
+    await this.audit.record({
+      organizationId: user.organizationId,
+      userId: user.id,
+      action: AuditAction.PASSWORD_CHANGED,
+      entityType: 'user',
+      entityId: user.id,
+      // Never the password, old or new — only that it happened.
+      after: { otherSessionsEnded: true },
+      ipAddress: meta.ipAddress,
+      deviceInfo: meta.userAgent,
+    });
+
+    return this.tokens.issue({
+      userId: user.id,
+      organizationId: user.organizationId,
+      branchId: user.branchId,
+      email: user.email,
+      name: user.name,
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
     });
   }
 

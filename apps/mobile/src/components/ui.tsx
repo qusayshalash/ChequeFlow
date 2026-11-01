@@ -570,6 +570,7 @@ export function Field({
   inputRef,
   returnKeyType,
   onSubmitEditing,
+  secret,
 }: {
   label: string;
   value: string;
@@ -589,9 +590,23 @@ export function Field({
   inputRef?: RefObject<TextInput | null>;
   returnKeyType?: 'next' | 'done';
   onSubmitEditing?: () => void;
+  /**
+   * A password, and which kind. The distinction is not cosmetic: it is what
+   * tells the phone's password manager whether to offer the saved password or
+   * to suggest and save a new one.
+   */
+  secret?: 'current' | 'new';
 }) {
   const c = useTheme();
   const styles = useStyles(makeStyles);
+  const secretProps = secret
+    ? ({
+        secureTextEntry: true,
+        autoCorrect: false,
+        textContentType: secret === 'current' ? 'password' : 'newPassword',
+        autoComplete: secret === 'current' ? 'current-password' : 'new-password',
+      } as const)
+    : {};
   return (
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>
@@ -611,8 +626,9 @@ export function Field({
         placeholderTextColor={c.text.faint}
         keyboardType={keyboardType}
         multiline={multiline}
-        autoCapitalize={autoCapitalize}
+        autoCapitalize={secret ? 'none' : autoCapitalize}
         accessibilityLabel={label}
+        {...secretProps}
         ref={inputRef}
         returnKeyType={returnKeyType}
         onSubmitEditing={onSubmitEditing}

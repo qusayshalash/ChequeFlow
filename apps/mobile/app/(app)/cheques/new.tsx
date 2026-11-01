@@ -132,7 +132,7 @@ export default function NewChequeScreen() {
           setDuplicates(details?.duplicates ?? []);
           return;
         }
-        const serverErrors = fieldErrorsFrom(error.details);
+        const serverErrors = fieldErrorsFrom(error);
         if (Object.keys(serverErrors).length > 0) {
           setErrors(serverErrors);
           return;

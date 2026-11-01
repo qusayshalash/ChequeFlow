@@ -14,6 +14,7 @@ export default function MoreLayout() {
       <Stack.Screen name="reports" options={{ title: t('reports.title') }} />
       <Stack.Screen name="users" options={{ title: t('user.title') }} />
       <Stack.Screen name="settings" options={{ title: t('nav.settings') }} />
+      <Stack.Screen name="password" options={{ title: t('account.passwordTitle') }} />
     </Stack>
   );
 }

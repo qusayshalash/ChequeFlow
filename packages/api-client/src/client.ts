@@ -26,6 +26,7 @@ import type {
   CreateChequeInput,
   CreateContactInput,
   AuditLogQuery,
+  ChangePasswordInput,
   CreateReminderInput,
   RegisterDeviceInput,
   CreateUserInput,
@@ -202,6 +203,22 @@ export class ChequeFlowApiClient {
       method: 'POST',
       body: { email, password },
       anonymous: true,
+    });
+    await this.tokenStore.setTokens(tokens);
+    return tokens;
+  }
+
+  /**
+   * Changes the signed-in user's password.
+   *
+   * The server ends every session the account has, this one included, and
+   * returns a fresh pair for this device — so the new tokens are stored here,
+   * or the next request would be made with a session that no longer exists.
+   */
+  async changePassword(input: ChangePasswordInput): Promise<AuthTokens> {
+    const tokens = await this.request<AuthTokens>('/auth/change-password', {
+      method: 'POST',
+      body: input,
     });
     await this.tokenStore.setTokens(tokens);
     return tokens;

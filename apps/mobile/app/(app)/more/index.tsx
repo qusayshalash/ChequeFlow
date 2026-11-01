@@ -7,6 +7,7 @@ import { Permission } from '@cheque-flow/shared-types';
 import {
   IconBell,
   IconChevronEnd,
+  IconLock,
   IconReports,
   IconSettings,
   IconUser,
@@ -56,6 +57,13 @@ export default function MoreScreen() {
       allowed: can(Permission.USER_MANAGE),
     },
     { Icon: IconSettings, label: t('nav.settings'), href: '/(app)/more/settings', allowed: true },
+    // Every user: changing your own password is not a management permission.
+    {
+      Icon: IconLock,
+      label: t('account.passwordTitle'),
+      href: '/(app)/more/password',
+      allowed: true,
+    },
   ].filter((entry) => entry.allowed);
 
   return (

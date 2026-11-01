@@ -159,6 +159,21 @@ export class UsersService {
       });
     }
 
+    // Your own password changes through the self-service endpoint, which asks
+    // for the current one. Allowing it here as well would let anyone holding
+    // an administrator's session — a laptop left open — take the account over
+    // without ever knowing its password, which is precisely what asking for
+    // the current password exists to prevent.
+    if (id === actor.id && input.newPassword !== undefined) {
+      throw new AppError(
+        ApiErrorCode.VALIDATION_ERROR,
+        'Use change-password for your own account',
+        {
+          fieldErrors: [{ path: 'newPassword', message: 'validation.user.useChangePassword' }],
+        },
+      );
+    }
+
     const roles = input.roles ? await this.resolveRoles(actor.organizationId, input.roles) : null;
     const passwordHash = input.newPassword
       ? await AuthService.hashPassword(input.newPassword)
@@ -196,7 +211,10 @@ export class UsersService {
       await this.audit.recordWithin(tx, {
         organizationId: actor.organizationId,
         userId: actor.id,
-        action: passwordHash ? AuditAction.USER_STATUS_CHANGED : AuditAction.USER_UPDATED,
+        // Recorded as what it was. It used to be written as a status change,
+        // so a reset read in the audit trail as someone being enabled or
+        // disabled — the one record that has to be exact.
+        action: passwordHash ? AuditAction.USER_PASSWORD_RESET : AuditAction.USER_UPDATED,
         entityType: 'user',
         entityId: id,
         before: {

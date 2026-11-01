@@ -15,6 +15,7 @@ import {
   IconPlus,
   IconSearch,
   IconSettings,
+  IconShield,
 } from '@/components/icons';
 import { useApi, useTranslator } from '@/components/providers';
 
@@ -213,6 +214,17 @@ export function TopBar({ onOpenMenu }: { onOpenMenu: () => void }) {
             >
               <IconSettings width="18" height="18" className="text-ink-muted" />
               {t('nav.settings')}
+            </Link>
+            {/* Every user, whatever their role: Settings is for managers, and
+                changing your own password is not a management task. */}
+            <Link
+              role="menuitem"
+              href="/account/password"
+              onClick={() => setAccountOpen(false)}
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-ink-soft hover:bg-subtle"
+            >
+              <IconShield width="18" height="18" className="text-ink-muted" />
+              {t('account.passwordTitle')}
             </Link>
             {/* Kept apart from the rest by a rule: signing out is not a
                 navigation item, and it should not sit a mis-click away. */}

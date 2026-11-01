@@ -10,6 +10,8 @@ export const AuditAction = {
   LOGIN_SUCCESS: 'auth.login.success',
   LOGIN_FAILED: 'auth.login.failed',
   LOGOUT: 'auth.logout',
+  PASSWORD_CHANGED: 'auth.password.changed',
+  PASSWORD_CHANGE_FAILED: 'auth.password.change_failed',
   TOKEN_REFRESH: 'auth.token.refresh',
   TOKEN_REUSE_DETECTED: 'auth.token.reuse_detected',
   CHEQUE_CREATED: 'cheque.created',
@@ -30,6 +32,7 @@ export const AuditAction = {
   USER_CREATED: 'user.created',
   USER_UPDATED: 'user.updated',
   USER_STATUS_CHANGED: 'user.status.changed',
+  USER_PASSWORD_RESET: 'user.password_reset',
   ROLE_CHANGED: 'user.role.changed',
   SETTINGS_CHANGED: 'settings.changed',
 } as const;

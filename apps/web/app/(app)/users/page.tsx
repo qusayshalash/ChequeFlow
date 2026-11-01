@@ -5,7 +5,7 @@ import { useState } from 'react';
 
 import { ApiClientError } from '@cheque-flow/api-client';
 import { Permission, SystemRole, UserStatus, type UserView } from '@cheque-flow/shared-types';
-import { createUserSchema } from '@cheque-flow/validation';
+import { createUserSchema, passwordSchema } from '@cheque-flow/validation';
 import {
   Badge,
   Button,
@@ -59,6 +59,13 @@ function UsersManager() {
 
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  // Setting a new password for someone else. Kept apart from the create form:
+  // it is a different act, audited differently, and ends every session the
+  // person has.
+  const [resetFor, setResetFor] = useState<UserView | null>(null);
+  const [resetPassword, setResetPassword] = useState('');
+  const [resetConfirm, setResetConfirm] = useState('');
+  const [resetErrors, setResetErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
@@ -105,12 +112,8 @@ function UsersManager() {
     onError: (error: unknown) => {
       if (error instanceof Error && error.message === 'validation') return;
       if (error instanceof ApiClientError) {
-        const details = error.details as
-          { fieldErrors?: Array<{ path: string; message: string }> } | undefined;
-        if (details?.fieldErrors?.length) {
-          setFieldErrors(
-            Object.fromEntries(details.fieldErrors.map((f) => [f.path, t(f.message)])),
-          );
+        if (error.fieldErrors.length > 0) {
+          setFieldErrors(Object.fromEntries(error.fieldErrors.map((f) => [f.path, t(f.message)])));
           return;
         }
         setFormError(t(error.messageKey));
@@ -128,6 +131,40 @@ function UsersManager() {
     onSuccess: invalidate,
     onError: (error: unknown) =>
       setFormError(error instanceof ApiClientError ? t(error.messageKey) : t('errors.saveFailed')),
+  });
+
+  const reset = useMutation({
+    mutationFn: (user: UserView) => {
+      const errors: Record<string, string> = {};
+      const parsed = passwordSchema.safeParse(resetPassword);
+      if (!parsed.success) errors.newPassword = t(parsed.error.issues[0]?.message ?? '');
+      if (resetConfirm !== resetPassword) errors.confirmPassword = t('account.passwordsDiffer');
+      if (Object.keys(errors).length > 0) {
+        setResetErrors(errors);
+        return Promise.reject(new Error('validation'));
+      }
+      setResetErrors({});
+      return api.updateUser(user.id, { newPassword: resetPassword });
+    },
+    onSuccess: () => {
+      setResetFor(null);
+      setResetPassword('');
+      setResetConfirm('');
+      setFormError(null);
+      invalidate();
+    },
+    onError: (error: unknown) => {
+      if (error instanceof Error && error.message === 'validation') return;
+      if (error instanceof ApiClientError) {
+        if (error.fieldErrors.length > 0) {
+          setResetErrors(Object.fromEntries(error.fieldErrors.map((f) => [f.path, t(f.message)])));
+          return;
+        }
+        setResetErrors({ _: t(error.messageKey) });
+        return;
+      }
+      setResetErrors({ _: t('errors.saveFailed') });
+    },
   });
 
   const changeRole = useMutation({
@@ -153,6 +190,73 @@ function UsersManager() {
 
       {formError ? <ErrorState title={formError} /> : null}
       {create.isSuccess ? <SuccessBanner message={t('user.createSuccess')} /> : null}
+      {reset.isSuccess ? <SuccessBanner message={t('user.passwordReset')} /> : null}
+
+      <Drawer
+        open={resetFor !== null}
+        onClose={() => setResetFor(null)}
+        eyebrow={resetFor?.name ?? ''}
+        title={t('user.resetPassword')}
+      >
+        <form
+          className="flex min-h-0 flex-1 flex-col"
+          noValidate
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (resetFor) reset.mutate(resetFor);
+          }}
+        >
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-5">
+            <p className="text-sm leading-6 text-ink-muted">{t('user.resetPasswordHint')}</p>
+            <Field
+              label={t('account.newPassword')}
+              htmlFor="resetPassword"
+              required
+              hint={t('auth.passwordHint')}
+              error={resetErrors.newPassword}
+            >
+              <input
+                id="resetPassword"
+                type="password"
+                dir="ltr"
+                autoComplete="new-password"
+                className={inputClassName}
+                value={resetPassword}
+                onChange={(event) => setResetPassword(event.target.value)}
+              />
+            </Field>
+            <Field
+              label={t('account.confirmPassword')}
+              htmlFor="resetConfirm"
+              required
+              error={resetErrors.confirmPassword}
+            >
+              <input
+                id="resetConfirm"
+                type="password"
+                dir="ltr"
+                autoComplete="new-password"
+                className={inputClassName}
+                value={resetConfirm}
+                onChange={(event) => setResetConfirm(event.target.value)}
+              />
+            </Field>
+            {resetErrors._ ? (
+              <p role="alert" className="text-sm text-danger">
+                {resetErrors._}
+              </p>
+            ) : null}
+          </div>
+          <div className="flex shrink-0 items-center justify-end gap-3 border-t border-line bg-subtle/70 p-4">
+            <Button type="button" variant="secondary" onClick={() => setResetFor(null)}>
+              {t('common.cancel')}
+            </Button>
+            <Button type="submit" loading={reset.isPending}>
+              {t('user.resetPassword')}
+            </Button>
+          </div>
+        </form>
+      </Drawer>
 
       <Drawer
         open={createOpen}
@@ -328,17 +432,35 @@ function UsersManager() {
                 key: 'actions',
                 header: t('common.actions'),
                 cell: (user) => (
-                  <Button
-                    variant="secondary"
-                    // Disabling your own account needs a second administrator
-                    // to undo, so the server refuses it and the button does too.
-                    disabled={user.id === session?.id}
-                    onClick={() => toggleStatus.mutate(user)}
-                  >
-                    {user.status === UserStatus.ACTIVE
-                      ? t('userStatus.DISABLED')
-                      : t('userStatus.ACTIVE')}
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant="secondary"
+                      // Disabling your own account needs a second administrator
+                      // to undo, so the server refuses it and the button does too.
+                      disabled={user.id === session?.id}
+                      onClick={() => toggleStatus.mutate(user)}
+                    >
+                      {user.status === UserStatus.ACTIVE
+                        ? t('userStatus.DISABLED')
+                        : t('userStatus.ACTIVE')}
+                    </Button>
+                    {/* Not on your own row: that goes through the page that
+                        asks for the current password, and the server refuses
+                        a reset of your own account from here. */}
+                    {user.id !== session?.id ? (
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          setResetErrors({});
+                          setResetPassword('');
+                          setResetConfirm('');
+                          setResetFor(user);
+                        }}
+                      >
+                        {t('user.resetPassword')}
+                      </Button>
+                    ) : null}
+                  </div>
                 ),
               },
             ]}

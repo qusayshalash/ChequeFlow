@@ -37,3 +37,22 @@ export const logoutSchema = z.object({
   allDevices: z.boolean().default(false),
 });
 export type LogoutInput = z.infer<typeof logoutSchema>;
+
+/**
+ * Changing your own password.
+ *
+ * The current password is asked for even though the caller is signed in: a
+ * session left open on a shared desk must not be enough to lock its owner out
+ * of their own account. It is not run through `passwordSchema`, for the same
+ * reason login does not — an old password is checked, not re-validated.
+ */
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1).max(128),
+    newPassword: passwordSchema,
+  })
+  .refine((input) => input.newPassword !== input.currentPassword, {
+    path: ['newPassword'],
+    message: 'validation.password.sameAsCurrent',
+  });
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
