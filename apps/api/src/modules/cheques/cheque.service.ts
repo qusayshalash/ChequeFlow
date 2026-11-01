@@ -518,6 +518,7 @@ export class ChequeService {
     chequeId: string,
     input: UpdateChequeInput,
     auditMeta: Partial<AuditContext> = {},
+    options: { allowDuplicate?: boolean } = {},
   ): Promise<ChequeDetailView> {
     const existing = await this.prisma.db.cheque.findFirst({
       where: { id: chequeId, organizationId: user.organizationId, deletedAt: null },
@@ -555,6 +556,40 @@ export class ChequeService {
       contactIds: [input.originalSourceId ?? null],
       bankId: input.bankId ?? null,
     });
+
+    // An edit can turn a cheque into a copy of another one.
+    //
+    // Creating a cheque checks its number, bank, amount and due date against
+    // the rest, and reviewing a photographed one does too. Editing did not:
+    // the same four fields could be changed here to match a cheque already on
+    // file and nothing would say so. Only an edit that actually moves the key
+    // is checked — confirming the values a cheque already has asks nothing
+    // new, and would re-ask about a duplicate a person already chose to keep.
+    const storedDueDate = existing.dueDate.toISOString().slice(0, 10);
+    const key = {
+      chequeNumber: input.chequeNumber ?? existing.chequeNumber,
+      amount: input.amount ?? moneyToString(existing.amount),
+      dueDate: input.dueDate ?? storedDueDate,
+      bankId: input.bankId === undefined ? existing.bankId : input.bankId,
+    };
+    const movesKey =
+      key.chequeNumber !== existing.chequeNumber ||
+      key.amount !== moneyToString(existing.amount) ||
+      key.dueDate !== storedDueDate ||
+      key.bankId !== existing.bankId;
+
+    if (movesKey) {
+      const duplicates = await this.duplicates.findByBusinessKey({
+        organizationId: user.organizationId,
+        bankId: key.bankId,
+        chequeNumber: key.chequeNumber,
+        amount: key.amount,
+        dueDate: key.dueDate,
+        // A cheque is never a duplicate of itself.
+        excludeChequeId: chequeId,
+      });
+      DuplicateDetectorService.assertNoDuplicates(duplicates, options.allowDuplicate === true);
+    }
 
     if (input.replacesChequeId) {
       await this.assertReplaceable(user.organizationId, input.replacesChequeId, chequeId);

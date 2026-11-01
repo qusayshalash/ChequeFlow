@@ -331,8 +331,12 @@ export class ChequeFlowApiClient {
     });
   }
 
-  updateCheque(id: string, input: UpdateChequeInput) {
-    return this.request<ChequeDetailView>(`/cheques/${id}`, { method: 'PATCH', body: input });
+  updateCheque(id: string, input: UpdateChequeInput, allowDuplicate = false) {
+    return this.request<ChequeDetailView>(`/cheques/${id}`, {
+      method: 'PATCH',
+      body: input,
+      query: { allowDuplicate },
+    });
   }
 
   /**

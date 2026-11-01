@@ -3,13 +3,15 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 
 import { ApiClientError } from '@cheque-flow/api-client';
-import type { ChequeDetailView } from '@cheque-flow/shared-types';
+import type { ChequeDetailView, DuplicateChequeMatch } from '@cheque-flow/shared-types';
 import { updateChequeSchema } from '@cheque-flow/validation';
 
+import { DuplicatePrompt } from '@/components/duplicate-prompt';
 import { FormScreen } from '@/components/form-screen';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { Banner, DateField, ErrorView, Field, LoadingView, Section } from '@/components/ui';
 import { fieldErrorsFrom, validateForm, type FieldErrors } from '@/lib/form';
+import * as haptics from '@/lib/haptics';
 
 /**
  * Corrects cheque data.
@@ -45,6 +47,8 @@ export default function EditChequeScreen() {
   const [reason, setReason] = useState('');
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
+  // The cheques this edit would make it a copy of, while the person decides.
+  const [duplicates, setDuplicates] = useState<DuplicateChequeMatch[] | null>(null);
 
   // Seed the form once the cheque arrives, then leave the user's edits alone.
   const cheque = query.data;
@@ -65,7 +69,7 @@ export default function EditChequeScreen() {
   const reasonRequired = amountChanged && cheque?.reviewedAt !== null;
 
   const mutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (allowDuplicate: boolean) => {
       if (!cheque) throw new Error('validation');
 
       const validated = validateForm(updateChequeSchema, {
@@ -89,7 +93,7 @@ export default function EditChequeScreen() {
         throw new Error('validation');
       }
       setErrors({});
-      return api.updateCheque(id, validated.data);
+      return api.updateCheque(id, validated.data, allowDuplicate);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['cheque', id] });
@@ -99,6 +103,14 @@ export default function EditChequeScreen() {
     onError: (error: unknown) => {
       if (error instanceof Error && error.message === 'validation') return;
       if (error instanceof ApiClientError) {
+        // Not a failure: the edit would make this cheque match one already on
+        // file, and the API is asking whether that is really so.
+        if (error.code === 'DUPLICATE_CHEQUE') {
+          haptics.needsAttention();
+          const details = error.details as { duplicates?: DuplicateChequeMatch[] } | undefined;
+          setDuplicates(details?.duplicates ?? []);
+          return;
+        }
         const serverErrors = fieldErrorsFrom(error.details);
         if (Object.keys(serverErrors).length > 0) {
           setErrors(serverErrors);
@@ -130,7 +142,8 @@ export default function EditChequeScreen() {
       submitLabel={t('common.save')}
       onSubmit={() => {
         setFormError(null);
-        mutation.mutate();
+        setDuplicates(null);
+        mutation.mutate(false);
       }}
       submitting={mutation.isPending}
       disabled={reasonRequired && reason.trim().length === 0}
@@ -214,7 +227,7 @@ export default function EditChequeScreen() {
 
       {reasonRequired ? (
         <Section title={t('common.reason')}>
-          <Banner tone="warning" text={t('cheque.duplicateWarning')} />
+          <Banner tone="warning" text={t('cheque.amountAfterReviewHint')} />
           <Field
             label={t('common.reason')}
             required
@@ -224,6 +237,18 @@ export default function EditChequeScreen() {
             error={error('reason')}
           />
         </Section>
+      ) : null}
+
+      {duplicates ? (
+        <DuplicatePrompt
+          matches={duplicates}
+          currency={cheque.currency}
+          onConfirm={() => {
+            setDuplicates(null);
+            mutation.mutate(true);
+          }}
+          onCancel={() => setDuplicates(null)}
+        />
       ) : null}
 
       {formError ? <ErrorView label={formError} /> : null}

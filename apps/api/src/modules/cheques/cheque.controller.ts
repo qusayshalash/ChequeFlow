@@ -287,14 +287,22 @@ export class ChequeController {
   @Patch(':id')
   @RequirePermissions(Permission.CHEQUE_UPDATE)
   @ApiOperation({ summary: 'Update cheque data (never its status)' })
-  @ApiResponse({ status: 409, description: 'VERSION_CONFLICT' })
+  @ApiQuery({
+    name: 'allowDuplicate',
+    required: false,
+    description: 'Save even when the edited cheque matches one already on file',
+  })
+  @ApiResponse({ status: 409, description: 'VERSION_CONFLICT or DUPLICATE_CHEQUE' })
   update(
     @CurrentUser() user: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
     @Body(zodBody(updateChequeSchema)) body: UpdateChequeInput,
+    @Query('allowDuplicate') allowDuplicate: string | undefined,
     @Req() request: Request,
   ) {
-    return this.cheques.update(user, id, body, AuditService.contextFromRequest(request));
+    return this.cheques.update(user, id, body, AuditService.contextFromRequest(request), {
+      allowDuplicate: allowDuplicate === 'true',
+    });
   }
 
   @Post(':id/reminders')

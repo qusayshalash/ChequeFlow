@@ -112,6 +112,7 @@
     "usePhoto": "Use photo"
   },
   "cheque": {
+    "amountAfterReviewHint": "This cheque has already been reviewed. Changing its amount is recorded in its history and needs a reason.",
     "imageZoomHintWeb": "Click the image to magnify, drag to move — Esc to close",
     "imageZoomHint": "Double-tap to magnify, or pinch",
     "imageTapHint": "Double-tap to magnify",

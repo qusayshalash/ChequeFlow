@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
 
 import { ApiClientError } from '@cheque-flow/api-client';
 import { ChequeDirection, type DuplicateChequeMatch } from '@cheque-flow/shared-types';
@@ -9,21 +8,11 @@ import { createChequeSchema } from '@cheque-flow/validation';
 
 import { FormScreen } from '@/components/form-screen';
 import * as haptics from '@/lib/haptics';
+import { DuplicatePrompt } from '@/components/duplicate-prompt';
 import { useApi, useApp, useTranslator } from '@/components/providers';
-import {
-  Banner,
-  Button,
-  DateField,
-  ErrorView,
-  Field,
-  MoreFields,
-  Picker,
-  Section,
-} from '@/components/ui';
+import { Banner, DateField, ErrorView, Field, MoreFields, Picker, Section } from '@/components/ui';
 import { addDaysIso, todayIso } from '@/lib/dates';
 import { fieldErrorsFrom, validateForm, type FieldErrors } from '@/lib/form';
-import { useStyles } from '@/theme-context';
-import { fontFamily, space, type Palette } from '@/theme';
 
 const CURRENCIES = ['ILS', 'USD', 'JOD', 'EUR'];
 
@@ -54,7 +43,6 @@ const EXTRA_FIELDS = [
 ] as const;
 
 export default function NewChequeScreen() {
-  const styles = useStyles(makeStyles);
   const api = useApi();
   const t = useTranslator();
   const { money, online } = useApp();
@@ -333,52 +321,18 @@ export default function NewChequeScreen() {
       </MoreFields>
 
       {duplicates ? (
-        <View style={styles.duplicateBox}>
-          <Text style={styles.duplicateTitle}>{t('cheque.duplicateWarning')}</Text>
-          {duplicates.map((match) => (
-            <Text key={match.chequeId} style={styles.duplicateRow}>
-              {match.chequeNumber} — {money(match.amount, currency)} — {t(`status.${match.status}`)}
-            </Text>
-          ))}
-          <Button
-            label={t('common.confirm')}
-            variant="danger"
-            onPress={() => {
-              setDuplicates(null);
-              mutation.mutate(true);
-            }}
-          />
-          <Button
-            label={t('common.cancel')}
-            variant="secondary"
-            onPress={() => setDuplicates(null)}
-          />
-        </View>
+        <DuplicatePrompt
+          matches={duplicates}
+          currency={currency}
+          onConfirm={() => {
+            setDuplicates(null);
+            mutation.mutate(true);
+          }}
+          onCancel={() => setDuplicates(null)}
+        />
       ) : null}
 
       {formError ? <ErrorView label={formError} /> : null}
     </FormScreen>
   );
 }
-
-const makeStyles = (c: Palette) =>
-  StyleSheet.create({
-    duplicateBox: {
-      backgroundColor: c.semantic.warningBg,
-      borderRadius: 10,
-      padding: space['4'],
-      gap: space['2'],
-    },
-    duplicateTitle: {
-      fontFamily: fontFamily.bold,
-      fontSize: 15,
-      color: c.semantic.warning,
-      textAlign: 'right',
-    },
-    duplicateRow: {
-      fontFamily: fontFamily.regular,
-      fontSize: 14,
-      color: c.semantic.warning,
-      textAlign: 'right',
-    },
-  });
