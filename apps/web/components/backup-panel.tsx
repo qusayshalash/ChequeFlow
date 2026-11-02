@@ -192,8 +192,12 @@ function RestoreSection() {
         return;
       }
       if (caught instanceof ApiClientError) {
-        // The server says the organization is not empty; the generic conflict
-        // message would leave the user with nothing to act on.
+        // Two conflicts, each with its own way out. The generic conflict
+        // message would leave the user with nothing to act on in either.
+        if (caught.code === 'CONFLICT' && caught.details.reason === 'ENCRYPTION_KEY_MISMATCH') {
+          setError(t('backup.restoreKeyMismatch'));
+          return;
+        }
         setError(caught.code === 'CONFLICT' ? t('backup.restoreNotEmpty') : t(caught.messageKey));
         return;
       }

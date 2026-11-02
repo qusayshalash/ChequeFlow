@@ -8,6 +8,7 @@ import type { RestoreBackupInput } from '@cheque-flow/validation';
 
 import { AppError } from '../../common/errors/app-error';
 import type { RequestUser } from '../../common/types/request-user';
+import { FieldEncryptionService } from '../../common/crypto/field-encryption.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditAction, AuditService, type AuditContext } from '../audit/audit.service';
 
@@ -65,6 +66,7 @@ export class BackupService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly encryption: FieldEncryptionService,
   ) {}
 
   async export(user: RequestUser, auditMeta: Partial<AuditContext> = {}): Promise<BackupFile> {
@@ -192,6 +194,32 @@ export class BackupService {
         ApiErrorCode.VALIDATION_ERROR,
         `Unsupported archive format ${archive.format}`,
         { details: { expected: BACKUP_FORMAT, found: archive.format } },
+      );
+    }
+
+    // Every encrypted value has to open with this server's key, before anything
+    // is written.
+    //
+    // Account numbers travel encrypted, which is right — a backup that
+    // decrypted them would be a plaintext list of bank accounts. But nothing
+    // checked that the server restoring them held the same key. On a new
+    // server, with a freshly generated key — the ordinary mistake on the day a
+    // backup is needed — the restore succeeded without a word, and every
+    // account number came back unreadable: blank on screen, a warning in a log
+    // nobody reads, discovered months later when the old backup is gone.
+    //
+    // Opening each value is the check, rather than comparing a fingerprint of
+    // the key, because it also works on archives written before this existed —
+    // the ones already sitting in someone's Drive.
+    const sealed = archive.data.cheques
+      .map((row) => (row as { accountNumberEncrypted?: unknown }).accountNumberEncrypted)
+      .filter((value): value is string => typeof value === 'string' && value.length > 0);
+    const unreadable = sealed.filter((value) => this.encryption.decrypt(value) === null).length;
+    if (unreadable > 0) {
+      throw new AppError(
+        ApiErrorCode.CONFLICT,
+        'This backup was encrypted with a different FIELD_ENCRYPTION_KEY',
+        { details: { reason: 'ENCRYPTION_KEY_MISMATCH', unreadable, total: sealed.length } },
       );
     }
 

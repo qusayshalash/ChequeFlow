@@ -64,6 +64,7 @@
     "welcome": "Welcome"
   },
   "backup": {
+    "restoreKeyMismatch": "Not restored: this backup was encrypted with a different key from this server's, and restoring it would leave every account number unreadable. Set the server's FIELD_ENCRYPTION_KEY to the value it had when the backup was taken, then try again.",
     "done": "Backup downloaded",
     "download": "Download a full copy",
     "drive": "Upload to Google Drive",

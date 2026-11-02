@@ -8,6 +8,8 @@
  *
  * Requires a migrated PostgreSQL database in TEST_DATABASE_URL.
  */
+import { createCipheriv, randomBytes } from 'node:crypto';
+
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 
@@ -48,6 +50,7 @@ describeWithDb('backup restore (e2e)', () => {
         bankId: source.bankId,
         originalSourceId: source.customerId,
         currentLocationId: source.safeLocationId,
+        accountNumber: '0011223344',
         cheques: [
           { chequeNumber: 'R-1', amount: '1000.00', dueDate: '2026-09-30' },
           { chequeNumber: 'R-2', amount: '2000.00', dueDate: '2026-10-31' },
@@ -111,6 +114,44 @@ describeWithDb('backup restore (e2e)', () => {
       .expect(422);
   });
 
+  it('refuses an archive encrypted with a different key, and writes nothing', async () => {
+    // The day a backup is needed is the day the server is new — and a new
+    // server with a freshly generated key used to restore without a word,
+    // leaving every account number unreadable.
+    const foreignKey = randomBytes(32);
+    const seal = (plaintext: string): string => {
+      const iv = randomBytes(12);
+      const cipher = createCipheriv('aes-256-gcm', foreignKey, iv, { authTagLength: 16 });
+      const data = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
+      return ['v1', iv, cipher.getAuthTag(), data]
+        .map((part) => (typeof part === 'string' ? part : part.toString('base64')))
+        .join(':');
+    };
+    const data = archive.data as { cheques: Array<Record<string, unknown>> };
+    const foreign = {
+      ...archive,
+      data: {
+        ...data,
+        cheques: data.cheques.map((row) => ({
+          ...row,
+          accountNumberEncrypted: seal('0011223344'),
+        })),
+      },
+    };
+
+    const response = await request(app.getHttpServer())
+      .post(`${API}/backup/restore`)
+      .set(auth(targetToken))
+      .send({ archive: foreign, confirm: true })
+      .expect(409);
+
+    expect(response.body.error.details.reason).toBe('ENCRYPTION_KEY_MISMATCH');
+    expect(response.body.error.details.unreadable).toBe(2);
+    expect(await prisma.db.cheque.count({ where: { organizationId: target.organizationId } })).toBe(
+      0,
+    );
+  });
+
   it('puts the records back, rebased onto the restoring organization', async () => {
     const response = await request(app.getHttpServer())
       .post(`${API}/backup/restore`)
@@ -137,6 +178,18 @@ describeWithDb('backup restore (e2e)', () => {
     expect(cheques.map((row) => row.chequeNumber)).toEqual(['R-1', 'R-2']);
     expect(cheques[0]?.amount.toFixed(2)).toBe('1000.00');
     expect(cheques.every((row) => row.organizationId === target.organizationId)).toBe(true);
+
+    // Restored with the same key, the account number opens.
+    const restoredId = (
+      await prisma.db.cheque.findFirstOrThrow({
+        where: { organizationId: target.organizationId, chequeNumber: 'R-1' },
+      })
+    ).id;
+    const detail = await request(app.getHttpServer())
+      .get(`${API}/cheques/${restoredId}`)
+      .set(auth(targetToken))
+      .expect(200);
+    expect(detail.body.accountNumberMasked).toMatch(/3344$/);
   });
 
   it('brings the ledger back with the cheques', async () => {
