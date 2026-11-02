@@ -221,10 +221,24 @@ jobs:
             echo "PUSH_ENABLED=false"
           } > infrastructure/.env.production
 
+      # The workflow's own variables (OCR_PROVIDER=mock among them) would
+      # override the env file: docker compose gives the shell's environment
+      # precedence over --env-file. So every call runs with an empty
+      # environment, as it would on a fresh server — which is also how this
+      # job first caught that collision.
+      - name: Write the compose helper
+        run: |
+          cat > dc <<'SH'
+          #!/bin/sh
+          exec env -i PATH="$PATH" HOME="$HOME" docker compose \
+            --env-file infrastructure/.env.production \
+            -f infrastructure/docker-compose.prod.yml "$@"
+          SH
+          chmod +x dc
+
       - name: Build and start the stack
         run: >
-          docker compose --env-file infrastructure/.env.production
-          -f infrastructure/docker-compose.prod.yml up -d --build
+          ./dc up -d --build
 
       - name: Wait for HTTPS
         run: |
@@ -234,14 +248,13 @@ jobs:
             fi
             sleep 3
           done
-          docker compose --env-file infrastructure/.env.production -f infrastructure/docker-compose.prod.yml ps
-          docker compose --env-file infrastructure/.env.production -f infrastructure/docker-compose.prod.yml logs --tail 80
+          ./dc ps
+          ./dc logs --tail 80
           exit 1
 
       - name: Create the first owner
         run: >
-          docker compose --env-file infrastructure/.env.production
-          -f infrastructure/docker-compose.prod.yml run --rm
+          ./dc run --rm
           -e ORG_NAME=CI -e ORG_TIMEZONE=Asia/Hebron
           -e OWNER_NAME=Owner -e OWNER_EMAIL=owner@ci.test -e OWNER_PASSWORD=Ci-Owner-Pass-2026
           migrate /repo/node_modules/.bin/tsx /repo/packages/database/prisma/bootstrap.ts
@@ -281,5 +294,4 @@ jobs:
       - name: Stack logs
         if: failure()
         run: >
-          docker compose --env-file infrastructure/.env.production
-          -f infrastructure/docker-compose.prod.yml logs --tail 150
+          ./dc logs --tail 150
