@@ -38,3 +38,12 @@ describe('resetting someone else', () => {
     expect(USERS).toContain('newPassword: resetPassword');
   });
 });
+
+describe('a locked account at sign-in', () => {
+  it('is told how long is left, not just "try later"', () => {
+    // Without the minutes, the owner retries at once and finds it still locked.
+    const login = readFileSync(join(WEB, 'app', 'login', 'page.tsx'), 'utf8');
+    expect(login).toContain('signInMessageValues(caught)');
+    expect(login).toContain("error.code === 'ACCOUNT_LOCKED'");
+  });
+});

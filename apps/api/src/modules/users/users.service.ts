@@ -187,7 +187,9 @@ export class UsersService {
           ...(input.phone !== undefined ? { phone: input.phone } : {}),
           ...(input.branchId !== undefined ? { branchId: input.branchId } : {}),
           ...(input.status !== undefined ? { status: input.status } : {}),
-          ...(passwordHash ? { passwordHash } : {}),
+          // A reset is also how a locked account is let back in: the person
+          // who forgot their password is usually the one who locked it.
+          ...(passwordHash ? { passwordHash, failedLoginCount: 0, lockedUntil: null } : {}),
         },
         include: userInclude,
       });

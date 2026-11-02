@@ -30,7 +30,9 @@ export default function LoginPage() {
     } catch (caught) {
       // Errors arrive as translation keys, so the message stays Arabic.
       setError(
-        caught instanceof ApiClientError ? t(caught.messageKey) : t('errors.INTERNAL_ERROR'),
+        caught instanceof ApiClientError
+          ? t(caught.messageKey, signInMessageValues(caught))
+          : t('errors.INTERNAL_ERROR'),
       );
     } finally {
       setPending(false);
@@ -164,4 +166,16 @@ export default function LoginPage() {
       </section>
     </main>
   );
+}
+
+/**
+ * Values a sign-in error's message needs. Only the lock has any: it says how
+ * many minutes are left, because "try again later" with no time makes the
+ * owner of the account try again at once and find it still locked.
+ */
+function signInMessageValues(error: ApiClientError): Record<string, string> | undefined {
+  const minutes = error.details.minutes;
+  return error.code === 'ACCOUNT_LOCKED' && typeof minutes === 'number'
+    ? { minutes: String(minutes) }
+    : undefined;
 }

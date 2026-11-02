@@ -492,6 +492,7 @@
     "yesterday": "1 day late"
   },
   "errors": {
+    "ACCOUNT_LOCKED": "Sign-in to this account is paused after several wrong attempts. Try again in {minutes} minutes, or ask an administrator to reset the password.",
     "crashTitle": "This part stopped working",
     "crashBody": "Nothing you saved was lost. Try again, and go home if it keeps happening.",
     "crashReference": "Reference",

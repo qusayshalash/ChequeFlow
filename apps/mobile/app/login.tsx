@@ -94,7 +94,11 @@ export default function LoginScreen() {
       await queryClient.invalidateQueries({ queryKey: ['session'] });
       router.replace('/(app)');
     } catch (caught) {
-      setError(caught instanceof ApiClientError ? t(caught.messageKey) : t('errors.network'));
+      setError(
+        caught instanceof ApiClientError
+          ? t(caught.messageKey, signInMessageValues(caught))
+          : t('errors.network'),
+      );
     } finally {
       setPending(false);
     }
@@ -450,3 +454,15 @@ const makeStyles = (c: Palette) =>
     submitText: { ...type.title, fontSize: 19, color: c.text.onBrand },
     submitSpacer: { width: 20 },
   });
+
+/**
+ * Values a sign-in error's message needs. Only the lock has any: it says how
+ * many minutes are left, because "try again later" with no time makes the
+ * owner of the account try again at once and find it still locked.
+ */
+function signInMessageValues(error: ApiClientError): Record<string, string> | undefined {
+  const minutes = error.details.minutes;
+  return error.code === 'ACCOUNT_LOCKED' && typeof minutes === 'number'
+    ? { minutes: String(minutes) }
+    : undefined;
+}

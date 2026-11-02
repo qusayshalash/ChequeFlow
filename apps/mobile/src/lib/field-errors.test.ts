@@ -60,3 +60,11 @@ describe('a field error from the server', () => {
     expect(wrong.map((file) => file.replace(process.cwd(), ''))).toEqual([]);
   });
 });
+
+describe('a locked account at sign-in', () => {
+  it('is told how long is left, not just "try later"', () => {
+    const login = readFileSync(join(process.cwd(), 'app', 'login.tsx'), 'utf8');
+    expect(login).toContain('signInMessageValues(caught)');
+    expect(login).toContain("error.code === 'ACCOUNT_LOCKED'");
+  });
+});

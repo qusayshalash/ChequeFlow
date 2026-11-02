@@ -179,6 +179,12 @@ model User {
   passwordHash   String     @map("password_hash")
   status         UserStatus @default(ACTIVE)
   lastLoginAt    DateTime?  @map("last_login_at") @db.Timestamptz(3)
+  /// Consecutive failed sign-ins since the last success. Reset on success,
+  /// and when the account is locked, so a lock that expires starts afresh.
+  failedLoginCount Int       @default(0) @map("failed_login_count")
+  /// Sign-in is refused until this moment, without the password being
+  /// checked — so a guess made during the lock cannot be told right or wrong.
+  lockedUntil      DateTime? @map("locked_until") @db.Timestamptz(3)
   createdAt      DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt      DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
 

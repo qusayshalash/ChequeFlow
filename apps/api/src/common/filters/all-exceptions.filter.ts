@@ -171,6 +171,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       VALIDATION_ERROR: 'The submitted data is invalid.',
       UNAUTHENTICATED: 'Authentication is required.',
       INVALID_CREDENTIALS: 'Incorrect email or password.',
+      ACCOUNT_LOCKED: 'Sign-in is temporarily locked after repeated failures.',
       FORBIDDEN: 'You do not have permission to perform this action.',
       NOT_FOUND: 'The requested resource was not found.',
       CONFLICT: 'The request conflicts with the current state.',

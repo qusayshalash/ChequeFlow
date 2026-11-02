@@ -104,6 +104,13 @@ export class AppConfigService {
     };
   }
 
+  get loginLock() {
+    return {
+      threshold: this.get('LOGIN_LOCK_THRESHOLD'),
+      minutes: this.get('LOGIN_LOCK_MINUTES'),
+    };
+  }
+
   get push() {
     return {
       enabled: this.get('PUSH_ENABLED'),

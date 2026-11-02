@@ -9,6 +9,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 export const AuditAction = {
   LOGIN_SUCCESS: 'auth.login.success',
   LOGIN_FAILED: 'auth.login.failed',
+  ACCOUNT_LOCKED: 'auth.account.locked',
   LOGOUT: 'auth.logout',
   PASSWORD_CHANGED: 'auth.password.changed',
   PASSWORD_CHANGE_FAILED: 'auth.password.change_failed',

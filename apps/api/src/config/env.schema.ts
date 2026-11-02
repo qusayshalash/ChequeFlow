@@ -81,6 +81,14 @@ export const envSchema = z
     REMINDER_OVERDUE_DAYS: z.coerce.number().int().min(0).default(1),
 
     /**
+     * Locking an account after consecutive failed sign-ins. The per-minute
+     * limit above is per IP address; this is per account, so guessing from
+     * several addresses gains nothing.
+     */
+    LOGIN_LOCK_THRESHOLD: z.coerce.number().int().min(3).max(50).default(5),
+    LOGIN_LOCK_MINUTES: z.coerce.number().int().min(1).max(1440).default(15),
+
+    /**
      * Delivering a reminder to a phone.
      *
      * Off by default, and deliberately so: a development machine sharing a
