@@ -14,6 +14,7 @@ import { forgetCachedAnswers } from '@/lib/query-persistence';
 import { syncDrafts } from '@/lib/draft-sync';
 import { useStyles } from '@/theme-context';
 import { elevation, fontFamily, radius, space, type, type Palette } from '@/theme';
+import { useToday } from '@/lib/today';
 
 export default function SettingsScreen() {
   const styles = useStyles(makeStyles);
@@ -40,6 +41,7 @@ export default function SettingsScreen() {
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
 
   const session = useQuery({ queryKey: ['session'], queryFn: () => api.me() });
+  const today = useToday();
 
   useEffect(() => {
     void (async () => {
@@ -162,7 +164,7 @@ export default function SettingsScreen() {
           value={calendar}
           onChange={(next) => setCalendar(next as (typeof CALENDARS)[number])}
         />
-        <InfoRow label={t('common.today')} value={date(new Date().toISOString().slice(0, 10))} />
+        <InfoRow label={t('common.today')} value={date(today)} />
       </Section>
 
       <Section title={t('common.syncNow')}>

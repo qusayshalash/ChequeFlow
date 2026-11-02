@@ -4,7 +4,7 @@ import {
   ChequeDirection,
   ChequeStatus,
   OUTSTANDING_CHEQUE_STATUSES,
-  utcToday,
+  todayIn,
   ApiErrorCode,
   type ContactCreditStatus,
   type ContactStatementCurrency,
@@ -485,7 +485,7 @@ export class ContactsService {
       byCurrency.set(row.currency, entry);
     }
 
-    const today = utcToday();
+    const today = todayIn(user.timeZone);
     const currencies = [...byCurrency.values()].sort((a, b) =>
       a.currency.localeCompare(b.currency),
     );

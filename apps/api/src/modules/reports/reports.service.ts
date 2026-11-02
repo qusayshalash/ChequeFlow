@@ -4,7 +4,7 @@ import {
   ChequeDirection,
   ChequeStatus,
   OUTSTANDING_CHEQUE_STATUSES,
-  utcToday,
+  todayIn,
   type Bucket,
   type DashboardCurrencyTotals,
   type DashboardSummary,
@@ -67,11 +67,6 @@ function bucketByCurrency(
     .sort((a, b) => a.currency.localeCompare(b.currency));
 }
 
-function todayUtc(): Date {
-  const now = new Date();
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-}
-
 function addDays(date: Date, days: number): Date {
   return new Date(date.getTime() + days * 86_400_000);
 }
@@ -107,7 +102,7 @@ export class ReportsService {
    * database and returned as its own block.
    */
   async dashboard(user: RequestUser, query: DashboardQuery = {}): Promise<DashboardSummary> {
-    const today = todayUtc();
+    const today = toDateOnly(todayIn(user.timeZone));
     const in7Days = addDays(today, 7);
     const in30Days = addDays(today, 30);
 
@@ -247,7 +242,7 @@ export class ReportsService {
    * is how a cheque quietly ages in a drawer.
    */
   async depositSlip(user: RequestUser, query: DepositSlipQuery): Promise<DepositSlipView> {
-    const on = query.on ?? utcToday();
+    const on = query.on ?? todayIn(user.timeZone);
 
     const rows = await this.prisma.db.cheque.findMany({
       where: {
@@ -332,7 +327,7 @@ export class ReportsService {
 
   /** Cheques due in a window, optionally including everything overdue. */
   async due(user: RequestUser, query: DueReportQuery) {
-    const today = todayUtc();
+    const today = toDateOnly(todayIn(user.timeZone));
     const from = query.from ? toDateOnly(query.from) : today;
     const to = query.to ? toDateOnly(query.to) : addDays(today, query.withinDays ?? 7);
 

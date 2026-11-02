@@ -5,7 +5,7 @@ import {
   ChequeEventType,
   ChequeStatus,
   OUTSTANDING_CHEQUE_STATUSES,
-  utcToday,
+  todayIn,
   type ChequeDetailView,
   type ChequeSummaryView,
   type DuplicateChequeMatch,
@@ -282,7 +282,7 @@ export class ChequeService {
     });
 
     return {
-      cheque: toChequeDetail(created, user.permissions, this.encryption),
+      cheque: toChequeDetail(created, user.permissions, this.encryption, todayIn(user.timeZone)),
       duplicates,
     };
   }
@@ -359,7 +359,7 @@ export class ChequeService {
     // One lookup for the whole book: every cheque in it shares a currency and
     // a rate, so they all convert against the same base.
     const base = await this.baseCurrency(user.organizationId);
-    const today = utcToday();
+    const today = todayIn(user.timeZone);
 
     const created = await this.prisma.db.$transaction(async (tx) => {
       const rows: Array<Awaited<ReturnType<typeof this.createOneWithin>>> = [];
@@ -475,12 +475,12 @@ export class ChequeService {
       include: chequeDetailInclude,
     });
     if (!cheque) throw AppError.notFound('Cheque', chequeId);
-    return toChequeDetail(cheque, user.permissions, this.encryption);
+    return toChequeDetail(cheque, user.permissions, this.encryption, todayIn(user.timeZone));
   }
 
   async list(user: RequestUser, query: ListChequesQuery): Promise<Paginated<ChequeSummaryView>> {
     // One reference day for the whole page, so overdue flags stay consistent.
-    const today = utcToday();
+    const today = todayIn(user.timeZone);
     const where = this.buildWhere(user, query);
     const skip = (query.page - 1) * query.pageSize;
 
@@ -696,7 +696,7 @@ export class ChequeService {
       return tx.cheque.findUniqueOrThrow({ where: { id: chequeId }, include: chequeDetailInclude });
     });
 
-    return toChequeDetail(updated, user.permissions, this.encryption);
+    return toChequeDetail(updated, user.permissions, this.encryption, todayIn(user.timeZone));
   }
 
   /**
@@ -734,7 +734,7 @@ export class ChequeService {
     // AND still outstanding. A cleared cheque with an old due date is not late.
     if (query.overdue !== undefined) {
       const past = {
-        dueDate: { lt: toDateOnly(utcToday()) },
+        dueDate: { lt: toDateOnly(todayIn(user.timeZone)) },
         status: { in: [...OUTSTANDING_CHEQUE_STATUSES] },
       };
       and.push(query.overdue ? past : { NOT: past });

@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import {
   ChequeStatus,
+  instantAt,
+  isValidTimeZone,
   ReminderType,
   type ChequeDirection,
   type MoneyString,
@@ -12,6 +14,14 @@ import { moneyToString, type Prisma } from '@cheque-flow/database';
 
 import { AppConfigService } from '../../config/app-config.service';
 import { PrismaService } from '../../prisma/prisma.service';
+
+/** The local hour a scheduled reminder is delivered at. */
+const REMINDER_HOUR = 8;
+
+/** Calendar arithmetic on an ISO date, by whole days. */
+function shiftIsoDate(iso: string, days: number): string {
+  return new Date(Date.parse(`${iso}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
+}
 
 /** Statuses that still need a due-date reminder. */
 const ACTIVE_STATUSES: readonly ChequeStatus[] = [
@@ -111,25 +121,32 @@ export class RemindersService {
 
   /**
    * Pure planning function — no I/O, so the schedule is easy to unit test.
-   * Reminders fire at 08:00 UTC on the offset day.
+   *
+   * Reminders fire at eight in the morning in the organization's own time
+   * zone. They were fixed at 08:00 UTC, which in Hebron is ten o'clock in
+   * winter and eleven in summer: a reminder about a cheque due today arrived
+   * halfway through the morning it was meant to start.
+   *
+   * Each day is found on the calendar and then placed at eight, rather than
+   * stepped back in fixed twenty-four-hour blocks: on the night the clocks
+   * move, a day is twenty-three or twenty-five hours long, and fixed steps
+   * would land the reminder at seven or nine.
    */
   static plan(
     dueDate: Date,
     offsetDays: readonly number[],
     overdueDays: number,
+    timeZone = 'UTC',
   ): PlannedReminder[] {
     const planned: PlannedReminder[] = [];
-    const dueMidnight = Date.UTC(
-      dueDate.getUTCFullYear(),
-      dueDate.getUTCMonth(),
-      dueDate.getUTCDate(),
-      8,
-    );
+    const dueIso = dueDate.toISOString().slice(0, 10);
+    const at = (daysFromDue: number) =>
+      instantAt(shiftIsoDate(dueIso, daysFromDue), REMINDER_HOUR, timeZone);
 
     for (const offset of [...new Set(offsetDays)].sort((a, b) => b - a)) {
       planned.push({
         type: offset === 0 ? ReminderType.ON_DUE : ReminderType.BEFORE_DUE,
-        remindAt: new Date(dueMidnight - offset * 86_400_000),
+        remindAt: at(-offset),
         offsetDays: offset,
       });
     }
@@ -137,7 +154,7 @@ export class RemindersService {
     if (overdueDays > 0) {
       planned.push({
         type: ReminderType.OVERDUE,
-        remindAt: new Date(dueMidnight + overdueDays * 86_400_000),
+        remindAt: at(overdueDays),
         offsetDays: -overdueDays,
       });
     }
@@ -160,7 +177,7 @@ export class RemindersService {
         status: true,
         currentHolderId: true,
         createdBy: true,
-        organization: { select: { settingsJson: true } },
+        organization: { select: { settingsJson: true, timezone: true } },
       },
     });
     if (!cheque) return 0;
@@ -186,6 +203,7 @@ export class RemindersService {
       cheque.dueDate,
       configured && configured.length > 0 ? configured : this.config.reminders.offsetDays,
       this.config.reminders.overdueDays,
+      isValidTimeZone(cheque.organization.timezone) ? cheque.organization.timezone : 'UTC',
     );
 
     const recipientUserId = cheque.currentHolderId ?? cheque.createdBy;

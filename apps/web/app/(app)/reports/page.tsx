@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
-import { Permission, utcToday } from '@cheque-flow/shared-types';
+import { Permission } from '@cheque-flow/shared-types';
 import { EmptyState, ErrorState, LoadingState } from '@cheque-flow/ui';
 
 import { IconAlert, IconCalendar, IconSafe } from '@/components/icons';
@@ -15,6 +15,7 @@ import { useApi, useApp, useTranslator } from '@/components/providers';
 import { RequirePermission } from '@/components/session';
 import { Tabs } from '@/components/tabs';
 import { formatDate, formatDayMonth, money } from '@/lib/format';
+import { useToday } from '@/lib/today';
 
 /**
  * The windows on offer.
@@ -90,7 +91,7 @@ function ReportsPageBody() {
   const t = useTranslator();
   const { locale } = useApp();
 
-  const today = utcToday();
+  const today = useToday();
   const [rangeKey, setRangeKey] = useState<string>('next90');
   const [grain, setGrain] = useState<'day' | 'week' | 'month'>('week');
   const [currency, setCurrency] = useState<string | null>(null);

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { ApiErrorCode, type Permission } from '@cheque-flow/shared-types';
+import { ApiErrorCode, isValidTimeZone, type Permission } from '@cheque-flow/shared-types';
 
 import { AppError } from '../../common/errors/app-error';
 import type { RequestUser } from '../../common/types/request-user';
@@ -25,6 +25,7 @@ export class SessionService {
         email: true,
         name: true,
         status: true,
+        organization: { select: { timezone: true } },
         userRoles: {
           select: {
             role: {
@@ -64,6 +65,9 @@ export class SessionService {
       name: user.name,
       roles: user.userRoles.map(({ role }) => role.name),
       permissions: [...permissions],
+      // A zone the runtime cannot read would make every date wrong in a way
+      // nobody could see; UTC is wrong in a way the setting explains.
+      timeZone: isValidTimeZone(user.organization.timezone) ? user.organization.timezone : 'UTC',
     };
   }
 }

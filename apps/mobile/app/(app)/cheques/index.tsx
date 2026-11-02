@@ -6,7 +6,6 @@ import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-na
 import {
   CHEQUE_SORTS,
   DEFAULT_CHEQUE_SORT,
-  utcToday,
   type ChequeStatus,
   type ChequeSummaryView,
   type Paginated,
@@ -31,6 +30,7 @@ import {
 } from '@/components/ui';
 import { useStyles, useTheme } from '@/theme-context';
 import { TAP, elevation, fontFamily, radius, space, type, type Palette } from '@/theme';
+import { useToday } from '@/lib/today';
 
 /**
  * The list tabs.
@@ -78,7 +78,7 @@ export default function ChequeListScreen() {
     currency?: string;
   }>();
 
-  const today = utcToday();
+  const today = useToday();
 
   const [tab, setTab] = useState<Tab>(isTab(params.tab) ? params.tab : 'ALL');
   const [search, setSearch] = useState('');

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
-import { utcToday, type ChequeSummaryView } from '@cheque-flow/shared-types';
+import type { ChequeSummaryView } from '@cheque-flow/shared-types';
 import { EmptyState, StatusBadge } from '@cheque-flow/ui';
 
 import {
@@ -17,6 +17,7 @@ import { IconClock } from '@/components/icons';
 import { RowActions } from '@/components/row-actions';
 import { useApp, useTranslator } from '@/components/providers';
 import { formatDate, formatDueDistance, money } from '@/lib/format';
+import { useToday } from '@/lib/today';
 
 /** The canonical columns used by every cheque data grid. */
 export const CHEQUE_COLUMN_KEYS = [
@@ -49,7 +50,7 @@ export function ChequeTable({
   const t = useTranslator();
   const { locale } = useApp();
   // One reference day for the whole table, so no row straddles midnight.
-  const today = utcToday();
+  const today = useToday();
 
   const columns: Array<Column<ChequeSummaryView>> = [
     // Column order follows the supplied design: what the cheque is,

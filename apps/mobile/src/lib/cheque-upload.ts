@@ -1,7 +1,8 @@
 import { File } from 'expo-file-system';
 
 import type { ChequeFlowApiClient } from '@cheque-flow/api-client';
-import { ChequeDirection } from '@cheque-flow/shared-types';
+import { ChequeDirection, todayIn } from '@cheque-flow/shared-types';
+import { deviceTimeZone } from '@/lib/device-time-zone';
 
 /**
  * Currency stamped on a cheque that has only been photographed.
@@ -33,7 +34,10 @@ export async function uploadCapturedCheque(
   api: ChequeFlowApiClient,
   images: readonly CapturedImage[],
 ): Promise<string> {
-  const today = new Date().toISOString().slice(0, 10);
+  // The day the cheque was received, where it was received: the phone's own
+  // calendar. The UTC date stamped a cheque photographed after local midnight
+  // as received the day before.
+  const today = todayIn(deviceTimeZone());
 
   const created = await api.createCheque(
     {

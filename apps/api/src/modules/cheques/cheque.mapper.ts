@@ -4,7 +4,11 @@ import type {
   ChequeSummaryView,
   Permission,
 } from '@cheque-flow/shared-types';
-import { allowedActionsForUser, isChequeOverdue, utcToday } from '@cheque-flow/shared-types';
+import {
+  allowedActionsForUser,
+  isChequeOverdue,
+  type IsoDateString,
+} from '@cheque-flow/shared-types';
 import { moneyToString, rateToString, type Prisma } from '@cheque-flow/database';
 
 import { type FieldEncryptionService } from '../../common/crypto/field-encryption.service';
@@ -110,9 +114,11 @@ export function toChequeDetail(
   row: ChequeDetailRow,
   permissions: readonly Permission[],
   encryption: FieldEncryptionService,
+  /** The organization's business day — required, so no caller can fall back to UTC. */
+  today: IsoDateString,
 ): ChequeDetailView {
   return {
-    ...toChequeSummary(row, utcToday()),
+    ...toChequeSummary(row, today),
     branchId: row.branchId,
     amountInWords: row.amountInWords,
     issueDate: toIsoDate(row.issueDate),

@@ -22,6 +22,7 @@ const user = (permissions: Permission[]): RequestUser => ({
   name: 'Test',
   roles: ['CASHIER'],
   permissions,
+  timeZone: 'UTC',
 });
 
 describe('PermissionsGuard', () => {

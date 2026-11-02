@@ -39,6 +39,9 @@ export class MeResponseDto {
 
   @ApiProperty({ type: [String], example: ['cheque.view', 'cheque.create'] })
   permissions!: string[];
+
+  @ApiProperty({ example: 'Asia/Hebron', description: "The organization's time zone" })
+  timeZone!: string;
 }
 
 export class LoginBodyDto {

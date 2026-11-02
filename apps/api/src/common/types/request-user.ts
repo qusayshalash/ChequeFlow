@@ -9,6 +9,12 @@ export interface RequestUser {
   name: string;
   roles: string[];
   permissions: Permission[];
+  /**
+   * The organization's time zone, e.g. `Asia/Hebron` — what "today" means for
+   * this user's books. Resolved with the session so that no query has to ask
+   * for it, and never trusted from the client.
+   */
+  timeZone: string;
 }
 
 declare global {

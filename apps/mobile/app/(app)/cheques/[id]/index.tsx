@@ -3,7 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { ChequeAction, utcToday, type ChequeDetailView } from '@cheque-flow/shared-types';
+import { ChequeAction, type ChequeDetailView } from '@cheque-flow/shared-types';
 
 import { IconAlert, IconCalendar } from '@/components/icons';
 import { ChequeJourney } from '@/components/journey';
@@ -22,6 +22,7 @@ import {
 } from '@/components/ui';
 import { useStyles, useTheme } from '@/theme-context';
 import { elevation, fontFamily, radius, space, type, type Palette } from '@/theme';
+import { useToday } from '@/lib/today';
 
 /**
  * Actions that get their own button on the detail screen.
@@ -45,7 +46,7 @@ export default function ChequeDetailScreen() {
   const { money, date, dateTime, dueDistance } = useApp();
   const router = useRouter();
 
-  const today = utcToday();
+  const today = useToday();
 
   const query = useQuery<ChequeDetailView>({
     queryKey: ['cheque', id],

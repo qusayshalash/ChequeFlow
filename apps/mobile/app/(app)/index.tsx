@@ -4,7 +4,7 @@ import { useMemo, type ReactElement } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { utcToday, type DashboardSummary } from '@cheque-flow/shared-types';
+import { type DashboardSummary } from '@cheque-flow/shared-types';
 
 import { AttentionList, StatCard } from '@/components/dashboard-parts';
 import {
@@ -24,6 +24,7 @@ import { useApi, useApp, useTranslator } from '@/components/providers';
 import { Amount, Banner, ErrorView, LoadingView, ScreenHeader, StatusPill } from '@/components/ui';
 import { useStyles, useTheme } from '@/theme-context';
 import { TAP, elevation, radius, space, type, type Palette } from '@/theme';
+import { useToday } from '@/lib/today';
 
 /** How far ahead the upcoming list looks. */
 const UPCOMING_HORIZON_DAYS = 90;
@@ -61,7 +62,7 @@ export default function DashboardScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const today = utcToday();
+  const today = useToday();
 
   const query = useQuery<DashboardSummary>({
     queryKey: ['dashboard'],

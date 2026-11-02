@@ -10,7 +10,6 @@ import { use } from 'react';
 import {
   ChequeStatus,
   Permission,
-  utcToday,
   type ChequeDetailView,
   type ChequeLinkView,
 } from '@cheque-flow/shared-types';
@@ -31,6 +30,7 @@ import { useApi, useApp, useTranslator } from '@/components/providers';
 import { usePermission } from '@/components/session';
 import { formatDate, formatDateTime, money } from '@/lib/format';
 import { loadErrorRequestId, loadErrorTitle } from '@/lib/query-error';
+import { useToday } from '@/lib/today';
 
 export default function ChequeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -57,7 +57,7 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
   };
   const canViewImages = usePermission(Permission.CHEQUE_VIEW_IMAGE);
 
-  const today = utcToday();
+  const today = useToday();
 
   const cheque = useQuery<ChequeDetailView>({
     queryKey: ['cheque', id],

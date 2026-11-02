@@ -5,7 +5,7 @@ import {
   ChequeAction,
   assertTransition,
   getTransition,
-  utcToday,
+  todayIn,
   type ChequeDetailView,
   type ChequeEventView,
   type ChequeSummaryView,
@@ -194,7 +194,7 @@ export class ChequeActionsService {
       );
     }
 
-    return toChequeDetail(updated, user.permissions, this.encryption);
+    return toChequeDetail(updated, user.permissions, this.encryption, todayIn(user.timeZone));
   }
 
   /**
@@ -222,7 +222,7 @@ export class ChequeActionsService {
     options: { skipInvalid?: boolean } = {},
     auditMeta: Partial<AuditContext> = {},
   ): Promise<BulkActionResult> {
-    const today = utcToday();
+    const today = todayIn(user.timeZone);
 
     // Before anything is read, for the same reason as the single-cheque path:
     // the permission belongs to the action, and a caller without it should not

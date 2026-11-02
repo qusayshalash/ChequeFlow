@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
-import { utcToday, type DepositSlipView } from '@cheque-flow/shared-types';
+import { type DepositSlipView } from '@cheque-flow/shared-types';
 import { Button, EmptyState, ErrorState, LoadingState } from '@cheque-flow/ui';
 
 import { PageHeader } from '@/components/page-header';
@@ -11,6 +11,7 @@ import { loadErrorRequestId, loadErrorTitle } from '@/lib/query-error';
 import { Panel } from '@/components/panel';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { formatDate, money } from '@/lib/format';
+import { useToday } from '@/lib/today';
 
 /**
  * The day's deposit run, on paper.
@@ -24,8 +25,13 @@ export default function DepositSlipPage() {
   const api = useApi();
   const t = useTranslator();
   const { locale } = useApp();
+  const today = useToday();
 
-  const [on, setOn] = useState(utcToday());
+  // A day someone chose, or nothing — in which case the slip is today's.
+  // Seeding state with today instead would freeze it at the first render,
+  // before the session has said which time zone "today" belongs to.
+  const [picked, setPicked] = useState<string | null>(null);
+  const on = picked ?? today;
 
   const slip = useQuery<DepositSlipView>({
     queryKey: ['deposit-slip', on],
@@ -76,7 +82,7 @@ export default function DepositSlipPage() {
               aria-label={t('reports.depositSlipDate')}
               className="bg-transparent text-sm font-semibold text-ink outline-none"
               value={on}
-              onChange={(event) => setOn(event.target.value || utcToday())}
+              onChange={(event) => setPicked(event.target.value || null)}
             />
           </label>
         </div>
@@ -173,7 +179,7 @@ export default function DepositSlipPage() {
 
               <div className="mt-6 flex justify-between gap-8 text-xs text-ink-muted">
                 <span>
-                  {t('reports.depositSlipPrepared')}: {formatDate(locale, utcToday())}
+                  {t('reports.depositSlipPrepared')}: {formatDate(locale, today)}
                 </span>
                 <span className="min-w-[180px] border-t border-line-strong pt-1 text-center">
                   {t('reports.depositSlipSignature')}

@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
-import { ChequeStatus, utcToday, type DashboardSummary } from '@cheque-flow/shared-types';
+import { ChequeStatus, type DashboardSummary } from '@cheque-flow/shared-types';
 import { EmptyState, ErrorState, LoadingState } from '@cheque-flow/ui';
 
 import { AttentionList } from '@/components/attention-list';
@@ -24,6 +24,7 @@ import { PageHeader } from '@/components/page-header';
 import { StatCard } from '@/components/stat-card';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { formatDate, formatDayMonth, money } from '@/lib/format';
+import { useToday } from '@/lib/today';
 
 /** Windows the chart offers, in days back from today. */
 const WINDOWS = [
@@ -49,7 +50,7 @@ export default function DashboardPage() {
   const t = useTranslator();
   const { locale } = useApp();
 
-  const today = utcToday();
+  const today = useToday();
   const [currency, setCurrency] = useState<string | null>(null);
   const [windowDays, setWindowDays] = useState<number>(30);
 

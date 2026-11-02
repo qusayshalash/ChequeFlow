@@ -17,6 +17,8 @@ export interface SessionUser {
   email: string;
   roles: string[];
   permissions: string[];
+  /** The organization's time zone: what "today" means for these books. */
+  timeZone: string;
 }
 
 /** Loads the signed-in user and their live permission set. */
