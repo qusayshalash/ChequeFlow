@@ -11,7 +11,7 @@ Keep application-specific behavior inside its app. Move contracts, validation, d
 Use Node.js 22.12+ and pnpm 10.15.0.
 
 - `pnpm install` installs all workspace dependencies.
-- `cp .env.example .env && pnpm infra:up` configures local settings and starts PostgreSQL, Redis, and MinIO.
+- `cp .env.example .env && pnpm infra:up` configures local settings and starts PostgreSQL, Redis, and RustFS (S3-compatible storage). Production deployment is in `docs/deployment.md`.
 - `pnpm dev` starts workspace development tasks; target one app with `pnpm --filter @cheque-flow/web dev` (or `api`/`mobile`).
 - `pnpm build`, `pnpm lint`, `pnpm typecheck`, and `pnpm test` run repository-wide Turbo tasks.
 - `pnpm test:e2e` runs API integration suites; `pnpm test:e2e:ui` runs Playwright tests.

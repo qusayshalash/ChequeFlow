@@ -74,6 +74,28 @@ describe('validateEnv', () => {
     ).toThrow(/ANTHROPIC_API_KEY is required/);
   });
 
+  it('refuses the mock OCR provider in production, even when asked for by name', () => {
+    // The other rules caught a real provider missing its key; nothing caught
+    // `mock` itself, so production could be told to invent cheque amounts.
+    expect(() =>
+      validateEnv({
+        ...base,
+        NODE_ENV: 'production',
+        JWT_REFRESH_SECRET: 'z'.repeat(40),
+        OCR_PROVIDER: 'mock',
+      }),
+    ).toThrow(/invents cheque data/);
+  });
+
+  it('still allows the mock OCR provider outside production', () => {
+    expect(validateEnv({ ...base, OCR_PROVIDER: 'mock' }).OCR_PROVIDER).toBe('mock');
+  });
+
+  it('takes a separate public address for signing storage links', () => {
+    const env = validateEnv({ ...base, S3_PUBLIC_ENDPOINT: 'https://files.example.com' });
+    expect(env.S3_PUBLIC_ENDPOINT).toBe('https://files.example.com');
+  });
+
   it('accepts the claude OCR provider once a key is present', () => {
     const env = validateEnv({ ...base, OCR_PROVIDER: 'claude', ANTHROPIC_API_KEY: 'sk-ant-test' });
     expect(env.OCR_PROVIDER).toBe('claude');

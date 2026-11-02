@@ -1,0 +1,28 @@
+# What never goes into an image.
+#
+# Secrets first: an .env baked into an image travels with every copy of it,
+# to every registry it is pushed to. Production settings come from the
+# environment the container runs in, never from the build context.
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+
+# Rebuilt inside the image, from the lockfile, for the image's own platform.
+node_modules
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/.expo
+**/*.tsbuildinfo
+
+# Large, local, or both.
+.git
+apps/mobile/android
+apps/mobile/ios
+test-results
+site-screenshots-*
+*.png
+!apps/web/public/**/*.png

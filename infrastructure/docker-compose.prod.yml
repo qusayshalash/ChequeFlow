@@ -1,0 +1,150 @@
+# The whole system on one server.
+#
+#   cp infrastructure/.env.production.example infrastructure/.env.production
+#   # fill it in, then:
+#   docker compose --env-file infrastructure/.env.production \
+#     -f infrastructure/docker-compose.prod.yml up -d --build
+#
+# docs/deployment.md walks through it, including what to keep a copy of.
+# Only the proxy publishes ports; everything else talks on the internal
+# network and cannot be reached from outside.
+
+name: chequeflow
+
+services:
+  postgres:
+    image: postgres:17.6-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-chequeflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-chequeflow}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-chequeflow} -d ${POSTGRES_DB:-chequeflow}']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # S3-compatible object storage for cheque images. RustFS, because MinIO's
+  # images were withdrawn from Docker Hub and now need an account to pull.
+  storage:
+    image: rustfs/rustfs:1.0.4
+    restart: unless-stopped
+    environment:
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY_ID:?set S3_ACCESS_KEY_ID}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_ACCESS_KEY:?set S3_SECRET_ACCESS_KEY}
+      RUSTFS_ADDRESS: 0.0.0.0:9000
+      RUSTFS_VOLUMES: /data
+    volumes:
+      - storage-data:/data
+
+  # Creates the bucket for cheque images, then exits.
+  #
+  # The API creates its own bucket in development and deliberately does not in
+  # production — so without this, the first photograph uploaded to a fresh
+  # server would fail. Safe to run every time: an existing bucket is left alone.
+  storage-init:
+    image: amazon/aws-cli:2.39.3
+    environment:
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      AWS_DEFAULT_REGION: us-east-1
+      BUCKET: ${S3_BUCKET:-cheque-images}
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - |
+        for attempt in $$(seq 1 60); do
+          aws --endpoint-url http://storage:9000 s3api list-buckets >/dev/null 2>&1 && break
+          sleep 2
+        done
+        aws --endpoint-url http://storage:9000 s3api head-bucket --bucket "$$BUCKET" 2>/dev/null \
+          || aws --endpoint-url http://storage:9000 s3api create-bucket --bucket "$$BUCKET"
+    depends_on:
+      storage:
+        condition: service_started
+
+  # Applies database migrations, then exits. The API waits for it, so it never
+  # starts against a schema older than its code.
+  migrate:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    image: chequeflow-api
+    working_dir: /repo/packages/database
+    command: ['/repo/node_modules/.bin/prisma', 'migrate', 'deploy']
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-chequeflow}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-chequeflow}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    image: chequeflow-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      API_PORT: 3333
+      # Behind the proxy: client addresses come from X-Forwarded-For.
+      TRUST_PROXY: 'true'
+      CORS_ORIGINS: https://${APP_DOMAIN}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-chequeflow}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-chequeflow}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET}
+      FIELD_ENCRYPTION_KEY: ${FIELD_ENCRYPTION_KEY:?set FIELD_ENCRYPTION_KEY}
+      # The API reaches storage on the internal network; phones and browsers
+      # reach it through the proxy, which is the address links are signed for.
+      S3_ENDPOINT: http://storage:9000
+      S3_PUBLIC_ENDPOINT: https://${FILES_DOMAIN}
+      S3_FORCE_PATH_STYLE: 'true'
+      S3_BUCKET: ${S3_BUCKET:-cheque-images}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      # No default: the API refuses to start on the mock provider in
+      # production, and the choice of a real one is the operator's.
+      OCR_PROVIDER: ${OCR_PROVIDER:?set OCR_PROVIDER to claude or google}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      PUSH_ENABLED: ${PUSH_ENABLED:-false}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      storage-init:
+        condition: service_completed_successfully
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: https://${APP_DOMAIN}/api/v1
+    image: chequeflow-web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+    depends_on:
+      - api
+
+  proxy:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?set APP_DOMAIN}
+      FILES_DOMAIN: ${FILES_DOMAIN:?set FILES_DOMAIN}
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - web
+      - api
+
+volumes:
+  postgres-data:
+  storage-data:
+  caddy-data:
+  caddy-config:

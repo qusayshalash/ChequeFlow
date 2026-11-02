@@ -29,6 +29,15 @@ export interface PutObjectInput {
 export class StorageService implements OnModuleInit {
   private readonly logger = new Logger(StorageService.name);
   private readonly client: S3Client;
+  /**
+   * Signs the links handed to browsers and phones.
+   *
+   * A separate client because a signed link carries the host it was signed
+   * for: signed with the internal address the API uses, every image link in
+   * production would point at a hostname nobody outside the server can reach.
+   * Signing is local arithmetic — this client never makes a request.
+   */
+  private readonly signer: S3Client;
   private readonly bucket: string;
   private readonly signedUrlTtl: number;
 
@@ -36,15 +45,18 @@ export class StorageService implements OnModuleInit {
     const storage = config.storage;
     this.bucket = storage.bucket;
     this.signedUrlTtl = storage.signedUrlTtl;
-    this.client = new S3Client({
-      region: storage.region,
-      endpoint: storage.endpoint,
-      forcePathStyle: storage.forcePathStyle,
-      credentials: {
-        accessKeyId: storage.accessKeyId,
-        secretAccessKey: storage.secretAccessKey,
-      },
-    });
+    const clientFor = (endpoint: string) =>
+      new S3Client({
+        region: storage.region,
+        endpoint,
+        forcePathStyle: storage.forcePathStyle,
+        credentials: {
+          accessKeyId: storage.accessKeyId,
+          secretAccessKey: storage.secretAccessKey,
+        },
+      });
+    this.client = clientFor(storage.endpoint);
+    this.signer = storage.publicEndpoint ? clientFor(storage.publicEndpoint) : this.client;
   }
 
   async onModuleInit(): Promise<void> {
@@ -102,7 +114,7 @@ export class StorageService implements OnModuleInit {
 
   /** Short-lived signed URL; the caller must have `cheque.view_image`. */
   async getSignedDownloadUrl(key: string, ttlSeconds?: number): Promise<string> {
-    return getSignedUrl(this.client, new GetObjectCommand({ Bucket: this.bucket, Key: key }), {
+    return getSignedUrl(this.signer, new GetObjectCommand({ Bucket: this.bucket, Key: key }), {
       expiresIn: ttlSeconds ?? this.signedUrlTtl,
     });
   }

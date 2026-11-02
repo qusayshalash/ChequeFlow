@@ -23,6 +23,7 @@ import {
 } from '@cheque-flow/shared-types';
 
 import { createPrismaClient } from '../src/client.js';
+import { REFERENCE_BANKS } from './reference-banks.js';
 
 loadEnv({ path: path.resolve(__dirname, '../../../.env'), quiet: true });
 
@@ -32,16 +33,7 @@ loadEnv({ path: path.resolve(__dirname, '../../../.env'), quiet: true });
  * A starting point, not a closed list: `bankNameRaw` accepts any name typed by
  * hand, so a cheque from a bank that is not here is still recordable.
  */
-const DEMO_BANKS = [
-  { country: 'PS', code: 'PALS', name: 'بنك فلسطين' },
-  { country: 'PS', code: 'QUDS', name: 'بنك القدس' },
-  { country: 'PS', code: 'NBNK', name: 'البنك الوطني' },
-  { country: 'PS', code: 'PIBC', name: 'البنك الإسلامي الفلسطيني' },
-  { country: 'PS', code: 'AIBA', name: 'البنك الإسلامي العربي' },
-  { country: 'PS', code: 'ARAB', name: 'البنك العربي' },
-  { country: 'PS', code: 'CAIR', name: 'بنك القاهرة عمان' },
-  { country: 'PS', code: 'JOBA', name: 'بنك الأردن' },
-] as const;
+const DEMO_BANKS = REFERENCE_BANKS;
 
 const DEMO_CONTACTS = [
   { type: ContactType.CUSTOMER, name: 'أحمد بن سالم', companyName: 'مؤسسة النخبة للتجارة' },

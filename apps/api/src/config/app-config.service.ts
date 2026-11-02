@@ -74,6 +74,7 @@ export class AppConfigService {
   get storage() {
     return {
       endpoint: this.get('S3_ENDPOINT'),
+      publicEndpoint: this.get('S3_PUBLIC_ENDPOINT'),
       region: this.get('S3_REGION'),
       bucket: this.get('S3_BUCKET'),
       accessKeyId: this.get('S3_ACCESS_KEY_ID'),

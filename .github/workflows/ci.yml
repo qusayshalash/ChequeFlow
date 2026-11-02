@@ -187,3 +187,99 @@ jobs:
 
       - name: Export iOS bundle
         run: pnpm --filter @cheque-flow/mobile exec expo export --platform ios --output-dir dist-ci-ios
+
+  # The production stack, exactly as docs/deployment.md tells an operator to
+  # run it: both images built, every service started from the production
+  # compose file, the first owner created with the bootstrap, and then the
+  # paths a real user takes — over HTTPS, through the proxy. The step that
+  # matters most is the last one: a cheque image opened through its signed
+  # link on the public files address, which only works if storage, the proxy,
+  # the signing address and the bucket are all right at once.
+  production-stack:
+    name: production stack (Docker)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Write a throwaway production environment
+        run: |
+          {
+            echo "APP_DOMAIN=localhost"
+            echo "FILES_DOMAIN=files.localhost"
+            echo "POSTGRES_PASSWORD=$(openssl rand -hex 24)"
+            echo "JWT_ACCESS_SECRET=$(openssl rand -hex 32)"
+            echo "JWT_REFRESH_SECRET=$(openssl rand -hex 32)"
+            echo "FIELD_ENCRYPTION_KEY=$(openssl rand -base64 32)"
+            echo "S3_ACCESS_KEY_ID=chequeflow"
+            echo "S3_SECRET_ACCESS_KEY=$(openssl rand -hex 24)"
+            # A real provider is required in production; the key is never used,
+            # because no cheque is sent for reading here.
+            echo "OCR_PROVIDER=claude"
+            echo "ANTHROPIC_API_KEY=ci-placeholder-never-called"
+            echo "PUSH_ENABLED=false"
+          } > infrastructure/.env.production
+
+      - name: Build and start the stack
+        run: >
+          docker compose --env-file infrastructure/.env.production
+          -f infrastructure/docker-compose.prod.yml up -d --build
+
+      - name: Wait for HTTPS
+        run: |
+          for attempt in $(seq 1 90); do
+            if curl -skf https://localhost/api/v1/health >/dev/null; then
+              echo "API answering through the proxy after ${attempt} attempt(s)"; exit 0
+            fi
+            sleep 3
+          done
+          docker compose --env-file infrastructure/.env.production -f infrastructure/docker-compose.prod.yml ps
+          docker compose --env-file infrastructure/.env.production -f infrastructure/docker-compose.prod.yml logs --tail 80
+          exit 1
+
+      - name: Create the first owner
+        run: >
+          docker compose --env-file infrastructure/.env.production
+          -f infrastructure/docker-compose.prod.yml run --rm
+          -e ORG_NAME=CI -e ORG_TIMEZONE=Asia/Hebron
+          -e OWNER_NAME=Owner -e OWNER_EMAIL=owner@ci.test -e OWNER_PASSWORD=Ci-Owner-Pass-2026
+          migrate /repo/node_modules/.bin/tsx /repo/packages/database/prisma/bootstrap.ts
+
+      - name: Use it the way a person would
+        run: |
+          set -e
+          TOKEN=$(curl -skf https://localhost/api/v1/auth/login \
+            -H 'content-type: application/json' \
+            -d '{"email":"owner@ci.test","password":"Ci-Owner-Pass-2026"}' | jq -r .accessToken)
+          test -n "$TOKEN" && test "$TOKEN" != null
+          AUTH="authorization: Bearer $TOKEN"
+
+          # The organization's zone travels with the session.
+          test "$(curl -skf https://localhost/api/v1/auth/me -H "$AUTH" | jq -r .timeZone)" = "Asia/Hebron"
+
+          # The dashboard is served.
+          curl -skf https://localhost/login -o /dev/null
+
+          # A cheque, a photograph of it, and the photograph opened again
+          # through its signed link on the public files address.
+          CHEQUE=$(curl -skf https://localhost/api/v1/cheques -H "$AUTH" \
+            -H 'content-type: application/json' \
+            -d '{"direction":"INCOMING","chequeNumber":"CI-0001","amount":"100.00","currency":"ILS","dueDate":"2027-01-15"}' \
+            | jq -r .cheque.id)
+          echo '/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==' \
+            | base64 -d > front.jpg
+          IMAGE=$(curl -skf "https://localhost/api/v1/cheques/$CHEQUE/images" -H "$AUTH" \
+            -F side=FRONT -F "file=@front.jpg;type=image/jpeg" | jq -r .image.id)
+          URL=$(curl -skf "https://localhost/api/v1/cheques/$CHEQUE/images/$IMAGE/url" -H "$AUTH" | jq -r .url)
+          echo "signed link host: $(echo "$URL" | cut -d/ -f3)"
+          case "$URL" in https://files.localhost/*) ;; *) echo "signed for the wrong address: $URL" >&2; exit 1 ;; esac
+          curl -skf "$URL" -o fetched.jpg
+          cmp front.jpg fetched.jpg
+          echo "image round-trip through the public address: identical"
+
+      - name: Stack logs
+        if: failure()
+        run: >
+          docker compose --env-file infrastructure/.env.production
+          -f infrastructure/docker-compose.prod.yml logs --tail 150

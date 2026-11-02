@@ -48,6 +48,14 @@ export const envSchema = z
     RATE_LIMIT_DEFAULT_PER_MINUTE: z.coerce.number().int().min(1).default(120),
 
     S3_ENDPOINT: z.string().min(1),
+    /**
+     * Where a browser or phone reaches storage, when that differs from where
+     * the API does. In production the API talks to storage on the internal
+     * network (`http://storage:9000`) while an image link has to work from
+     * anywhere (`https://files.example.com`). Used only to sign links; leave
+     * it unset when one address serves both, as in development.
+     */
+    S3_PUBLIC_ENDPOINT: z.string().url().optional(),
     S3_REGION: z.string().default('us-east-1'),
     S3_BUCKET: z.string().min(1),
     S3_ACCESS_KEY_ID: z.string().min(1),
@@ -114,6 +122,18 @@ export const envSchema = z
     }
 
     // Production must never silently run on synthetic OCR data.
+    //
+    // Asking for the mock provider by name was the way round this: the rules
+    // below caught a real provider missing its key, and nothing caught
+    // `OCR_PROVIDER=mock` itself — so a production server could be told,
+    // explicitly, to invent the amounts on the cheques it was shown.
+    if (env.OCR_PROVIDER === 'mock') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['OCR_PROVIDER'],
+        message: 'OCR_PROVIDER=mock invents cheque data and cannot be used in production',
+      });
+    }
     if (env.OCR_PROVIDER === 'claude' && !env.ANTHROPIC_API_KEY) {
       ctx.addIssue({
         code: 'custom',

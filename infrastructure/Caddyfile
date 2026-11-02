@@ -1,0 +1,27 @@
+# The only thing that faces the internet.
+#
+# Caddy obtains and renews HTTPS certificates by itself from the domain names
+# below — no certificate files to copy around or forget to renew. Every other
+# service in the stack is reachable only from inside it.
+
+{$APP_DOMAIN} {
+	encode zstd gzip
+
+	# The API keeps its own /api prefix, so it is passed through untouched.
+	handle /api/* {
+		reverse_proxy api:3333
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}
+
+# Cheque images, on their own name. A signed link carries the host it was
+# signed for and the exact path, so storage is served whole on a subdomain
+# rather than under a path the proxy would have to rewrite — which would break
+# every signature. Caddy keeps the original Host header, which is what the
+# signature is checked against.
+{$FILES_DOMAIN} {
+	reverse_proxy storage:9000
+}

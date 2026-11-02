@@ -24,7 +24,7 @@
 | ----------------------- | -------------------------- | ------------------------------------------------------------- |
 | Node.js                 | ≥ 22.12 (مُختبر على 24.20) |                                                               |
 | pnpm                    | 10.15.0                    | `corepack enable && corepack prepare pnpm@10.15.0 --activate` |
-| Docker + Docker Compose | أي إصدار حديث              | لتشغيل PostgreSQL وRedis وMinIO                               |
+| Docker + Docker Compose | أي إصدار حديث              | لتشغيل PostgreSQL وRedis وتخزين الصور (RustFS)                |
 | Xcode / Android Studio  | اختياري                    | لتشغيل تطبيق الجوال على محاكٍ                                 |
 
 ---
@@ -40,7 +40,7 @@ cp .env.example .env
 ```
 
 ```bash
-# 2) تشغيل الخدمات المحلية (PostgreSQL + Redis + MinIO)
+# 2) تشغيل الخدمات المحلية (PostgreSQL + Redis + RustFS)
 pnpm infra:up
 ```
 
@@ -169,7 +169,7 @@ pnpm --filter @cheque-flow/mobile dev
 
 ## تخزين صور الشيكات بلا Docker
 
-صور الشيكات تُحفظ في تخزين كائنات متوافق مع S3. إن لم يكن Docker ولا MinIO
+صور الشيكات تُحفظ في تخزين كائنات متوافق مع S3. إن لم يكن Docker ولا RustFS
 متاحًا فلا يوجد ما يستمع على المنفذ، فيفشل رفع أي صورة، وتسقط معه ثمانية من
 اختبارات `test:e2e`. `scripts/storage-stub.mjs` يردّ على الطلبات الخمسة التي
 يُصدرها الـAPI فعلًا ولا شيء غيرها.
@@ -258,7 +258,7 @@ bash tests/acceptance-phase-2.sh
 │   ├── ui/             رموز التصميم ومكوّنات الواجهة
 │   ├── localization/   قواميس ar/en وأدوات التنسيق
 │   └── config/         إعدادات ESLint وTypeScript وPrettier المشتركة
-├── infrastructure/  docker-compose (PostgreSQL, Redis, MinIO)
+├── infrastructure/  docker-compose (PostgreSQL, Redis, RustFS) + النشر الإنتاجي
 ├── docs/            قرارات معمارية + توثيق API
 └── tests/           سيناريوهات القبول (المرحلتان الأولى والثانية)
 ```

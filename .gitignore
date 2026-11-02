@@ -7,10 +7,13 @@ out/
 coverage/
 *.tsbuildinfo
 
+# Every environment file, at any depth — `.env.production` holds every
+# production secret, and ignoring only files named exactly `.env` would have
+# let it be committed. The examples are the only ones that belong in git.
 .env
-.env.local
-.env.*.local
+.env.*
 !.env.example
+!.env.*.example
 
 .expo/
 .expo-shared/
