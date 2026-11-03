@@ -21,6 +21,7 @@
       "package": "com.chequeflow.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundImage": "./assets/adaptive-icon-background.png",
         "backgroundColor": "#087F6D"
       },
       "permissions": ["CAMERA", "USE_BIOMETRIC", "USE_FINGERPRINT"],
@@ -51,7 +52,7 @@
         "expo-splash-screen",
         {
           "image": "./assets/splash-icon.png",
-          "imageWidth": 220,
+          "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#087F6D"
         }
@@ -59,7 +60,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/adaptive-icon.png",
+          "icon": "./assets/notification-icon.png",
           "color": "#087F6D",
           "defaultChannel": "reminders"
         }
