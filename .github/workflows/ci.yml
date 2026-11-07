@@ -305,6 +305,44 @@ jobs:
           test "$(curl -skf "https://localhost/api/v1/cheques/$CHEQUE" -H "$AUTH" | jq -r .status)" = "IN_HAND"
           echo "image round-trip through the public address: identical"
 
+      # A backup counts once it has been restored. This takes one, destroys
+      # the volumes as a dead server would have, restores onto the empty stack
+      # and asks the API for what was there.
+      - name: Survive losing the server
+        run: |
+          set -e
+          sudo mkdir -p /srv/backup
+          sudo mkdir -p /root
+          {
+            echo "RESTIC_REPOSITORY=/srv/backup/repo"
+            echo "RESTIC_PASSWORD=$(openssl rand -hex 32)"
+            echo "BACKUP_PING_URL="
+          } > infrastructure/.env.backup
+          run_clean() { sudo env -i PATH="$PATH" HOME=/root "$@"; }
+          run_clean bash scripts/server-backup.sh
+
+          ./dc down -v
+          run_clean bash scripts/server-restore.sh latest --confirm
+
+          for attempt in $(seq 1 60); do
+            curl -skf https://localhost/api/v1/health >/dev/null && break
+            sleep 3
+          done
+          TOKEN=$(curl -skf https://localhost/api/v1/auth/login \
+            -H 'content-type: application/json' \
+            -d '{"email":"owner@ci.test","password":"Ci-Owner-Pass-2026"}' | jq -r .accessToken)
+          AUTH="authorization: Bearer $TOKEN"
+          CHEQUE=$(curl -skf "https://localhost/api/v1/cheques?pageSize=5" -H "$AUTH" | jq -r '.data[] | select(.chequeNumber=="CI-0001") | .id')
+          test "$(curl -skf "https://localhost/api/v1/cheques/$CHEQUE" -H "$AUTH" | jq -r .status)" = "IN_HAND"
+          IMAGE=$(curl -skf "https://localhost/api/v1/cheques/$CHEQUE" -H "$AUTH" | jq -r '.images[0].id')
+          URL=$(curl -skf "https://localhost/api/v1/cheques/$CHEQUE/images/$IMAGE/url" -H "$AUTH" | jq -r .url)
+          curl -skf "$URL" -o restored.jpg
+          cmp front.jpg restored.jpg
+
+          # The append-only rule came back with the data.
+          ! ./dc exec -T postgres psql -U chequeflow -d chequeflow -c "DELETE FROM audit_logs" 2>/dev/null
+          echo "restored after losing every volume: record, image and triggers intact"
+
       - name: Stack logs
         if: failure()
         run: >

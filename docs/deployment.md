@@ -106,13 +106,38 @@ docker compose --env-file infrastructure/.env.production \
 
 ## 5) النسخ الاحتياطي
 
-ثلاثة أشياء، ولكل منها نسخة:
+`scripts/server-backup.sh` ينسخ قاعدة البيانات وصور الشيكات إلى خارج الخادم، مشفّرة
+**قبل** أن تغادره، فلا يقرؤها مزوّد التخزين. يحتفظ بـ7 نسخ يومية و4 أسبوعية و6 شهرية.
+وظيفة `production stack` في CI تأخذ نسخة، تحذف كل البيانات، تستعيدها، ثم تفتح الشيك
+وصورته.
 
-| ماذا                   | كيف                                                                                          |
-| ---------------------- | -------------------------------------------------------------------------------------------- |
-| قاعدة البيانات         | `docker compose … exec postgres pg_dump -U chequeflow chequeflow > backup.sql` يوميًا (cron) |
-| صور الشيكات            | الحجم `storage-data` — لقطة من المزوّد، أو نسخ دوري                                          |
-| `FIELD_ENCRYPTION_KEY` | مرة واحدة، في مكان آمن خارج الخادم                                                           |
+**الإعداد مرة واحدة:**
+
+1. أنشئ مخزنًا (bucket) ومفتاح وصول خاصًا به لدى مزوّد متوافق مع S3، مثل Cloudflare R2.
+2. انسخ `infrastructure/.env.backup.example` إلى `infrastructure/.env.backup` واملأه.
+   ولّد `RESTIC_PASSWORD` بالأمر `openssl rand -hex 32`.
+3. جرّب: `bash scripts/server-backup.sh`
+4. جدوِله يوميًا، الساعة 01:00 بتوقيت UTC:
+
+```bash
+echo '0 1 * * * root /root/ChequeFlow/scripts/server-backup.sh >> /var/log/chequeflow-backup.log 2>&1' > /etc/cron.d/chequeflow-backup
+```
+
+**احتفظ خارج الخادم، كلٌّ في مكان آمن، بما يلي:**
+
+| ماذا                   | لماذا                                         |
+| ---------------------- | --------------------------------------------- |
+| `RESTIC_PASSWORD`      | من دونه لا تُفتح أي نسخة احتياطية             |
+| `FIELD_ENCRYPTION_KEY` | من دونه لا تُقرأ أرقام الحسابات بعد الاستعادة |
+| مفتاح الوصول للمخزن    | للوصول إلى النسخ من خادم جديد                 |
+
+**الاستعادة، على هذا الخادم أو على خادم جديد:** ثبّت النظام، وضع في
+`.env.production` قيمة `FIELD_ENCRYPTION_KEY` نفسها، وضع `.env.backup`، ثم:
+
+```bash
+bash scripts/server-restore.sh                  # يعرض النسخ المتاحة
+bash scripts/server-restore.sh latest --confirm # يستبدل كل ما على الخادم
+```
 
 ونسخة النظام الاحتياطية من صفحة الإعدادات تبقى متاحة أيضًا، لكنها لا تحمل الصور.
 
