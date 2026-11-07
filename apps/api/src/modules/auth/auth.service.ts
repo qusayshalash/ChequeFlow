@@ -306,8 +306,8 @@ export class AuthService {
   }
 
   /** Returns the caller's profile with their live permission set. */
-  me(user: RequestUser): RequestUser {
-    return user;
+  me(user: RequestUser): RequestUser & { ocrEnabled: boolean } {
+    return { ...user, ocrEnabled: this.config.ocr.provider !== 'disabled' };
   }
 
   private static dummyHashCache: string | null = null;

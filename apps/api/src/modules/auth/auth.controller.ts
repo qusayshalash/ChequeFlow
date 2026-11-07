@@ -120,7 +120,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Current user with their live permissions' })
   @ApiResponse({ status: 200, type: MeResponseDto })
-  me(@CurrentUser() user: RequestUser): RequestUser {
+  me(@CurrentUser() user: RequestUser): RequestUser & { ocrEnabled: boolean } {
     return this.auth.me(user);
   }
 }

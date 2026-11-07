@@ -8,6 +8,7 @@ import type { ChequeDetailView } from '@cheque-flow/shared-types';
 import { Badge, Button, Card, Field, LoadingState, inputClassName } from '@cheque-flow/ui';
 
 import { useApi, useTranslator } from '@/components/providers';
+import { useSession } from '@/components/session';
 
 /** Extraction fields the reviewer can confirm straight onto the cheque. */
 const EDITABLE_FIELDS = [
@@ -32,6 +33,7 @@ export function OcrReviewPanel({ cheque }: { cheque: ChequeDetailView }) {
   const api = useApi();
   const t = useTranslator();
   const queryClient = useQueryClient();
+  const ocrOff = useSession().data?.ocrEnabled === false;
 
   const [values, setValues] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
@@ -93,6 +95,9 @@ export function OcrReviewPanel({ cheque }: { cheque: ChequeDetailView }) {
   if (suggestion.isPending) return <LoadingState label={t('ocr.processing')} />;
 
   if (!suggestion.data) {
+    // Nothing to review and nothing to run: the record's own actions move it on.
+    if (ocrOff) return null;
+
     return (
       <Card className="flex flex-col items-start gap-3">
         <h2 className="text-lg font-semibold text-ink">{t('ocr.reviewTitle')}</h2>
@@ -180,14 +185,16 @@ export function OcrReviewPanel({ cheque }: { cheque: ChequeDetailView }) {
           <Button type="submit" size="lg" loading={confirm.isPending}>
             {t('ocr.confirm')}
           </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => runOcr.mutate()}
-            loading={runOcr.isPending}
-          >
-            {t('common.retry')}
-          </Button>
+          {ocrOff ? null : (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => runOcr.mutate()}
+              loading={runOcr.isPending}
+            >
+              {t('common.retry')}
+            </Button>
+          )}
         </div>
       </form>
     </Card>

@@ -132,7 +132,10 @@ export default function PerformActionScreen() {
 
   if (cheque.isPending) return <LoadingView label={t('common.loading')} />;
 
-  const actions = cheque.data?.allowedActions ?? [];
+  // Reviewing has its own screen and submitting has no endpoint.
+  const actions = (cheque.data?.allowedActions ?? []).filter(
+    (name) => name !== ChequeAction.REVIEW && name !== ChequeAction.SUBMIT_FOR_REVIEW,
+  );
 
   /** Everything the chosen action requires must be filled before submitting. */
   function missingInput(action: string): boolean {

@@ -116,7 +116,11 @@ export function ChequeActionsPanel({
   });
 
   // The API already filtered these by status *and* by the caller's permissions.
-  const available = cheque.allowedActions;
+  // Reviewing has its own panel and submitting has no endpoint, so a button for
+  // either could only answer "an unexpected error occurred".
+  const available = cheque.allowedActions.filter(
+    (name) => name !== ChequeAction.REVIEW && name !== ChequeAction.SUBMIT_FOR_REVIEW,
+  );
 
   if (available.length === 0) {
     return null;

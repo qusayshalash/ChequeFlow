@@ -10,6 +10,11 @@ const base: OcrProviderSettings = {
 };
 
 describe('resolveOcrProvider', () => {
+  it('never falls back to invented data when reading is turned off', () => {
+    const result = resolveOcrProvider({ ...base, provider: 'disabled' });
+    expect(result).toEqual({ effective: 'disabled', requested: 'disabled' });
+  });
+
   it('uses Google Vision when a key file is configured', () => {
     const result = resolveOcrProvider({ ...base, googleKeyFile: '/key.json' });
     expect(result).toEqual({ effective: 'google', requested: 'google' });

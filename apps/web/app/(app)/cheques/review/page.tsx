@@ -11,10 +11,12 @@ import { PageHeader } from '@/components/page-header';
 import { Pagination } from '@/components/pagination';
 import { Panel } from '@/components/panel';
 import { useApi, useTranslator } from '@/components/providers';
+import { useSession } from '@/components/session';
 
 export default function ReviewQueuePage() {
   const api = useApi();
   const t = useTranslator();
+  const ocrOff = useSession().data?.ocrEnabled === false;
 
   const [page, setPage] = useState(1);
 
@@ -31,10 +33,12 @@ export default function ReviewQueuePage() {
   return (
     <div className="mx-auto flex max-w-[1440px] flex-col gap-5">
       <PageHeader title={t('nav.review')} subtitle={t('pageDescription.review')} />
-      <Card className="flex items-start gap-3 border-warning-line bg-warning-soft/70 text-sm leading-6 text-warning">
-        <span className="mt-1 size-2 shrink-0 rounded-full bg-warning" aria-hidden="true" />
-        {t('ocr.suggestionNotice')}
-      </Card>
+      {ocrOff ? null : (
+        <Card className="flex items-start gap-3 border-warning-line bg-warning-soft/70 text-sm leading-6 text-warning">
+          <span className="mt-1 size-2 shrink-0 rounded-full bg-warning" aria-hidden="true" />
+          {t('ocr.suggestionNotice')}
+        </Card>
+      )}
       {query.isPending ? <LoadingState label={t('common.loading')} /> : null}
       {query.isError ? (
         <ErrorState

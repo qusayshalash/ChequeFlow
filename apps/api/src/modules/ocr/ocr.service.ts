@@ -29,6 +29,7 @@ import { StorageService } from '../storage/storage.service';
 import { toDateOnly } from '../cheques/cheque.service';
 import { chequeDetailInclude, toIsoDate } from '../cheques/cheque.mapper';
 import { OCR_PROVIDER } from './ocr.tokens';
+import { DISABLED_OCR_PROVIDER_NAME } from './providers/disabled-ocr.provider';
 
 export interface OcrSuggestion {
   extractionId: string;
@@ -62,6 +63,14 @@ export class OcrService {
   ) {}
 
   async process(user: RequestUser, chequeId: string): Promise<OcrSuggestion> {
+    // Before anything is written: a cheque must not be left marked PROCESSING,
+    // or FAILED, by a feature the organization has switched off.
+    if (this.provider.name === DISABLED_OCR_PROVIDER_NAME) {
+      throw new AppError(ApiErrorCode.CONFLICT, 'Cheque reading is turned off', {
+        details: { reason: 'OCR_DISABLED' },
+      });
+    }
+
     const cheque = await this.prisma.db.cheque.findFirst({
       where: { id: chequeId, organizationId: user.organizationId, deletedAt: null },
       include: { images: { select: { side: true, storageKey: true, mimeType: true } } },

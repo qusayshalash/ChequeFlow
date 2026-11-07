@@ -104,7 +104,7 @@ services:
       S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
       # No default: the API refuses to start on the mock provider in
       # production, and the choice of a real one is the operator's.
-      OCR_PROVIDER: ${OCR_PROVIDER:?set OCR_PROVIDER to claude or google}
+      OCR_PROVIDER: ${OCR_PROVIDER:?set OCR_PROVIDER to disabled, claude or google}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       PUSH_ENABLED: ${PUSH_ENABLED:-false}
     depends_on:

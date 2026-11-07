@@ -3,10 +3,11 @@ import { Logger } from '@nestjs/common';
 import type { OcrProvider } from '@cheque-flow/shared-types';
 
 import { ClaudeVisionOcrProvider } from './providers/claude-vision-ocr.provider';
+import { DisabledOcrProvider } from './providers/disabled-ocr.provider';
 import { GoogleVisionOcrProvider } from './providers/google-vision-ocr.provider';
 import { MockOcrProvider } from './providers/mock-ocr.provider';
 
-export type OcrProviderName = 'mock' | 'claude' | 'google';
+export type OcrProviderName = 'mock' | 'claude' | 'google' | 'disabled';
 
 export interface OcrProviderSettings {
   provider: OcrProviderName;
@@ -45,6 +46,8 @@ export interface OcrProviderResolution {
  */
 export function resolveOcrProvider(settings: OcrProviderSettings): OcrProviderResolution {
   const requested = settings.provider;
+
+  if (requested === 'disabled') return { effective: 'disabled', requested };
 
   if (requested === 'google') {
     const hasCredentials =
@@ -100,6 +103,8 @@ export function createOcrProvider(settings: OcrProviderSettings): OcrProvider {
   }
 
   switch (resolution.effective) {
+    case 'disabled':
+      return new DisabledOcrProvider();
     case 'google':
       return new GoogleVisionOcrProvider({ keyFilename: settings.googleKeyFile });
     case 'claude':

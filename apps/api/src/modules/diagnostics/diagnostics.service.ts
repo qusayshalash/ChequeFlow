@@ -62,6 +62,16 @@ export class DiagnosticsService {
       isProduction: this.config.isProduction,
     });
 
+    // A choice, not a fault: nothing is being invented and nothing needs fixing.
+    if (resolution.effective === 'disabled') {
+      return {
+        state: 'ok',
+        requested: resolution.requested,
+        effective: resolution.effective,
+        messageKey: 'diagnostics.ocrDisabled',
+      };
+    }
+
     if (resolution.effective === 'mock' && resolution.requested !== 'mock') {
       return {
         state: 'degraded',

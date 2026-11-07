@@ -1,9 +1,10 @@
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import type { ReactElement } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { IconCamera, IconCheque, IconContacts, IconEdit, type IconProps } from '@/components/icons';
-import { useTranslator } from '@/components/providers';
+import { useApi, useTranslator } from '@/components/providers';
 import { Body, ScreenHeader } from '@/components/ui';
 import { useStyles, useTheme } from '@/theme-context';
 import { elevation, fontFamily, radius, space, type Palette } from '@/theme';
@@ -23,17 +24,23 @@ export default function AddScreen() {
   const styles = useStyles(makeStyles);
   const t = useTranslator();
   const router = useRouter();
+  const api = useApi();
+  const session = useQuery({ queryKey: ['session'], queryFn: () => api.me() });
+  // Photographing runs the reader, so it goes when the server has that off.
+  const ocrOff = session.data?.ocrEnabled === false;
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <ScreenHeader title={t('common.add')} />
 
-      <Choice
-        Icon={IconCamera}
-        label={t('cheque.captureNew')}
-        hint={t('ocr.reviewSubtitle')}
-        onPress={() => router.push('/(app)/capture')}
-      />
+      {ocrOff ? null : (
+        <Choice
+          Icon={IconCamera}
+          label={t('cheque.captureNew')}
+          hint={t('ocr.reviewSubtitle')}
+          onPress={() => router.push('/(app)/capture')}
+        />
+      )}
       <Choice
         Icon={IconEdit}
         label={t('cheque.addManually')}

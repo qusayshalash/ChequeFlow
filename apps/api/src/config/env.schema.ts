@@ -69,7 +69,7 @@ export const envSchema = z
       .max(50 * 1024 * 1024)
       .default(10 * 1024 * 1024),
 
-    OCR_PROVIDER: z.enum(['mock', 'claude', 'google']).default('google'),
+    OCR_PROVIDER: z.enum(['mock', 'claude', 'google', 'disabled']).default('google'),
     OCR_MOCK_LATENCY_MS: z.coerce.number().int().min(0).max(10_000).default(350),
     OCR_MOCK_SEED: z.string().default('cheque-flow'),
     ANTHROPIC_API_KEY: z.string().optional(),

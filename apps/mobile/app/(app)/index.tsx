@@ -64,6 +64,9 @@ export default function DashboardScreen() {
 
   const today = useToday();
 
+  const session = useQuery({ queryKey: ['session'], queryFn: () => api.me() });
+  const ocrOff = session.data?.ocrEnabled === false;
+
   const query = useQuery<DashboardSummary>({
     queryKey: ['dashboard'],
     queryFn: () => api.getDashboard(),
@@ -248,11 +251,13 @@ export default function DashboardScreen() {
           />
 
           <View style={styles.quickRow}>
-            <QuickAction
-              label={t('cheque.captureNew')}
-              Icon={IconCamera}
-              onPress={() => router.push('/(app)/capture')}
-            />
+            {ocrOff ? null : (
+              <QuickAction
+                label={t('cheque.captureNew')}
+                Icon={IconCamera}
+                onPress={() => router.push('/(app)/capture')}
+              />
+            )}
             <QuickAction
               label={t('cheque.addManually')}
               Icon={IconEdit}

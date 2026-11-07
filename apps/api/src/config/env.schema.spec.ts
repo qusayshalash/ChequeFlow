@@ -87,6 +87,16 @@ describe('validateEnv', () => {
     ).toThrow(/invents cheque data/);
   });
 
+  it('lets production run with cheque reading turned off, and no key', () => {
+    const env = validateEnv({
+      ...base,
+      NODE_ENV: 'production',
+      JWT_REFRESH_SECRET: 'z'.repeat(40),
+      OCR_PROVIDER: 'disabled',
+    });
+    expect(env.OCR_PROVIDER).toBe('disabled');
+  });
+
   it('still allows the mock OCR provider outside production', () => {
     expect(validateEnv({ ...base, OCR_PROVIDER: 'mock' }).OCR_PROVIDER).toBe('mock');
   });

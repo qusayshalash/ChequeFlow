@@ -467,6 +467,7 @@
     "databaseOk": "Connected",
     "howToFix": "How do I turn on real reading?",
     "ocr": "Cheque reading (OCR)",
+    "ocrDisabled": "Turned off: cheques are entered by hand",
     "ocrFallback": "Not reading cheques — the extracted values are invented",
     "ocrGuide": "Follow the guide in docs/ocr-setup.md",
     "ocrMock": "Test mode: the extracted values are invented",

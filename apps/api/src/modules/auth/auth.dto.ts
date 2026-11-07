@@ -42,6 +42,9 @@ export class MeResponseDto {
 
   @ApiProperty({ example: 'Asia/Hebron', description: "The organization's time zone" })
   timeZone!: string;
+
+  @ApiProperty({ description: 'Whether this server reads cheque images' })
+  ocrEnabled!: boolean;
 }
 
 export class LoginBodyDto {

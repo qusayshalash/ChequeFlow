@@ -19,6 +19,8 @@ export interface SessionUser {
   permissions: string[];
   /** The organization's time zone: what "today" means for these books. */
   timeZone: string;
+  /** False when this server takes cheques by manual entry only. */
+  ocrEnabled: boolean;
 }
 
 /** Loads the signed-in user and their live permission set. */

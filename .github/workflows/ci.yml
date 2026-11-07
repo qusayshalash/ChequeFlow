@@ -214,10 +214,8 @@ jobs:
             echo "FIELD_ENCRYPTION_KEY=$(openssl rand -base64 32)"
             echo "S3_ACCESS_KEY_ID=chequeflow"
             echo "S3_SECRET_ACCESS_KEY=$(openssl rand -hex 24)"
-            # A real provider is required in production; the key is never used,
-            # because no cheque is sent for reading here.
-            echo "OCR_PROVIDER=claude"
-            echo "ANTHROPIC_API_KEY=ci-placeholder-never-called"
+            # What the example file ships: manual entry, no key.
+            echo "OCR_PROVIDER=disabled"
             echo "PUSH_ENABLED=false"
           } > infrastructure/.env.production
 
@@ -271,6 +269,9 @@ jobs:
           # The organization's zone travels with the session.
           test "$(curl -skf https://localhost/api/v1/auth/me -H "$AUTH" | jq -r .timeZone)" = "Asia/Hebron"
 
+          # Cheque reading is off, and the session says so.
+          test "$(curl -skf https://localhost/api/v1/auth/me -H "$AUTH" | jq -r .ocrEnabled)" = "false"
+
           # The dashboard is served.
           curl -skf https://localhost/login -o /dev/null
 
@@ -280,6 +281,10 @@ jobs:
             -H 'content-type: application/json' \
             -d '{"direction":"INCOMING","chequeNumber":"CI-0001","amount":"100.00","currency":"ILS","dueDate":"2027-01-15"}' \
             | jq -r .cheque.id)
+          # Reading is refused, and refusing it leaves the record as it was.
+          test "$(curl -sk -o /dev/null -w '%{http_code}' -X POST "https://localhost/api/v1/cheques/$CHEQUE/process-ocr" -H "$AUTH")" = "409"
+          test "$(curl -skf "https://localhost/api/v1/cheques/$CHEQUE" -H "$AUTH" | jq -r .ocrStatus)" != "PROCESSING"
+
           echo '/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==' \
             | base64 -d > front.jpg
           IMAGE=$(curl -skf "https://localhost/api/v1/cheques/$CHEQUE/images" -H "$AUTH" \
@@ -289,6 +294,15 @@ jobs:
           case "$URL" in https://files.localhost/*) ;; *) echo "signed for the wrong address: $URL" >&2; exit 1 ;; esac
           curl -skf "$URL" -o fetched.jpg
           cmp front.jpg fetched.jpg
+
+          # A hand-entered cheque can leave DRAFT on a freshly bootstrapped server.
+          CONTACT=$(curl -skf https://localhost/api/v1/contacts -H "$AUTH" \
+            -H 'content-type: application/json' -d '{"name":"CI Contact","type":"CUSTOMER"}' | jq -r .id)
+          LOCATION=$(curl -skf https://localhost/api/v1/locations -H "$AUTH" | jq -r '.[0].id')
+          curl -skf "https://localhost/api/v1/cheques/$CHEQUE/receive" -H "$AUTH" \
+            -H 'content-type: application/json' \
+            -d "{\"version\":$(curl -skf "https://localhost/api/v1/cheques/$CHEQUE" -H "$AUTH" | jq .version),\"fromContactId\":\"$CONTACT\",\"toLocationId\":\"$LOCATION\"}" -o /dev/null
+          test "$(curl -skf "https://localhost/api/v1/cheques/$CHEQUE" -H "$AUTH" | jq -r .status)" = "IN_HAND"
           echo "image round-trip through the public address: identical"
 
       - name: Stack logs
