@@ -26,8 +26,11 @@ done
 setting() { sed -n "s/^$1=//p" "$2" | head -n 1; }
 
 REPOSITORY=$(setting RESTIC_REPOSITORY "$BACKUP_ENV")
+# The same fallbacks the compose file uses for these two.
 POSTGRES_USER=$(setting POSTGRES_USER "$APP_ENV")
+POSTGRES_USER=${POSTGRES_USER:-chequeflow}
 POSTGRES_DB=$(setting POSTGRES_DB "$APP_ENV")
+POSTGRES_DB=${POSTGRES_DB:-chequeflow}
 
 REPOSITORY_MOUNT=()
 case "$REPOSITORY" in
