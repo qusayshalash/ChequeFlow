@@ -33,7 +33,7 @@ cp infrastructure/.env.production.example infrastructure/.env.production
 املأ `infrastructure/.env.production`. ولّد كل سرّ **على الخادم نفسه**:
 
 ```bash
-openssl rand -base64 48   # كلمة مرور قاعدة البيانات، سرّا الجلسات، سرّ التخزين
+openssl rand -hex 32      # كلمة مرور قاعدة البيانات، سرّا الجلسات، سرّ التخزين
 openssl rand -base64 32   # FIELD_ENCRYPTION_KEY — بالضبط 32 بايت
 ```
 
