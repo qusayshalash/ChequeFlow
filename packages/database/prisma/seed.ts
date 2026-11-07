@@ -16,13 +16,13 @@ import { config as loadEnv } from 'dotenv';
 import {
   ContactType,
   DEFAULT_ROLE_PERMISSIONS,
-  LocationType,
   PERMISSION_DESCRIPTIONS,
   Permission,
   SystemRole,
 } from '@cheque-flow/shared-types';
 
 import { createPrismaClient } from '../src/client.js';
+import { DEFAULT_LOCATIONS } from './default-locations.js';
 import { REFERENCE_BANKS } from './reference-banks.js';
 
 loadEnv({ path: path.resolve(__dirname, '../../../.env'), quiet: true });
@@ -207,13 +207,7 @@ async function main(): Promise<void> {
     }
 
     // ── locations ───────────────────────────────────────────────────────────
-    const locations = [
-      { type: LocationType.SAFE, name: 'الخزنة الرئيسية', description: 'خزنة الإدارة المالية' },
-      { type: LocationType.DRAWER, name: 'درج الصندوق', description: 'درج أمين الصندوق' },
-      { type: LocationType.BANK, name: 'إيداع بنكي', description: 'شيكات مودعة في البنك' },
-      { type: LocationType.EXTERNAL, name: 'خارج الشركة', description: 'بحوزة جهة خارجية' },
-    ];
-    for (const location of locations) {
+    for (const location of DEFAULT_LOCATIONS) {
       const existing = await prisma.location.findFirst({
         where: { organizationId: organization.id, name: location.name },
       });

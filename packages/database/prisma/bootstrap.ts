@@ -7,8 +7,8 @@
  * account to sign in with to create one.
  *
  * This creates only what a real organization needs to start: the permission
- * catalogue, the reference banks, the organization, one branch, the built-in
- * roles, and an owner. Everything else is entered through the product.
+ * catalogue, the reference banks, the organization, one branch, its storage
+ * locations, the built-in roles, and an owner. Everything else is entered through the product.
  *
  * It runs once. With any organization already present it refuses, so running
  * it again by mistake cannot create a second owner or touch existing data.
@@ -29,6 +29,7 @@ import {
 } from '@cheque-flow/shared-types';
 
 import { createPrismaClient } from '../src/client.js';
+import { DEFAULT_LOCATIONS } from './default-locations.js';
 import { REFERENCE_BANKS } from './reference-banks.js';
 
 function required(name: string): string {
@@ -113,6 +114,14 @@ async function main(): Promise<void> {
 
       const branch = await tx.branch.create({
         data: { organizationId: organization.id, name: 'الفرع الرئيسي', code: 'MAIN' },
+      });
+
+      await tx.location.createMany({
+        data: DEFAULT_LOCATIONS.map((location) => ({
+          ...location,
+          organizationId: organization.id,
+          branchId: branch.id,
+        })),
       });
 
       let ownerRoleId = '';
