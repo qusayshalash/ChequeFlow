@@ -11,7 +11,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint app src",
     "test": "vitest run",
-    "dev:offline": "expo start --offline"
+    "dev:offline": "expo start --offline",
+    "eas-build-post-install": "pnpm --filter \"@cheque-flow/mobile^...\" build"
   },
   "dependencies": {
     "@cheque-flow/api-client": "workspace:*",
