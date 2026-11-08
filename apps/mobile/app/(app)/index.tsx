@@ -4,7 +4,7 @@ import { useMemo, type ReactElement } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { type DashboardSummary } from '@cheque-flow/shared-types';
+import { headlineTotal, type DashboardSummary } from '@cheque-flow/shared-types';
 
 import { AttentionList, StatCard } from '@/components/dashboard-parts';
 import {
@@ -74,6 +74,9 @@ export default function DashboardScreen() {
 
   // Not tied to any chart window: "what is coming" is its own question, and on
   // a book whose next cheque is three weeks out a short horizon shows nothing.
+  // Every outstanding cheque, converted or not; see headlineTotal.
+  const headline = query.data ? headlineTotal(query.data, null) : null;
+
   const due = useQuery({
     queryKey: ['dashboard-due'],
     queryFn: () =>
@@ -157,9 +160,11 @@ export default function DashboardScreen() {
           <View style={styles.statGrid}>
             <StatCard
               label={t('dashboard.totalCheques')}
-              value={String(query.data.baseTotal.count)}
+              value={String(headline?.count ?? 0)}
               amountLabel={t('dashboard.totalAmount')}
-              amount={money(query.data.baseTotal.total, query.data.baseTotal.currency)}
+              amount={(headline?.amounts ?? [])
+                .map((entry) => money(entry.total, entry.currency))
+                .join(' · ')}
               tone="teal"
               Icon={IconCheque}
               onPress={() => open('tab=ALL')}
@@ -192,19 +197,6 @@ export default function DashboardScreen() {
               onPress={() => open('tab=ALL')}
             />
           </View>
-
-          {/* Beside the base figure rather than in a banner of its own: it is a
-              caveat on that one number, not on the screen. */}
-          {query.data.baseTotal.unconvertedCount > 0 ? (
-            <View style={styles.warn}>
-              <IconAlert size={14} color={c.semantic.warning} />
-              <Text style={styles.warnText}>
-                {t('dashboard.unconverted', {
-                  count: String(query.data.baseTotal.unconvertedCount),
-                })}
-              </Text>
-            </View>
-          ) : null}
 
           <AttentionList
             title={t('dashboard.needsYourAttention')}
@@ -374,16 +366,6 @@ const makeStyles = (c: Palette) =>
     pressed: { backgroundColor: c.surface.sunken },
 
     statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space['2'] },
-
-    warn: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: space['2'],
-      backgroundColor: c.semantic.warningBg,
-      borderRadius: radius.md,
-      padding: space['3'],
-    },
-    warnText: { ...type.caption, color: c.semantic.warning, flex: 1, textAlign: 'right' },
 
     quickRow: { flexDirection: 'row', gap: space['2'] },
     quick: {

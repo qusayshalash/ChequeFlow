@@ -4,7 +4,12 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
-import { ChequeStatus, addMoney, type DashboardSummary } from '@cheque-flow/shared-types';
+import {
+  ChequeStatus,
+  headlineTotal,
+  addMoney,
+  type DashboardSummary,
+} from '@cheque-flow/shared-types';
 import { EmptyState, ErrorState, LoadingState } from '@cheque-flow/ui';
 
 import { AttentionList } from '@/components/attention-list';
@@ -209,7 +214,7 @@ export default function DashboardPage() {
     );
   }
 
-  const base = dashboard.data.baseTotal;
+  const headline = headlineTotal(dashboard.data, currency);
 
   return (
     <div className="mx-auto max-w-[1440px]">
@@ -246,9 +251,11 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <StatCard
           label={t('dashboard.totalCheques')}
-          value={String(base.count)}
+          value={String(headline.count)}
           amountLabel={t('dashboard.totalAmount')}
-          amount={money(locale, base.total, base.currency)}
+          amount={headline.amounts
+            .map((entry) => money(locale, entry.total, entry.currency))
+            .join(' · ')}
           tone="teal"
           Icon={IconCheque}
           href="/cheques"
@@ -281,14 +288,6 @@ export default function DashboardPage() {
           href="/cheques/review"
         />
       </div>
-
-      {/* Only the base-currency figure carries an unconverted warning, and it
-          belongs beside the figure rather than in a banner of its own. */}
-      {base.unconvertedCount > 0 ? (
-        <p className="mt-3 rounded-xl border border-warning-line bg-warning-soft px-4 py-2.5 text-xs font-medium text-warning">
-          {t('dashboard.unconverted', { count: String(base.unconvertedCount) })}
-        </p>
-      ) : null}
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(320px,1fr)_minmax(0,1.75fr)] xl:items-stretch">
         <AttentionList
