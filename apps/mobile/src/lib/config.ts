@@ -5,19 +5,25 @@ import { DEFAULT_LOCALE, isLocale, type Locale } from '@cheque-flow/localization
 /**
  * Runtime configuration.
  *
- * `EXPO_PUBLIC_*` variables are inlined by Metro at build time. React Native
- * does not type `process.env`, so it is read through a narrowing helper rather
- * than an `any` cast.
+ * `EXPO_PUBLIC_*` variables are inlined by Metro at build time, and only where
+ * the code spells them out as `process.env.EXPO_PUBLIC_NAME`. They used to be
+ * read through a helper taking the name as an argument, which Metro cannot
+ * see: nothing was inlined, a built app found `process.env` empty, and the
+ * EAS preview pointed at the deployed server went to `localhost` instead.
+ * Expo Go hid it by deriving the address from the dev server.
  */
-function readEnv(name: string): string | undefined {
-  const source: unknown = process.env;
-  if (typeof source !== 'object' || source === null) return undefined;
-  const value = (source as Record<string, unknown>)[name];
+function nonEmpty(value: string | undefined): string | undefined {
   return typeof value === 'string' && value.length > 0 ? value : undefined;
 }
 
+const ENV = {
+  apiUrl: nonEmpty(process.env.EXPO_PUBLIC_API_URL),
+  apiPort: nonEmpty(process.env.EXPO_PUBLIC_API_PORT),
+  defaultLocale: nonEmpty(process.env.EXPO_PUBLIC_DEFAULT_LOCALE),
+};
+
 /** Where the API listens in development, when the address is derived. */
-const DEV_API_PORT = readEnv('EXPO_PUBLIC_API_PORT') ?? '3333';
+const DEV_API_PORT = ENV.apiPort ?? '3333';
 
 /**
  * The machine serving this bundle, in development.
@@ -49,7 +55,7 @@ function devServerHost(): string | undefined {
  * the last resort, which on a phone means the phone itself.
  */
 export const API_URL = (() => {
-  const configured = readEnv('EXPO_PUBLIC_API_URL');
+  const configured = ENV.apiUrl;
   if (configured) return configured;
 
   const host = devServerHost();
@@ -57,7 +63,7 @@ export const API_URL = (() => {
 })();
 
 export function defaultLocale(): Locale {
-  const configured = readEnv('EXPO_PUBLIC_DEFAULT_LOCALE');
+  const configured = ENV.defaultLocale;
   return configured && isLocale(configured) ? configured : DEFAULT_LOCALE;
 }
 
