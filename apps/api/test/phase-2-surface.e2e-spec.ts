@@ -572,6 +572,87 @@ describeWithDb('phase 2 surface (e2e)', () => {
         .expect(422);
     });
 
+    describe('the owner role', () => {
+      let adminToken = '';
+      let adminId = '';
+      const asAdmin = () => ({ Authorization: `Bearer ${adminToken}` });
+
+      beforeAll(async () => {
+        const login = `admin${unique}`;
+        const created = await request(app.getHttpServer())
+          .post(`${API}/users`)
+          .set(auth())
+          .send({
+            name: 'مدير',
+            email: login,
+            password: 'ValidPassword1',
+            roles: [SystemRole.ADMIN],
+          })
+          .expect(201);
+        adminId = created.body.id;
+        const session = await request(app.getHttpServer())
+          .post(`${API}/auth/login`)
+          .send({ email: login, password: 'ValidPassword1' })
+          .expect(200);
+        adminToken = session.body.accessToken;
+      });
+
+      // An administrator has every permission but the organization's
+      // settings; each of these was a way round that.
+      it("is not an administrator's to grant, to themselves or anyone", async () => {
+        await request(app.getHttpServer())
+          .patch(`${API}/users/${adminId}`)
+          .set(asAdmin())
+          .send({ roles: [SystemRole.OWNER] })
+          .expect(403);
+        await request(app.getHttpServer())
+          .post(`${API}/users`)
+          .set(asAdmin())
+          .send({
+            name: 'x',
+            email: `owner2${unique}`,
+            password: 'ValidPassword1',
+            roles: [SystemRole.OWNER],
+          })
+          .expect(403);
+      });
+
+      it('protects the owner from an administrator', async () => {
+        await request(app.getHttpServer())
+          .patch(`${API}/users/${ownUserId}`)
+          .set(asAdmin())
+          .send({ newPassword: 'TakenOver123', reason: 'x' })
+          .expect(403);
+        await request(app.getHttpServer())
+          .patch(`${API}/users/${ownUserId}`)
+          .set(asAdmin())
+          .send({ status: UserStatus.DISABLED })
+          .expect(403);
+        // The owner can still sign in with the original password.
+        await request(app.getHttpServer())
+          .post(`${API}/auth/login`)
+          .send({ email: fixtures.ownerEmail, password: fixtures.password })
+          .expect(200);
+      });
+
+      it('leaves an administrator managing everyone else', async () => {
+        await request(app.getHttpServer())
+          .patch(`${API}/users/${adminId}`)
+          .set(asAdmin())
+          .send({ name: 'مدير النظام' })
+          .expect(200);
+      });
+
+      it('keeps at least one owner', async () => {
+        const response = await request(app.getHttpServer())
+          .patch(`${API}/users/${ownUserId}`)
+          .set(auth())
+          .send({ roles: [SystemRole.ADMIN] })
+          .expect(422);
+        expect(response.body.error.fieldErrors[0].message).toBe('validation.user.lastOwner');
+      });
+    });
+
     it('revokes every session when an administrator resets a password', async () => {
       const login = `reset${unique}`;
       const created = await request(app.getHttpServer())

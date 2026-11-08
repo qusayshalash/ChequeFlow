@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 
-import { ApiErrorCode, UserStatus, type Paginated, type UserView } from '@cheque-flow/shared-types';
+import {
+  ApiErrorCode,
+  SystemRole,
+  UserStatus,
+  type Paginated,
+  type UserView,
+} from '@cheque-flow/shared-types';
 import type { Prisma } from '@cheque-flow/database';
 import type { CreateUserInput, ListUsersQuery, UpdateUserInput } from '@cheque-flow/validation';
 
@@ -99,6 +105,7 @@ export class UsersService {
       });
     }
 
+    UsersService.assertMayGrantOwner(user, input.roles);
     const roles = await this.resolveRoles(user.organizationId, input.roles);
     const passwordHash = await AuthService.hashPassword(input.password);
 
@@ -172,6 +179,41 @@ export class UsersService {
           fieldErrors: [{ path: 'newPassword', message: 'validation.user.useChangePassword' }],
         },
       );
+    }
+
+    // The owner role is the owner's to give, and an owner's account is the
+    // owner's to change. An administrator holds every permission except the
+    // organization's settings, and user.manage was enough to close that gap:
+    // grant themselves OWNER, or reset the owner's password and sign in as
+    // them, or disable them.
+    const targetIsOwner = existing.userRoles.some((link) => link.role.name === SystemRole.OWNER);
+    if (targetIsOwner && !UsersService.isOwner(actor)) {
+      throw AppError.forbidden('Only an owner can change an owner account', {
+        required: SystemRole.OWNER,
+      });
+    }
+    if (input.roles) UsersService.assertMayGrantOwner(actor, input.roles);
+
+    // And the organization keeps one. Without an active owner nobody can
+    // change its settings, and nobody can make another owner.
+    const losesOwner =
+      targetIsOwner &&
+      ((input.roles !== undefined && !input.roles.includes(SystemRole.OWNER)) ||
+        (input.status !== undefined && input.status !== UserStatus.ACTIVE));
+    if (losesOwner) {
+      const otherOwners = await this.prisma.db.user.count({
+        where: {
+          organizationId: actor.organizationId,
+          id: { not: id },
+          status: UserStatus.ACTIVE,
+          userRoles: { some: { role: { name: SystemRole.OWNER } } },
+        },
+      });
+      if (otherOwners === 0) {
+        throw new AppError(ApiErrorCode.VALIDATION_ERROR, 'The last owner must stay an owner', {
+          fieldErrors: [{ path: 'roles', message: 'validation.user.lastOwner' }],
+        });
+      }
     }
 
     const roles = input.roles ? await this.resolveRoles(actor.organizationId, input.roles) : null;
@@ -258,5 +300,17 @@ export class UsersService {
     }
 
     return roles.map((role) => ({ id: role.id }));
+  }
+
+  private static isOwner(actor: RequestUser): boolean {
+    return actor.roles.includes(SystemRole.OWNER);
+  }
+
+  private static assertMayGrantOwner(actor: RequestUser, roles: readonly string[]): void {
+    if (roles.includes(SystemRole.OWNER) && !UsersService.isOwner(actor)) {
+      throw AppError.forbidden('Only an owner can grant the owner role', {
+        required: SystemRole.OWNER,
+      });
+    }
   }
 }

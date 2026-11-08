@@ -863,7 +863,8 @@
       "useChangePassword": "To change your own password, use the change-password page",
       "cannotDisableSelf": "You cannot disable your own account",
       "emailTaken": "That sign-in name is already taken",
-      "unknownRole": "Unknown role"
+      "unknownRole": "Unknown role",
+      "lastOwner": "The organization must keep at least one owner"
     }
   },
   "week": {
