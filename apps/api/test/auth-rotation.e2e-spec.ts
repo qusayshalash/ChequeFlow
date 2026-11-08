@@ -63,6 +63,12 @@ describeWithDb('auth token rotation (e2e)', () => {
       .post(`${API}/auth/refresh`)
       .send({ refreshToken: rotated.body.refreshToken })
       .expect(401);
+
+    // And the access token minted with it, not fifteen minutes later.
+    await request(app.getHttpServer())
+      .get(`${API}/auth/me`)
+      .set({ Authorization: `Bearer ${rotated.body.accessToken}` })
+      .expect(401);
   });
 
   it('revokes a session on logout', async () => {
@@ -77,6 +83,27 @@ describeWithDb('auth token rotation (e2e)', () => {
       .post(`${API}/auth/refresh`)
       .send({ refreshToken: session.refreshToken })
       .expect(401);
+
+    // Signing out ends the access token too. It stayed valid until expiry.
+    await request(app.getHttpServer())
+      .get(`${API}/auth/me`)
+      .set({ Authorization: `Bearer ${session.accessToken}` })
+      .expect(401);
+  });
+
+  it('leaves other sessions open when one signs out', async () => {
+    const kept = await login();
+    const ended = await login();
+    await request(app.getHttpServer())
+      .post(`${API}/auth/logout`)
+      .set({ Authorization: `Bearer ${ended.accessToken}` })
+      .send({ refreshToken: ended.refreshToken, allDevices: false })
+      .expect(204);
+
+    await request(app.getHttpServer())
+      .get(`${API}/auth/me`)
+      .set({ Authorization: `Bearer ${kept.accessToken}` })
+      .expect(200);
   });
 
   it('requires a bearer token on protected routes', async () => {

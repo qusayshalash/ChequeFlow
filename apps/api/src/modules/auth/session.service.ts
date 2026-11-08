@@ -16,8 +16,35 @@ export class SessionService {
   constructor(private readonly prisma: PrismaService) {}
 
   async resolveRequestUser(payload: AccessTokenPayload): Promise<RequestUser> {
-    const user = await this.prisma.db.user.findUnique({
-      where: { id: payload.sub },
+    // The session the token was issued under must still be open.
+    //
+    // `sid` was carried in every token and checked nowhere, so signing out, a
+    // password reset by an administrator, and a detected token theft each
+    // revoked the refresh token and left the access token working until it
+    // expired, up to fifteen minutes later. Rotation keeps exactly one live
+    // token per family, so a family with none has ended.
+    const [user, session] = await Promise.all([
+      this.findUser(payload.sub),
+      this.prisma.db.refreshToken.findFirst({
+        where: {
+          familyId: payload.sid,
+          userId: payload.sub,
+          revokedAt: null,
+          expiresAt: { gt: new Date() },
+        },
+        select: { id: true },
+      }),
+    ]);
+
+    if (!session) {
+      throw new AppError(ApiErrorCode.UNAUTHENTICATED, 'Session has ended');
+    }
+    return this.toRequestUser(user, payload);
+  }
+
+  private findUser(id: string) {
+    return this.prisma.db.user.findUnique({
+      where: { id },
       select: {
         id: true,
         organizationId: true,
@@ -38,7 +65,12 @@ export class SessionService {
         },
       },
     });
+  }
 
+  private toRequestUser(
+    user: Awaited<ReturnType<SessionService['findUser']>>,
+    payload: AccessTokenPayload,
+  ): RequestUser {
     if (!user) {
       throw new AppError(ApiErrorCode.UNAUTHENTICATED, 'Token refers to a deleted user');
     }

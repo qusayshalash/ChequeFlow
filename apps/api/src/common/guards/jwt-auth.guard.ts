@@ -17,7 +17,7 @@ export interface AccessTokenPayload {
   branch: string | null;
   email: string;
   name: string;
-  /** Session id, so a revoked session invalidates its access tokens too. */
+  /** Session id: the refresh-token family, checked on every request. */
   sid: string;
 }
 
