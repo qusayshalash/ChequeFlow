@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ApiClientError } from '@cheque-flow/api-client';
+import { addMoney, isNegativeMoney, subtractMoney } from '@cheque-flow/shared-types';
 
 import { IconAlert, IconCalendar, IconSafe } from '@/components/icons';
 import { useApi, useApp, useTranslator } from '@/components/providers';
@@ -104,14 +105,16 @@ export default function ReportsScreen() {
     const start = grain === 'week' ? mondayOf(today) : today;
 
     const bars: SparkBar[] = [];
-    let inflow = 0;
-    let outflow = 0;
+    // The bars are floats, for drawing; the totals are summed from the API's
+    // strings so the last cent is right.
+    const inflows: (string | undefined)[] = [];
+    const outflows: (string | undefined)[] = [];
 
     for (let day = start; day <= to; day = addDaysIso(day, step)) {
       const row = byPeriod.get(day);
       const value = Number(row?.inflow ?? 0);
-      inflow += value;
-      outflow += Number(row?.outflow ?? 0);
+      inflows.push(row?.inflow);
+      outflows.push(row?.outflow);
       bars.push({
         label: date(day).split(' ').slice(0, 2).join(' '),
         value,
@@ -121,7 +124,9 @@ export default function ReportsScreen() {
       });
     }
 
-    return { bars, inflow, outflow, net: inflow - outflow };
+    const inflow = addMoney(inflows);
+    const outflow = addMoney(outflows);
+    return { bars, inflow, outflow, net: subtractMoney(inflow, outflow) };
   }, [cashFlow.data, shown, grain, today, to, date]);
 
   const exportCsv = useMutation({
@@ -174,20 +179,20 @@ export default function ReportsScreen() {
             <View style={styles.figures}>
               <Figure
                 label={t('reports.inflow')}
-                value={money(flow.inflow.toFixed(2), shown!)}
+                value={money(flow.inflow, shown!)}
                 tone={c.accent.dark}
               />
               <View style={styles.figureRule} />
               <Figure
                 label={t('reports.outflow')}
-                value={money(flow.outflow.toFixed(2), shown!)}
+                value={money(flow.outflow, shown!)}
                 tone={c.semantic.danger}
               />
               <View style={styles.figureRule} />
               <Figure
                 label={t('reports.net')}
-                value={money(flow.net.toFixed(2), shown!)}
-                tone={flow.net < 0 ? c.semantic.danger : c.accent.dark}
+                value={money(flow.net, shown!)}
+                tone={isNegativeMoney(flow.net) ? c.semantic.danger : c.accent.dark}
               />
             </View>
           </>

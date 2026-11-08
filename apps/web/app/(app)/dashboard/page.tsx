@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
-import { ChequeStatus, type DashboardSummary } from '@cheque-flow/shared-types';
+import { ChequeStatus, addMoney, type DashboardSummary } from '@cheque-flow/shared-types';
 import { EmptyState, ErrorState, LoadingState } from '@cheque-flow/ui';
 
 import { AttentionList } from '@/components/attention-list';
@@ -183,10 +183,11 @@ export default function DashboardPage() {
           color: 'var(--app-danger-solid)',
         },
       ],
-      netTotal: (cashFlow.data?.periods ?? []).reduce(
-        (sum, period) =>
-          sum + Number(period.byCurrency.find((row) => row.currency === pick)?.net ?? 0),
-        0,
+      // Summed as strings: the series above are floats for drawing only.
+      netTotal: addMoney(
+        (cashFlow.data?.periods ?? []).map(
+          (period) => period.byCurrency.find((row) => row.currency === pick)?.net,
+        ),
       ),
     };
   }, [cashFlow.data, bounced.data, currency, currencies, chartFrom, chartTo, today, locale, t]);
@@ -407,7 +408,7 @@ export default function DashboardPage() {
                 />
                 <Summary
                   label={t('dashboard.netExpected')}
-                  value={money(locale, chart.netTotal.toFixed(2), chart.currency)}
+                  value={money(locale, chart.netTotal, chart.currency)}
                   tone="text-primary-ink"
                 />
               </div>

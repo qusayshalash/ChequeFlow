@@ -3,7 +3,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
-import { Permission } from '@cheque-flow/shared-types';
+import {
+  Permission,
+  addMoney,
+  isNegativeMoney,
+  isZeroMoney,
+  subtractMoney,
+} from '@cheque-flow/shared-types';
 import { EmptyState, ErrorState, LoadingState } from '@cheque-flow/ui';
 
 import { IconAlert, IconCalendar, IconSafe } from '@/components/icons';
@@ -159,7 +165,10 @@ function ReportsPageBody() {
     // not banked. The line says so by going dashed.
     const futureFrom = rows.findIndex((entry) => entry.period > today);
 
-    const sum = (values: number[]) => values.reduce((total, value) => total + value, 0);
+    // Totals from the API's strings, not from the chart's numbers: those are
+    // floats, fine for drawing a line and wrong in the last cent of a sum.
+    const totalIn = addMoney(rows.map((entry) => entry.row?.inflow));
+    const totalOut = addMoney(rows.map((entry) => entry.row?.outflow));
 
     return {
       labels: rows.map((entry) =>
@@ -179,8 +188,8 @@ function ReportsPageBody() {
           ...(futureFrom >= 0 ? { dashedFrom: futureFrom } : {}),
         },
       ],
-      totals: { inflow: sum(inflow), outflow: sum(outflow), net: sum(inflow) - sum(outflow) },
-      empty: sum(inflow) === 0 && sum(outflow) === 0,
+      totals: { inflow: totalIn, outflow: totalOut, net: subtractMoney(totalIn, totalOut) },
+      empty: isZeroMoney(totalIn) && isZeroMoney(totalOut),
     };
   }, [cashFlow.data, shown, grain, from, to, today, locale, t]);
 
@@ -289,18 +298,18 @@ function ReportsPageBody() {
             <div className="mt-4 grid grid-cols-1 gap-px overflow-hidden rounded-xl bg-line/70 sm:grid-cols-3">
               <Figure
                 label={t('reports.inflow')}
-                value={money(locale, chart.totals.inflow.toFixed(2), shown!)}
+                value={money(locale, chart.totals.inflow, shown!)}
                 tone="text-primary-ink"
               />
               <Figure
                 label={t('reports.outflow')}
-                value={money(locale, chart.totals.outflow.toFixed(2), shown!)}
+                value={money(locale, chart.totals.outflow, shown!)}
                 tone="text-danger"
               />
               <Figure
                 label={t('reports.net')}
-                value={money(locale, chart.totals.net.toFixed(2), shown!)}
-                tone={chart.totals.net < 0 ? 'text-danger' : 'text-primary-ink'}
+                value={money(locale, chart.totals.net, shown!)}
+                tone={isNegativeMoney(chart.totals.net) ? 'text-danger' : 'text-primary-ink'}
               />
             </div>
           </>
