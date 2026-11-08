@@ -113,9 +113,9 @@ export function TopBar({ onOpenMenu }: { onOpenMenu: () => void }) {
             onChange={(event) => setSearch(event.target.value)}
             placeholder={t('dashboard.searchPlaceholder')}
             aria-label={t('common.search')}
-            className="h-11 w-full rounded-xl border border-line bg-subtle/80 ps-10 pe-16 text-sm text-ink outline-none placeholder:text-ink-muted hover:border-line-strong focus:border-primary focus:bg-surface focus:ring-4 focus:ring-primary/10"
+            className="h-11 w-full rounded-xl border border-line bg-subtle/80 ps-10 pe-3 text-sm sm:pe-16 text-ink outline-none placeholder:text-ink-muted hover:border-line-strong focus:border-primary focus:bg-surface focus:ring-4 focus:ring-primary/10"
           />
-          <kbd className="pointer-events-none absolute end-3 rounded-md border border-line bg-surface px-1.5 py-0.5 text-[11px] font-medium text-ink-muted">
+          <kbd className="pointer-events-none absolute end-3 hidden rounded-md border border-line bg-surface px-1.5 py-0.5 text-[11px] font-medium text-ink-muted sm:block">
             {t('common.searchShortcut')}
           </kbd>
         </label>

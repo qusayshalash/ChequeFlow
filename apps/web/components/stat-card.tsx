@@ -57,14 +57,16 @@ export function StatCard({
     <>
       <div className="flex items-start justify-between gap-3">
         <span
-          className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${palette.iconBg} ${palette.iconFg}`}
+          className={`flex size-9 shrink-0 items-center justify-center rounded-xl sm:size-11 ${palette.iconBg} ${palette.iconFg}`}
         >
           <Icon width="22" height="22" />
         </span>
 
         <span className="min-w-0 flex-1 text-end">
-          <span className="block truncate text-[13px] font-medium text-ink-muted">{label}</span>
-          <span className="mt-1 block text-[28px] leading-none font-bold tracking-[-0.03em] text-ink tabular-nums">
+          <span className="block text-[13px] leading-snug font-medium text-ink-muted sm:truncate">
+            {label}
+          </span>
+          <span className="mt-1 block text-2xl leading-none sm:text-[28px] font-bold tracking-[-0.03em] text-ink tabular-nums">
             {value}
           </span>
         </span>
@@ -73,7 +75,7 @@ export function StatCard({
             opens the list this figure counts. Rendered as a plain mark rather
             than a menu button so it never looks like an action that is
             missing its menu. */}
-        <span className="-me-1 -mt-1 shrink-0 text-ink-faint" aria-hidden="true">
+        <span className="-me-1 -mt-1 hidden shrink-0 text-ink-faint sm:block" aria-hidden="true">
           <IconDots width="16" height="16" />
         </span>
       </div>
@@ -92,7 +94,7 @@ export function StatCard({
   );
 
   const shell =
-    'block rounded-2xl border border-line/90 bg-surface p-4 shadow-[0_1px_2px_rgb(16_24_40/0.04)]';
+    'block rounded-2xl border border-line/90 bg-surface p-3 sm:p-4 shadow-[0_1px_2px_rgb(16_24_40/0.04)]';
 
   if (!href) return <div className={shell}>{body}</div>;
 

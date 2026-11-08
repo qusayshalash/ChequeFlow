@@ -182,7 +182,76 @@ export function ChequeTable({
     },
   ];
 
-  return (
+  // On a phone, cards instead of the grid. Seven columns in 375 pixels showed
+  // three of them with the amount clipped at the edge, and the due date and
+  // the party, the two things a list of cheques is read for, sat off screen
+  // behind a sideways scroll.
+  const cards =
+    cheques.length === 0 ? null : (
+      <ul className="flex flex-col gap-2.5 md:hidden">
+        {cheques.map((cheque) => {
+          const party =
+            (cheque.direction === 'OUTGOING'
+              ? cheque.currentRecipientName
+              : cheque.originalSourceName) ??
+            cheque.drawerName ??
+            '—';
+          const checked = selection?.selected.has(cheque.id) ?? false;
+          return (
+            <li
+              key={cheque.id}
+              className={`relative rounded-2xl border bg-surface p-3.5 ${
+                checked ? 'border-primary ring-2 ring-primary/15' : 'border-line/90'
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  {selection ? (
+                    <input
+                      type="checkbox"
+                      className="relative z-10 size-5 shrink-0 accent-[var(--app-primary)]"
+                      checked={checked}
+                      onChange={() => selection.onToggle(cheque.id)}
+                      aria-label={`${t('bulk.selectRow')} ${cheque.chequeNumber}`}
+                    />
+                  ) : null}
+                  <Link
+                    href={`/cheques/${cheque.id}`}
+                    className="truncate font-semibold text-ink tabular-nums after:absolute after:inset-0 after:rounded-2xl"
+                    dir="ltr"
+                  >
+                    {cheque.chequeNumber}
+                  </Link>
+                </div>
+                <StatusBadge status={cheque.status} label={t(`status.${cheque.status}`)} />
+              </div>
+
+              <div className="mt-2.5 flex items-end justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm text-ink-soft">{party}</p>
+                  <p
+                    className={`mt-0.5 text-xs ${
+                      cheque.isOverdue ? 'font-semibold text-danger' : 'text-ink-muted'
+                    }`}
+                  >
+                    {cheque.isOverdue ? (
+                      <span className="sr-only">{t('cheque.overdueLabel')} </span>
+                    ) : null}
+                    {formatDate(locale, cheque.dueDate)} ·{' '}
+                    {formatDueDistance(locale, cheque.dueDate, today)}
+                  </p>
+                </div>
+                <span className="shrink-0 font-bold text-ink tabular-nums">
+                  {money(locale, cheque.amount, cheque.currency)}
+                </span>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    );
+
+  const table = (
     <DataTable<ChequeSummaryView>
       rows={cheques}
       rowKey={(cheque) => cheque.id}
@@ -203,5 +272,14 @@ export function ChequeTable({
         (column) => column.key === 'actions' || !visibleColumns || visibleColumns.has(column.key),
       )}
     />
+  );
+
+  if (!cards) return table;
+
+  return (
+    <>
+      {cards}
+      <div className="hidden md:block">{table}</div>
+    </>
   );
 }

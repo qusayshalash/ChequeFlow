@@ -31,13 +31,18 @@ export function FactGrid({
       {facts.map((fact) => (
         <div key={fact.label} className="min-w-0 border-s-2 border-line-soft ps-3">
           <dt className="text-[11px] font-semibold tracking-wide text-ink-muted">{fact.label}</dt>
-          <dd
-            className={`mt-1.5 truncate text-sm font-semibold text-ink ${
-              fact.ltr ? 'tabular-nums' : ''
-            }`}
-            dir={fact.ltr ? 'ltr' : undefined}
-          >
-            {fact.value}
+          {/* The value keeps the page's direction and only an identifier's own
+              text runs left to right. With `dir="ltr"` on the whole cell,
+              numbers sat against the far edge while Arabic values sat against
+              the label, so one card read as two ragged columns. */}
+          <dd className="mt-1.5 truncate text-sm font-semibold text-ink">
+            {fact.ltr ? (
+              <bdi dir="ltr" className="tabular-nums">
+                {fact.value}
+              </bdi>
+            ) : (
+              fact.value
+            )}
           </dd>
         </div>
       ))}

@@ -306,7 +306,8 @@ export default function ChequesPage() {
               {t('common.filters')}
             </Button>
 
-            <details className="group relative">
+            {/* Columns belong to the table, and a phone shows cards instead. */}
+            <details className="group relative hidden md:block">
               <summary className="flex h-11 cursor-pointer list-none items-center gap-2 rounded-xl border border-line bg-surface px-4 text-sm font-semibold text-ink-soft shadow-sm hover:border-line-strong hover:bg-subtle">
                 <IconColumns width="18" height="18" />
                 {t('common.columns')}

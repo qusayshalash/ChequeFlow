@@ -469,3 +469,17 @@ textarea::placeholder {
     transition-duration: 0.01ms !important;
   }
 }
+
+/*
+ * Safari on iPhone zooms the page into any field whose text is under 16px,
+ * and leaves it zoomed. Every field here is `text-sm`, so each tap on a phone
+ * enlarged the page and pushed half of it off screen. Outside any layer so it
+ * outranks the utility, and only below `sm`, where the zoom happens.
+ */
+@media (max-width: 639.98px) {
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
