@@ -16,10 +16,13 @@ function nonEmpty(value: string | undefined): string | undefined {
   return typeof value === 'string' && value.length > 0 ? value : undefined;
 }
 
+// Typed here rather than through expo-env.d.ts: Expo generates that file and
+// it is not committed, so CI saw `process.env` as `any`. The casts leave the
+// `process.env.EXPO_PUBLIC_*` spelling Metro looks for intact.
 const ENV = {
-  apiUrl: nonEmpty(process.env.EXPO_PUBLIC_API_URL),
-  apiPort: nonEmpty(process.env.EXPO_PUBLIC_API_PORT),
-  defaultLocale: nonEmpty(process.env.EXPO_PUBLIC_DEFAULT_LOCALE),
+  apiUrl: nonEmpty(process.env.EXPO_PUBLIC_API_URL as string | undefined),
+  apiPort: nonEmpty(process.env.EXPO_PUBLIC_API_PORT as string | undefined),
+  defaultLocale: nonEmpty(process.env.EXPO_PUBLIC_DEFAULT_LOCALE as string | undefined),
 };
 
 /** Where the API listens in development, when the address is derived. */
