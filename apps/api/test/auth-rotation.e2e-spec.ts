@@ -39,6 +39,12 @@ describeWithDb('auth token rotation (e2e)', () => {
       .expect(200);
 
     expect(refreshed.body.refreshToken).not.toBe(first.refreshToken);
+
+    // A renewal is routine and stays out of the audit trail.
+    const renewals = await prisma.db.auditLog.count({
+      where: { organizationId: fixtures.organizationId, action: 'auth.token.refresh' },
+    });
+    expect(renewals).toBe(0);
     await request(app.getHttpServer())
       .get(`${API}/auth/me`)
       .set({ Authorization: `Bearer ${refreshed.body.accessToken}` })
@@ -64,6 +70,12 @@ describeWithDb('auth token rotation (e2e)', () => {
       .send({ refreshToken: rotated.body.refreshToken })
       .expect(401);
 
+    // The theft is in the trail an administrator reads.
+    const thefts = await prisma.db.auditLog.count({
+      where: { organizationId: fixtures.organizationId, action: 'auth.token.reuse_detected' },
+    });
+    expect(thefts).toBe(1);
+
     // And the access token minted with it, not fifteen minutes later.
     await request(app.getHttpServer())
       .get(`${API}/auth/me`)
@@ -83,6 +95,16 @@ describeWithDb('auth token rotation (e2e)', () => {
       .post(`${API}/auth/refresh`)
       .send({ refreshToken: session.refreshToken })
       .expect(401);
+
+    // A token presented after signing out is stale, not stolen.
+    const alarms = await prisma.db.auditLog.count({
+      where: {
+        organizationId: fixtures.organizationId,
+        action: 'auth.token.reuse_detected',
+        entityId: { not: null },
+      },
+    });
+    expect(alarms).toBe(1);
 
     // Signing out ends the access token too. It stayed valid until expiry.
     await request(app.getHttpServer())

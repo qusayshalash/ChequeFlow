@@ -8,6 +8,7 @@ import { ApiErrorCode, type AuthTokens } from '@cheque-flow/shared-types';
 import { AppConfigService } from '../../config/app-config.service';
 import { AppError } from '../../common/errors/app-error';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AuditAction, AuditService } from '../audit/audit.service';
 import type { AccessTokenPayload } from '../../common/guards/jwt-auth.guard';
 
 export interface IssueTokensInput {
@@ -37,6 +38,7 @@ export class TokenService {
     private readonly jwt: JwtService,
     private readonly config: AppConfigService,
     private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
   ) {}
 
   static hashToken(token: string): string {
@@ -115,6 +117,25 @@ export class TokenService {
         `Refresh token re-use detected for user ${stored.userId}; revoking family ${stored.familyId}`,
       );
       await this.revokeFamily(stored.familyId);
+      // In the trail, not only the server log: someone holding a copy of this
+      // person's session is exactly what an administrator needs to see. The
+      // action was defined and never written.
+      //
+      // Only for a token that was rotated. One revoked by signing out, by a
+      // password reset or by an earlier theft is presented again by ordinary
+      // clients holding a stale copy; calling those theft would make every
+      // sign-out an alarm.
+      if (stored.replacedByHash !== null) {
+        await this.audit.record({
+          organizationId: stored.user.organizationId,
+          userId: stored.userId,
+          action: AuditAction.TOKEN_REUSE_DETECTED,
+          entityType: 'session',
+          entityId: stored.familyId,
+          ipAddress: meta.ipAddress ?? null,
+          deviceInfo: meta.userAgent ?? null,
+        });
+      }
       throw new AppError(ApiErrorCode.UNAUTHENTICATED, 'Refresh token re-use detected');
     }
 

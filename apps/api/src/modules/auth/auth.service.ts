@@ -132,19 +132,13 @@ export class AuthService {
   }
 
   async refresh(refreshToken: string, meta: RequestMeta): Promise<AuthTokens> {
-    const { tokens, userId, organizationId } = await this.tokens.rotate(refreshToken, {
+    // Not written to the audit trail. Clients renew every fifteen minutes on
+    // their own, which made renewals a fifth of the trail and buried the
+    // changes it exists to show; each one is still kept, with its address and
+    // device, in `refresh_tokens`. Sign-in, sign-out and theft are recorded.
+    const { tokens } = await this.tokens.rotate(refreshToken, {
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
-    });
-
-    await this.audit.record({
-      organizationId,
-      userId,
-      action: AuditAction.TOKEN_REFRESH,
-      entityType: 'session',
-      entityId: userId,
-      ipAddress: meta.ipAddress,
-      deviceInfo: meta.userAgent,
     });
 
     return tokens;
