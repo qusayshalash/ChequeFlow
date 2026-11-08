@@ -871,5 +871,9 @@
     "fourth": "Fourth week",
     "next": "Next week",
     "third": "Third week"
+  },
+  "rolesPage": {
+    "permission": "Permission",
+    "youHave": "Yours"
   }
 }

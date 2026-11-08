@@ -46,7 +46,7 @@ function RolesPageBody() {
                   scope="col"
                   className="sticky start-0 z-30 min-w-72 border-b border-line bg-subtle/95 px-5 py-4 text-start text-xs font-bold"
                 >
-                  {t('nav.roles')}
+                  {t('rolesPage.permission')}
                 </th>
                 {Object.values(SystemRole).map((role) => (
                   <th
@@ -69,17 +69,13 @@ function RolesPageBody() {
                     scope="row"
                     className="sticky start-0 z-10 border-b border-line-soft bg-surface px-5 py-4 text-start font-normal text-ink-soft group-hover:bg-subtle"
                   >
-                    <span className="flex flex-col">
-                      <code dir="ltr" className="text-xs text-ink-muted">
-                        {permission}
-                      </code>
-                      <span className="mt-1 font-semibold text-ink">
-                        {t(`permission.${permission}`)}
-                      </span>
-                    </span>
+                    {/* The name only. The internal key (`cheque.create`) sat above
+                        it and told the reader nothing; the badge said "yes"
+                        without saying to what. */}
+                    <span className="font-semibold text-ink">{t(`permission.${permission}`)}</span>
                     {mine.has(permission) ? (
-                      <Badge tone="success" className="mt-1">
-                        {t('common.yes')}
+                      <Badge tone="success" className="ms-2">
+                        {t('rolesPage.youHave')}
                       </Badge>
                     ) : null}
                   </th>
