@@ -127,7 +127,11 @@ export default function LoginPage() {
               </Field>
 
               <Field label={t('auth.password')} htmlFor="password" required>
-                <div className="relative">
+                {/* LTR like the input inside it. In the page's RTL the button's
+                    `end-3` resolved to the left edge while the input's `pe-16`
+                    reserved space on the right, so the password was typed
+                    underneath the show button. */}
+                <div className="relative" dir="ltr">
                   <input
                     id="password"
                     name="password"
