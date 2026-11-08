@@ -67,3 +67,6 @@ playwright-report/
 *service-account*.json
 gcp-*.json
 secrets/
+
+# Other sites' proxy files on a server (see docs/other-sites.md).
+infrastructure/sites/*.caddy

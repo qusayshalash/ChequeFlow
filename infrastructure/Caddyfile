@@ -25,3 +25,9 @@
 {$FILES_DOMAIN} {
 	reverse_proxy storage:9000
 }
+
+# Other sites on this server, one file each, kept outside git so a `git pull`
+# here never collides with them. They reach their own containers over the
+# `chequeflow-edge` network, which joins this proxy and nothing else from the
+# cheque system — not its database, not its storage. See docs/other-sites.md.
+import /etc/caddy/sites/*.caddy

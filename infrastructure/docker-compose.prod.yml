@@ -137,11 +137,22 @@ services:
       - '443:443'
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Other sites' Caddy files; ignored by git.
+      - ./sites:/etc/caddy/sites:ro
       - caddy-data:/data
       - caddy-config:/config
+    networks:
+      - default
+      - edge
     depends_on:
       - web
       - api
+
+networks:
+  # The proxy's second network, for other projects on this server. They join
+  # it by this fixed name, and on it can reach the proxy only.
+  edge:
+    name: chequeflow-edge
 
 volumes:
   postgres-data:
