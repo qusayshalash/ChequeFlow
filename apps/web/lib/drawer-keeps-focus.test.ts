@@ -24,3 +24,21 @@ describe('the drawer', () => {
     expect(drawer).toMatch(/event\.key === 'Escape'[\s\S]*?closeRef\.current\(\);/);
   });
 });
+
+/**
+ * The image viewer had the same dependency, and its effect calls `reset()`:
+ * any re-render of the cheque page while an image was open threw away the
+ * reader's zoom and pan.
+ */
+describe('the image viewer', () => {
+  const viewer = readFileSync(join(__dirname, '..', 'components', 'image-lightbox.tsx'), 'utf8');
+
+  it('resets the zoom only when the image changes', () => {
+    expect(viewer).toMatch(/\}, \[url, reset\]\);/);
+    expect(viewer).not.toMatch(/\[url, onClose, reset\]/);
+  });
+
+  it('still closes on Escape, through the latest handler', () => {
+    expect(viewer).toMatch(/event\.key === 'Escape'\) closeHandler\.current\(\);/);
+  });
+});

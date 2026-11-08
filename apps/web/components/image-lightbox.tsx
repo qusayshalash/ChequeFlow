@@ -41,6 +41,15 @@ export function ImageLightbox({
     setOffset({ x: 0, y: 0 });
   }, []);
 
+  // Through a ref, so the effect below runs when the image changes and not
+  // whenever the caller re-renders: the caller passes a new arrow each time,
+  // and every re-run called `reset()`, dropping the zoom and the pan of a
+  // cheque someone was reading.
+  const closeHandler = useRef(onClose);
+  useEffect(() => {
+    closeHandler.current = onClose;
+  });
+
   useEffect(() => {
     if (!url) return;
     reset();
@@ -49,7 +58,7 @@ export function ImageLightbox({
     closeRef.current?.focus();
 
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') closeHandler.current();
     };
     document.addEventListener('keydown', onKey);
 
@@ -61,7 +70,7 @@ export function ImageLightbox({
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = previous;
     };
-  }, [url, onClose, reset]);
+  }, [url, reset]);
 
   if (!url) return null;
 
