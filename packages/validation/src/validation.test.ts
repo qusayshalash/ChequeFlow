@@ -19,6 +19,15 @@ describe('money schema', () => {
     expect(moneySchema.safeParse(value).success).toBe(false);
   });
 
+  it.each([
+    ['500', '500.00'],
+    ['500.5', '500.50'],
+    ['0500.00', '500.00'],
+    ['0.01', '0.01'],
+  ])('spells %s one way, as %s', (input, canonical) => {
+    expect(moneySchema.parse(input)).toBe(canonical);
+  });
+
   it('never coerces through a float', () => {
     const parsed = moneySchema.parse('9007199254740993.99');
     expect(parsed).toBe('9007199254740993.99');

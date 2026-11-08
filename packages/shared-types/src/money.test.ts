@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { addMoney, isNegativeMoney, isZeroMoney, subtractMoney } from './money.js';
+import { addMoney, isNegativeMoney, isZeroMoney, sameMoney, subtractMoney } from './money.js';
 
 describe('money arithmetic', () => {
   it('adds without the float error a screen used to show', () => {
@@ -27,6 +27,14 @@ describe('money arithmetic', () => {
     expect(isNegativeMoney('-0.01')).toBe(true);
     expect(isNegativeMoney('0.00')).toBe(false);
     expect(isZeroMoney(subtractMoney('7.30', '7.3'))).toBe(true);
+  });
+
+  it('knows two spellings of one amount are the same', () => {
+    expect(sameMoney('500', '500.00')).toBe(true);
+    expect(sameMoney('500.5', '500.50')).toBe(true);
+    expect(sameMoney('500.01', '500.00')).toBe(false);
+    expect(sameMoney('', '500.00')).toBe(false);
+    expect(sameMoney('5x', '5.00')).toBe(false);
   });
 
   it('refuses something that is not an amount', () => {

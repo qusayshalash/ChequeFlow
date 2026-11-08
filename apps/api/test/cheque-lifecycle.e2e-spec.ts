@@ -214,6 +214,26 @@ describeWithDb('cheque lifecycle (e2e)', () => {
     version = response.body.version;
   });
 
+  it('does not read a re-spelled amount as a change after review', async () => {
+    // `1500.5` is the stored `1500.50`. Compared as text it was a change: the
+    // edit needed a reason, and the audit recorded an amount change.
+    const response = await request(app.getHttpServer())
+      .patch(`${API}/cheques/${chequeId}`)
+      .set(auth(ownerToken))
+      .send({ amount: '1500.5', notes: 'same amount, other spelling', version })
+      .expect(200);
+
+    expect(response.body.amount).toBe('1500.50');
+    version = response.body.version;
+
+    const audit = await request(app.getHttpServer())
+      .get(`${API}/audit-logs`)
+      .query({ entityId: chequeId, action: 'cheque.amount_changed' })
+      .set(auth(ownerToken))
+      .expect(200);
+    expect(audit.body.data).toHaveLength(0);
+  });
+
   it('blocks a user without the permission from depositing', async () => {
     const response = await request(app.getHttpServer())
       .post(`${API}/cheques/${chequeId}/deposit`)

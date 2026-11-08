@@ -12,7 +12,17 @@ export const moneySchema = z
   .string()
   .trim()
   .regex(/^\d{1,16}(\.\d{1,2})?$/, { message: 'validation.money.invalid' })
-  .refine((value) => Number.parseFloat(value) > 0, { message: 'validation.money.positive' });
+  .refine((value) => Number.parseFloat(value) > 0, { message: 'validation.money.positive' })
+  // One spelling per amount: `500`, `500.0` and `0500.00` all become `500.00`,
+  // the form the database returns. The API decides whether an amount changed
+  // by comparing strings, so `500` against a stored `500.00` read as a change:
+  // a reviewed cheque then demanded a reason and the `cheque.cancel`
+  // permission for an edit that left the amount as it was, and the audit
+  // recorded an amount change that never happened.
+  .transform((value) => {
+    const [whole = '0', fraction = ''] = value.split('.');
+    return `${whole.replace(/^0+(?=\d)/, '')}.${fraction.padEnd(2, '0')}`;
+  });
 
 /**
  * A currency conversion rate: a positive ratio with up to six decimals.

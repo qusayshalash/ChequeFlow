@@ -3,7 +3,11 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 
 import { ApiClientError } from '@cheque-flow/api-client';
-import type { ChequeDetailView, DuplicateChequeMatch } from '@cheque-flow/shared-types';
+import {
+  sameMoney,
+  type ChequeDetailView,
+  type DuplicateChequeMatch,
+} from '@cheque-flow/shared-types';
 import { updateChequeSchema } from '@cheque-flow/validation';
 
 import { DuplicatePrompt } from '@/components/duplicate-prompt';
@@ -65,7 +69,9 @@ export default function EditChequeScreen() {
     setNotes(cheque.notes ?? '');
   }, [cheque]);
 
-  const amountChanged = Boolean(cheque) && amount !== cheque?.amount;
+  // As an amount, not as text: `500` typed over a stored `500.00` is no change,
+  // and asking for a reason for it was asking to justify nothing.
+  const amountChanged = Boolean(cheque) && !sameMoney(amount, cheque?.amount);
   const reasonRequired = amountChanged && cheque?.reviewedAt !== null;
 
   const mutation = useMutation({

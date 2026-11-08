@@ -51,6 +51,12 @@ export function isNegativeMoney(value: MoneyString): boolean {
   return parse(value).units < BigInt(0);
 }
 
+/** Whether two spellings are the same amount; anything unparsable is not. */
+export function sameMoney(a: string | null | undefined, b: string | null | undefined): boolean {
+  if (!a || !b || !MONEY.test(a.trim()) || !MONEY.test(b.trim())) return false;
+  return isZeroMoney(subtractMoney(a, b));
+}
+
 export function isZeroMoney(value: MoneyString): boolean {
   return parse(value).units === BigInt(0);
 }
