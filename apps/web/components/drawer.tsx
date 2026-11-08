@@ -53,6 +53,17 @@ export function Drawer({
   const panel = useRef<HTMLElement | null>(null);
   const titleId = useRef(`drawer-title-${Math.random().toString(36).slice(2, 9)}`).current;
 
+  // Read through a ref so the effect below runs on open and close only.
+  //
+  // Every caller passes a fresh arrow, so with `onClose` in the effect's
+  // dependencies each render re-ran it: every keystroke in a field inside the
+  // panel moved focus to the panel's first stop, the close button. Typing a
+  // name for a new user took one click per letter.
+  const closeRef = useRef(onClose);
+  useEffect(() => {
+    closeRef.current = onClose;
+  });
+
   useEffect(() => {
     if (!open) return;
 
@@ -66,7 +77,7 @@ export function Drawer({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.stopPropagation();
-        onClose();
+        closeRef.current();
         return;
       }
       if (event.key !== 'Tab' || !node) return;
@@ -99,7 +110,7 @@ export function Drawer({
       const cameFromPanel = !active || active === document.body || node?.contains(active);
       if (opener?.isConnected && cameFromPanel) opener.focus();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 
