@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
-import { Permission } from '@cheque-flow/shared-types';
+import { AUDIT_ACTIONS, Permission, auditActionKey } from '@cheque-flow/shared-types';
 import { Badge, EmptyState, ErrorState, LoadingState } from '@cheque-flow/ui';
 
 import { PageHeader } from '@/components/page-header';
@@ -41,9 +41,17 @@ function AuditPageBody() {
   const { locale } = useApp();
 
   const [page, setPage] = useState(1);
-  // Free text against the action name — `CHEQUE_DEPOSITED`, `USER_CREATED`.
-  // The server matches on `contains`, so a fragment is enough.
+  // One of the recorded actions, chosen by name. This was a free-text box
+  // asking for the internal code, with `CHEQUE_DEPOSITED` as its example — an
+  // action that is not even recorded under that name.
   const [action, setAction] = useState('');
+
+  // Names for what the trail stores as codes. A code with no name yet is shown
+  // as it is rather than as a translation key.
+  const named = (key: string, raw: string) => {
+    const text = t(key);
+    return text === key ? raw : text;
+  };
 
   const query = useQuery({
     queryKey: ['audit-logs', page, action],
@@ -58,7 +66,7 @@ function AuditPageBody() {
         <div className="border-b border-line-soft p-4">
           <label className="flex flex-col gap-1.5 text-sm">
             <span className="font-semibold text-ink-soft">{t('audit.action')}</span>
-            <input
+            <select
               value={action}
               onChange={(event) => {
                 setAction(event.target.value);
@@ -66,10 +74,15 @@ function AuditPageBody() {
                 // table and reads as "no results".
                 setPage(1);
               }}
-              placeholder={t('audit.actionHint')}
-              dir="ltr"
               className="h-11 max-w-sm rounded-xl border border-line bg-surface px-3 text-sm text-ink"
-            />
+            >
+              <option value="">{t('audit.allActions')}</option>
+              {AUDIT_ACTIONS.map((name) => (
+                <option key={name} value={name}>
+                  {named(auditActionKey(name), name)}
+                </option>
+              ))}
+            </select>
           </label>
         </div>
 
@@ -132,14 +145,14 @@ function AuditPageBody() {
                         ) : null}
                       </td>
                       <td className="border-b border-line-soft px-4 py-3">
-                        <Badge tone="info">
-                          <span dir="ltr">{row.action}</span>
-                        </Badge>
+                        <Badge tone="info">{named(auditActionKey(row.action), row.action)}</Badge>
                       </td>
-                      <td className="border-b border-line-soft px-4 py-3 text-ink-soft" dir="ltr">
-                        <span className="font-semibold">{row.entityType}</span>
+                      <td className="border-b border-line-soft px-4 py-3 text-ink-soft">
+                        <span className="font-semibold">
+                          {named(`auditEntity.${row.entityType}`, row.entityType)}
+                        </span>
                         {row.entityId ? (
-                          <span className="block font-mono text-xs text-ink-muted">
+                          <span className="block font-mono text-xs text-ink-muted" dir="ltr">
                             {row.entityId}
                           </span>
                         ) : null}

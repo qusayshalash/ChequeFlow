@@ -27,13 +27,13 @@
   },
   "audit": {
     "action": "الإجراء",
-    "actionHint": "مثال: CHEQUE_DEPOSITED",
     "empty": "لا توجد حركات مطابقة",
     "emptyHint": "سجل التدقيق يسجّل كل تغيير على البيانات. إن كان فارغًا فلم يحدث شيء يطابق البحث.",
     "entity": "السجل",
     "origin": "المصدر",
     "when": "التاريخ",
-    "who": "المستخدم"
+    "who": "المستخدم",
+    "allActions": "كل الإجراءات"
   },
   "auth": {
     "biometricEnable": "تفعيل الدخول بالبصمة",
@@ -875,5 +875,44 @@
   "rolesPage": {
     "permission": "الصلاحية",
     "youHave": "لديك"
+  },
+  "auditAction": {
+    "auth_login_success": "تسجيل دخول",
+    "auth_login_failed": "محاولة دخول فاشلة",
+    "auth_account_locked": "قفل الحساب مؤقتًا",
+    "auth_logout": "تسجيل خروج",
+    "auth_password_changed": "تغيير كلمة المرور",
+    "auth_password_change_failed": "محاولة فاشلة لتغيير كلمة المرور",
+    "auth_token_refresh": "تجديد الجلسة",
+    "auth_token_reuse_detected": "محاولة استخدام جلسة منتهية",
+    "cheque_created": "إضافة شيك",
+    "cheque_updated": "تعديل بيانات شيك",
+    "cheque_amount_changed": "تعديل مبلغ شيك",
+    "cheque_date_changed": "تعديل تاريخ شيك",
+    "cheque_action": "إجراء على شيك",
+    "cheque_reviewed": "اعتماد بيانات شيك",
+    "cheque_image_uploaded": "رفع صورة شيك",
+    "cheque_image_viewed": "عرض صورة شيك",
+    "cheque_exported": "تصدير الشيكات",
+    "backup_exported": "تنزيل نسخة احتياطية",
+    "backup_restored": "استعادة نسخة احتياطية",
+    "contact_created": "إضافة جهة",
+    "contact_updated": "تعديل جهة",
+    "contact_deleted": "حذف جهة",
+    "contact_merged": "دمج جهتين",
+    "user_created": "إضافة مستخدم",
+    "user_updated": "تعديل مستخدم",
+    "user_status_changed": "تفعيل أو تعطيل مستخدم",
+    "user_password_reset": "إعادة تعيين كلمة مرور مستخدم",
+    "user_role_changed": "تغيير دور مستخدم",
+    "settings_changed": "تغيير الإعدادات"
+  },
+  "auditEntity": {
+    "cheque": "شيك",
+    "cheque_image": "صورة شيك",
+    "contact": "جهة",
+    "organization": "المنشأة",
+    "session": "جلسة",
+    "user": "مستخدم"
   }
 }

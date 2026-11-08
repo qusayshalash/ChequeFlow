@@ -27,13 +27,13 @@
   },
   "audit": {
     "action": "Action",
-    "actionHint": "e.g. CHEQUE_DEPOSITED",
     "empty": "No matching activity",
     "emptyHint": "The audit trail records every change to the data. An empty list means nothing matched the search.",
     "entity": "Record",
     "origin": "Origin",
     "when": "When",
-    "who": "User"
+    "who": "User",
+    "allActions": "All actions"
   },
   "auth": {
     "biometricEnable": "Enable biometric unlock",
@@ -875,5 +875,44 @@
   "rolesPage": {
     "permission": "Permission",
     "youHave": "Yours"
+  },
+  "auditAction": {
+    "auth_login_success": "Signed in",
+    "auth_login_failed": "Failed sign-in",
+    "auth_account_locked": "Account locked",
+    "auth_logout": "Signed out",
+    "auth_password_changed": "Password changed",
+    "auth_password_change_failed": "Failed password change",
+    "auth_token_refresh": "Session renewed",
+    "auth_token_reuse_detected": "Reuse of an ended session",
+    "cheque_created": "Cheque added",
+    "cheque_updated": "Cheque edited",
+    "cheque_amount_changed": "Cheque amount changed",
+    "cheque_date_changed": "Cheque date changed",
+    "cheque_action": "Cheque action",
+    "cheque_reviewed": "Cheque details confirmed",
+    "cheque_image_uploaded": "Cheque image uploaded",
+    "cheque_image_viewed": "Cheque image viewed",
+    "cheque_exported": "Cheques exported",
+    "backup_exported": "Backup downloaded",
+    "backup_restored": "Backup restored",
+    "contact_created": "Contact added",
+    "contact_updated": "Contact edited",
+    "contact_deleted": "Contact deleted",
+    "contact_merged": "Contacts merged",
+    "user_created": "User added",
+    "user_updated": "User edited",
+    "user_status_changed": "User enabled or disabled",
+    "user_password_reset": "User password reset",
+    "user_role_changed": "User role changed",
+    "settings_changed": "Settings changed"
+  },
+  "auditEntity": {
+    "cheque": "Cheque",
+    "cheque_image": "Cheque image",
+    "contact": "Contact",
+    "organization": "Organization",
+    "session": "Session",
+    "user": "User"
   }
 }

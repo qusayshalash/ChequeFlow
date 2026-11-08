@@ -8,3 +8,4 @@ export * from './domain.js';
 export * from './outstanding.js';
 export * from './serial-cheques.js';
 export * from './whatsapp.js';
+export * from './audit.js';
