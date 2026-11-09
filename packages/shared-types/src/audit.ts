@@ -31,6 +31,7 @@ export const AuditAction = {
   SETTINGS_CHANGED: 'settings.changed',
   BANK_CREATED: 'bank.created',
   BANK_UPDATED: 'bank.updated',
+  BANK_DELETED: 'bank.deleted',
 } as const;
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 

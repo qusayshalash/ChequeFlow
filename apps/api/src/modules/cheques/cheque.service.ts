@@ -837,6 +837,7 @@ export class ChequeService {
         where: {
           id: refs.bankId,
           OR: [{ organizationId: null }, { organizationId }],
+          deletedAt: null,
         },
         select: { id: true },
       });

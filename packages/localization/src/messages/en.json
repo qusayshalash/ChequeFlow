@@ -874,7 +874,8 @@
       "codeInvalid": "2 to 12 capital letters and digits",
       "nothingToChange": "Nothing to change",
       "nameTaken": "A bank with this name exists",
-      "codeTaken": "A bank with this code exists"
+      "codeTaken": "A bank with this code exists",
+      "inUse": "A bank with cheques cannot be deleted — hide it instead"
     }
   },
   "week": {
@@ -918,7 +919,8 @@
     "user_role_changed": "User role changed",
     "settings_changed": "Settings changed",
     "bank_created": "Bank added",
-    "bank_updated": "Bank edited"
+    "bank_updated": "Bank edited",
+    "bank_deleted": "Bank deleted"
   },
   "auditEntity": {
     "cheque": "Cheque",
@@ -944,6 +946,8 @@
     "cheques": "cheques",
     "referenceHint": "Reference banks are shared and fixed",
     "empty": "No banks added yet",
-    "hiddenHint": "Hidden banks are left out of the pickers; cheques drawn on them keep them"
+    "hiddenHint": "Hidden banks are left out of the pickers; cheques drawn on them keep them",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this bank? This cannot be undone."
   }
 }

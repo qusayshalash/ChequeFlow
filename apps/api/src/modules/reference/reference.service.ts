@@ -6,6 +6,7 @@ import {
   type BankView,
   type BranchView,
   type LocationView,
+  foldBankName,
 } from '@cheque-flow/shared-types';
 import type { CreateBankInput, UpdateBankInput } from '@cheque-flow/validation';
 
@@ -29,7 +30,7 @@ export class ReferenceService {
 
   /** The banks this organization can draw cheques on: reference plus its own. */
   static visibleBanks(organizationId: string) {
-    return { OR: [{ organizationId: null }, { organizationId }] };
+    return { OR: [{ organizationId: null }, { organizationId }], deletedAt: null };
   }
 
   async listBranches(user: RequestUser): Promise<BranchView[]> {
@@ -202,18 +203,62 @@ export class ReferenceService {
     };
   }
 
-  /** Two banks of one name in a picker cannot be told apart. */
+  /**
+   * Deletes one of this organization's own banks, softly, if no cheque has
+   * ever been drawn on it. One that has, deleted cheques included, would leave
+   * those cheques naming a bank nobody can find; it can be hidden instead.
+   */
+  async deleteBank(
+    user: RequestUser,
+    id: string,
+    auditMeta: Partial<AuditContext> = {},
+  ): Promise<void> {
+    const existing = await this.prisma.db.bank.findFirst({
+      where: { id, ...ReferenceService.visibleBanks(user.organizationId) },
+    });
+    if (!existing) throw AppError.notFound('Bank', id);
+    if (existing.organizationId === null) {
+      throw AppError.forbidden('Reference banks are shared and cannot be changed');
+    }
+
+    await this.prisma.db.$transaction(async (tx) => {
+      const cheques = await tx.cheque.count({ where: { bankId: id } });
+      if (cheques > 0) {
+        throw new AppError(ApiErrorCode.CONFLICT, 'Bank has cheques', {
+          details: { reason: 'BANK_IN_USE', cheques },
+        });
+      }
+      await tx.bank.update({ where: { id }, data: { deletedAt: new Date(), isActive: false } });
+      await this.audit.recordWithin(tx, {
+        organizationId: user.organizationId,
+        userId: user.id,
+        action: AuditAction.BANK_DELETED,
+        entityType: 'bank',
+        entityId: id,
+        before: { name: existing.name, code: existing.code },
+        ipAddress: auditMeta.ipAddress ?? null,
+        deviceInfo: auditMeta.deviceInfo ?? null,
+      });
+    });
+  }
+
+  /**
+   * Two banks of one name in a picker cannot be told apart, and in Arabic
+   * "one name" is wider than equal strings: see {@link foldBankName}.
+   */
   private async assertNameFree(organizationId: string, name: string, exceptId?: string) {
-    const taken = await this.prisma.db.bank.findFirst({
+    const folded = foldBankName(name);
+    const visible = await this.prisma.db.bank.findMany({
       where: {
         ...ReferenceService.visibleBanks(organizationId),
-        name: { equals: name.trim(), mode: 'insensitive' },
         ...(exceptId ? { id: { not: exceptId } } : {}),
       },
-      select: { id: true },
+      select: { name: true },
     });
+    const taken = visible.find((bank) => foldBankName(bank.name) === folded);
     if (taken) {
       throw new AppError(ApiErrorCode.VALIDATION_ERROR, 'A bank with this name exists', {
+        details: { existingName: taken.name },
         fieldErrors: [{ path: 'name', message: 'validation.bank.nameTaken' }],
       });
     }

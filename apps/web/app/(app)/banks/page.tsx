@@ -23,6 +23,25 @@ import { useApi, useTranslator } from '@/components/providers';
 import { RequirePermission } from '@/components/session';
 
 /**
+ * The message for a failed bank write. A name clash names the bank it clashes
+ * with: «البنك الاسلامي الفلسطيني» is refused because of «البنك الإسلامي
+ * الفلسطيني», and without seeing that the refusal looks like a mistake.
+ */
+function bankErrorMap(caught: ApiClientError): Record<string, string> {
+  if (caught.details.reason === 'BANK_IN_USE') return { name: 'validation.bank.inUse' };
+  const map = caught.fieldErrorMap;
+  return Object.keys(map).length > 0 ? map : { name: caught.messageKey };
+}
+
+function errorText(t: (key: string) => string, key: string, caught: unknown): string {
+  const existing =
+    caught instanceof ApiClientError && typeof caught.details.existingName === 'string'
+      ? caught.details.existingName
+      : null;
+  return existing && key === 'validation.bank.nameTaken' ? `${t(key)}: ${existing}` : t(key);
+}
+
+/**
  * The banks cheques are drawn on.
  *
  * Two kinds sit in one list. The reference banks ship with the server and are
@@ -131,6 +150,7 @@ function AddBankForm({ onAdded }: { onAdded: () => void }) {
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [lastError, setLastError] = useState<unknown>(null);
 
   const create = useMutation({
     mutationFn: () => {
@@ -152,9 +172,9 @@ function AddBankForm({ onAdded }: { onAdded: () => void }) {
       onAdded();
     },
     onError: (caught: unknown) => {
+      setLastError(caught);
       if (caught instanceof ApiClientError) {
-        const map = caught.fieldErrorMap;
-        setFieldErrors(Object.keys(map).length > 0 ? map : { name: caught.messageKey });
+        setFieldErrors(bankErrorMap(caught));
       } else if (!(caught instanceof Error && caught.message === 'validation')) {
         setFieldErrors({ name: 'errors.saveFailed' });
       }
@@ -174,7 +194,7 @@ function AddBankForm({ onAdded }: { onAdded: () => void }) {
             label={t('bank.name')}
             htmlFor="bank-name"
             required
-            error={fieldErrors.name ? t(fieldErrors.name) : undefined}
+            error={fieldErrors.name ? errorText(t, fieldErrors.name, lastError) : undefined}
           >
             <input
               id="bank-name"
@@ -219,6 +239,29 @@ function OwnBankCard({ bank, onChanged }: { bank: BankSettingsView; onChanged: (
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(bank.name);
   const [error, setError] = useState<string | null>(null);
+  const [lastError, setLastError] = useState<unknown>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const handleError = (caught: unknown) => {
+    setLastError(caught);
+    if (caught instanceof ApiClientError) {
+      setError(bankErrorMap(caught).name ?? caught.messageKey);
+    } else if (!(caught instanceof Error && caught.message === 'validation')) {
+      setError('errors.saveFailed');
+    }
+  };
+
+  const remove = useMutation({
+    mutationFn: () => api.deleteBank(bank.id),
+    onSuccess: () => {
+      setConfirmDelete(false);
+      onChanged();
+    },
+    onError: (caught: unknown) => {
+      setConfirmDelete(false);
+      handleError(caught);
+    },
+  });
 
   const update = useMutation({
     mutationFn: (input: { name?: string; isActive?: boolean }) => {
@@ -234,14 +277,10 @@ function OwnBankCard({ bank, onChanged }: { bank: BankSettingsView; onChanged: (
       setEditing(false);
       onChanged();
     },
-    onError: (caught: unknown) => {
-      if (caught instanceof ApiClientError) {
-        setError(caught.fieldErrorMap.name ?? caught.messageKey);
-      } else if (!(caught instanceof Error && caught.message === 'validation')) {
-        setError('errors.saveFailed');
-      }
-    },
+    onError: handleError,
   });
+
+  const message = error ? errorText(t, error, lastError) : undefined;
 
   return (
     <Card className={`p-0 ${bank.isActive ? '' : 'opacity-75'}`}>
@@ -253,11 +292,7 @@ function OwnBankCard({ bank, onChanged }: { bank: BankSettingsView; onChanged: (
             update.mutate({ name });
           }}
         >
-          <Field
-            label={t('bank.name')}
-            htmlFor={`bank-${bank.id}`}
-            error={error ? t(error) : undefined}
-          >
+          <Field label={t('bank.name')} htmlFor={`bank-${bank.id}`} error={message}>
             <input
               id={`bank-${bank.id}`}
               className={inputClassName}
@@ -288,21 +323,59 @@ function OwnBankCard({ bank, onChanged }: { bank: BankSettingsView; onChanged: (
       ) : (
         <>
           <BankSummary bank={bank} />
-          {error ? <p className="px-4 pb-2 text-xs text-danger">{t(error)}</p> : null}
-          <div className="flex gap-2 border-t border-line/70 px-4 py-2.5">
-            <Button type="button" size="sm" variant="outline" onClick={() => setEditing(true)}>
-              {t('bank.rename')}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              loading={update.isPending}
-              onClick={() => update.mutate({ isActive: !bank.isActive })}
-            >
-              {bank.isActive ? t('bank.hide') : t('bank.show')}
-            </Button>
-          </div>
+          {message ? <p className="px-4 pb-2 text-xs text-danger">{message}</p> : null}
+          {confirmDelete ? (
+            <div className="flex flex-wrap items-center gap-2 border-t border-line/70 bg-danger-soft/40 px-4 py-2.5">
+              <p className="me-auto text-xs font-semibold text-danger">{t('bank.deleteConfirm')}</p>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => setConfirmDelete(false)}
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="danger"
+                loading={remove.isPending}
+                onClick={() => remove.mutate()}
+              >
+                {t('bank.delete')}
+              </Button>
+            </div>
+          ) : (
+            <div className="flex gap-2 border-t border-line/70 px-4 py-2.5">
+              <Button type="button" size="sm" variant="outline" onClick={() => setEditing(true)}>
+                {t('bank.rename')}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                loading={update.isPending}
+                onClick={() => update.mutate({ isActive: !bank.isActive })}
+              >
+                {bank.isActive ? t('bank.hide') : t('bank.show')}
+              </Button>
+              {/* Only a bank no cheque uses can go; the rest can only be hidden. */}
+              {bank.chequeCount === 0 ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="ms-auto text-danger"
+                  onClick={() => {
+                    setError(null);
+                    setConfirmDelete(true);
+                  }}
+                >
+                  {t('bank.delete')}
+                </Button>
+              ) : null}
+            </div>
+          )}
         </>
       )}
     </Card>

@@ -207,4 +207,73 @@ describeWithDb('organization banks (e2e)', () => {
     // Reading the picker list is still open to anyone who can see cheques.
     await request(app.getHttpServer()).get(`${API}/banks`).set(as(viewerA)).expect(200);
   });
+
+  it('rejects the same name spelt without its hamza, naming the bank it clashes with', async () => {
+    const reference = await prisma.db.bank.create({
+      data: {
+        country: 'PS',
+        code: `HZ${Date.now().toString(36).slice(-6).toUpperCase()}`,
+        name: 'بنك الإختبار الإسلامي',
+      },
+    });
+    try {
+      const response = await request(app.getHttpServer())
+        .post(`${API}/banks`)
+        .set(as(ownerA))
+        .send({ name: 'بنك الاختبار الاسلامي' })
+        .expect(422);
+      expect(response.body.error.fieldErrors[0].message).toBe('validation.bank.nameTaken');
+      expect(response.body.error.details.existingName).toBe('بنك الإختبار الإسلامي');
+    } finally {
+      await prisma.db.bank.delete({ where: { id: reference.id } });
+    }
+  });
+
+  it('deletes a bank no cheque uses, freeing its name and code', async () => {
+    const created = await request(app.getHttpServer())
+      .post(`${API}/banks`)
+      .set(as(ownerA))
+      .send({ name: 'Short Lived Bank', code: 'SHORT1' })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .delete(`${API}/banks/${created.body.id}`)
+      .set(as(ownerA))
+      .expect(204);
+
+    const manage = await request(app.getHttpServer())
+      .get(`${API}/banks/manage`)
+      .set(as(ownerA))
+      .expect(200);
+    expect(manage.body.map((bank: { id: string }) => bank.id)).not.toContain(created.body.id);
+
+    // Soft: the row and its audit stay, so the history still has it.
+    const row = await prisma.db.bank.findUniqueOrThrow({ where: { id: created.body.id } });
+    expect(row.deletedAt).not.toBeNull();
+    expect(
+      await prisma.db.auditLog.count({
+        where: { action: 'bank.deleted', entityId: created.body.id },
+      }),
+    ).toBe(1);
+
+    await request(app.getHttpServer())
+      .post(`${API}/banks`)
+      .set(as(ownerA))
+      .send({ name: 'Short Lived Bank', code: 'SHORT1' })
+      .expect(201);
+  });
+
+  it('refuses to delete a bank with cheques, or a reference bank', async () => {
+    const response = await request(app.getHttpServer())
+      .delete(`${API}/banks/${bankId}`)
+      .set(as(ownerA))
+      .expect(409);
+    expect(response.body.error.details.reason).toBe('BANK_IN_USE');
+
+    await request(app.getHttpServer())
+      .delete(`${API}/banks/${orgA.bankId}`)
+      .set(as(ownerA))
+      .expect(403);
+    await request(app.getHttpServer()).delete(`${API}/banks/${bankId}`).set(as(ownerB)).expect(404);
+  });
 });

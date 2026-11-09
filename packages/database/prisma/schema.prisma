@@ -337,6 +337,8 @@ model Bank {
   /// Hidden from the pickers; cheques already drawn on it keep it.
   isActive       Boolean  @default(true) @map("is_active")
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  /// Only an organization's own bank with no cheques is ever deleted.
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(3)
 
   organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   bankAccounts BankAccount[]

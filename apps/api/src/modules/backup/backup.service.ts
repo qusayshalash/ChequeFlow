@@ -84,7 +84,9 @@ export class BackupService {
         db.contact.findMany({ where: { organizationId } }),
         // The shared reference list and this organization's own; another
         // organization's banks are its business.
-        db.bank.findMany({ where: { OR: [{ organizationId: null }, { organizationId }] } }),
+        db.bank.findMany({
+          where: { OR: [{ organizationId: null }, { organizationId }], deletedAt: null },
+        }),
         db.cheque.findMany({ where: { organizationId } }),
         db.chequeEvent.findMany({ where: { cheque: { organizationId } } }),
         db.reminder.findMany({ where: { cheque: { organizationId } } }),
@@ -294,7 +296,7 @@ export class BackupService {
         const own = typeof row.organizationId === 'string';
         const scope = own ? { organizationId } : { organizationId: null };
         const existing = await tx.bank.findFirst({
-          where: { ...scope, country, code: row.code },
+          where: { ...scope, country, code: row.code, deletedAt: null },
           select: { id: true },
         });
         if (existing) {

@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -76,6 +78,18 @@ export class ReferenceController {
     @Req() request: Request,
   ) {
     return this.reference.updateBank(user, id, body, AuditService.contextFromRequest(request));
+  }
+
+  @Delete('banks/:id')
+  @HttpCode(204)
+  @RequirePermissions(Permission.SETTINGS_MANAGE)
+  @ApiOperation({ summary: "Delete one of this organization's own banks that has no cheques" })
+  async deleteBank(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() request: Request,
+  ): Promise<void> {
+    await this.reference.deleteBank(user, id, AuditService.contextFromRequest(request));
   }
 
   @Get('locations')

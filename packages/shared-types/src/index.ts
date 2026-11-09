@@ -11,3 +11,4 @@ export * from './whatsapp.js';
 export * from './audit.js';
 export * from './money.js';
 export * from './dashboard-headline.js';
+export * from './bank-name.js';

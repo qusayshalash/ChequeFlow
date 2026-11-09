@@ -114,6 +114,7 @@ export class OcrService {
       where: {
         OR: [{ organizationId: null }, { organizationId: cheque.organizationId }],
         isActive: true,
+        deletedAt: null,
       },
       select: { name: true },
     });

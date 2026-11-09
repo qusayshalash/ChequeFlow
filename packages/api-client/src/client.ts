@@ -520,6 +520,11 @@ export class ChequeFlowApiClient {
     return this.request<BankSettingsView>(`/banks/${id}`, { method: 'PATCH', body: input });
   }
 
+  /** Only an organization's own bank that no cheque uses can be deleted. */
+  deleteBank(id: string) {
+    return this.request<void>(`/banks/${id}`, { method: 'DELETE' });
+  }
+
   listLocations(branchId?: string) {
     return this.request<LocationView[]>('/locations', { query: { branchId } });
   }
