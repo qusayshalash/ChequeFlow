@@ -603,16 +603,21 @@ export class ChequeService {
       input.currency !== undefined ||
       input.exchangeRate !== undefined;
 
+    // A rate belongs to the currency it was given for. Changing a dollar
+    // cheque to shekels kept the dollar's rate of 1, so 10,000 shekels went
+    // into the books as 10,000 dollars. A new currency starts unconverted
+    // unless a rate comes with it.
+    const currencyChanged = input.currency !== undefined && input.currency !== existing.currency;
     const conversion = conversionTouched
       ? computeConversion(
           input.amount ?? moneyToString(existing.amount),
           input.currency ?? existing.currency,
           await this.baseCurrency(user.organizationId),
-          input.exchangeRate === undefined
-            ? existing.exchangeRate === null
+          input.exchangeRate !== undefined
+            ? (input.exchangeRate ?? null)
+            : currencyChanged || existing.exchangeRate === null
               ? null
-              : rateToString(existing.exchangeRate)
-            : (input.exchangeRate ?? null),
+              : rateToString(existing.exchangeRate),
         )
       : null;
 

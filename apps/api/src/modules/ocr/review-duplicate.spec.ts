@@ -30,6 +30,8 @@ describe('confirming a reviewed cheque', () => {
     organizationId: 'org-1',
     chequeNumber: 'TMP-63146975',
     amount: toMoney('1.00'),
+    currency: 'USD',
+    exchangeRate: null,
     dueDate: new Date('2026-09-09T00:00:00.000Z'),
     bankId: null,
     version: 1,
@@ -64,6 +66,8 @@ describe('confirming a reviewed cheque', () => {
     const prisma = {
       db: {
         cheque: { findFirst: () => Promise.resolve(record) },
+        // Review recomputes the converted amount against the books' currency.
+        organization: { findUniqueOrThrow: () => Promise.resolve({ baseCurrency: 'USD' }) },
         $transaction: async (run: (client: unknown) => Promise<unknown>) => run(tx),
       },
     };

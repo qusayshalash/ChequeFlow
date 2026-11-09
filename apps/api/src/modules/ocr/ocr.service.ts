@@ -15,7 +15,7 @@ import {
   type ChequeExtractionResult,
   type OcrProvider,
 } from '@cheque-flow/shared-types';
-import { Prisma, moneyToString, toMoney } from '@cheque-flow/database';
+import { Prisma, moneyToString, rateToString, toMoney } from '@cheque-flow/database';
 import type { ReviewChequeInput } from '@cheque-flow/validation';
 
 import { AppError } from '../../common/errors/app-error';
@@ -26,7 +26,7 @@ import { AuditAction, AuditService, type AuditContext } from '../audit/audit.ser
 import { ChequeActionsService } from '../cheques/cheque-actions.service';
 import { DuplicateDetectorService } from '../cheques/duplicate-detector.service';
 import { StorageService } from '../storage/storage.service';
-import { toDateOnly } from '../cheques/cheque.service';
+import { computeConversion, toDateOnly } from '../cheques/cheque.service';
 import { chequeDetailInclude, toIsoDate } from '../cheques/cheque.mapper';
 import { OCR_PROVIDER } from './ocr.tokens';
 import { DISABLED_OCR_PROVIDER_NAME } from './providers/disabled-ocr.provider';
@@ -324,10 +324,35 @@ export class OcrService {
     // Measured on a real record: the confirmed number and 9500.00 were stored
     // while the request answered 409 and the cheque stayed DRAFT. A review
     // either happens or it does not.
+    // The converted amount follows the confirmed values. A photographed cheque
+    // is created at a placeholder 1.00, and the review that set the real
+    // amount left its converted amount at 1.00: a cheque for thousands
+    // counted as one in every base-currency total.
+    const nextCurrency = confirmed.currency ?? cheque.currency;
+    const conversion =
+      confirmed.amount !== undefined || confirmed.currency !== undefined
+        ? computeConversion(
+            confirmed.amount ?? moneyToString(cheque.amount),
+            nextCurrency,
+            (
+              await this.prisma.db.organization.findUniqueOrThrow({
+                where: { id: user.organizationId },
+                select: { baseCurrency: true },
+              })
+            ).baseCurrency,
+            nextCurrency !== cheque.currency || cheque.exchangeRate === null
+              ? null
+              : rateToString(cheque.exchangeRate),
+          )
+        : null;
+
     const updated = await this.prisma.db.$transaction(async (tx) => {
       await tx.cheque.update({
         where: { id: chequeId },
         data: {
+          ...(conversion
+            ? { exchangeRate: conversion.exchangeRate, amountBase: conversion.amountBase }
+            : {}),
           ...(confirmed.chequeNumber !== undefined ? { chequeNumber: confirmed.chequeNumber } : {}),
           ...(confirmed.amount !== undefined ? { amount: toMoney(confirmed.amount) } : {}),
           ...(confirmed.amountInWords !== undefined
