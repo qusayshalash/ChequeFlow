@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { IconDots } from '@/components/icons';
 import { useTranslator } from '@/components/providers';
@@ -31,6 +31,30 @@ export function RowActions({ label, actions }: { label: string; actions: RowActi
   const t = useTranslator();
   const [open, setOpen] = useState(false);
   const holder = useRef<HTMLDivElement | null>(null);
+  const button = useRef<HTMLButtonElement | null>(null);
+  const menu = useRef<HTMLDivElement | null>(null);
+  const [place, setPlace] = useState<{ top: number; left: number } | null>(null);
+
+  // Fixed to the window, not absolute inside the row.
+  //
+  // Tables scroll inside their own container, and that container clips what
+  // leaves it: with one or two rows the menu opened below the last row and
+  // was cut off, reachable only by scrolling the table. Placed against the
+  // window, it opens below the button, or above when there is no room, and
+  // stays inside the screen sideways.
+  useLayoutEffect(() => {
+    if (!open || !button.current || !menu.current) return;
+    const anchor = button.current.getBoundingClientRect();
+    const { offsetWidth: width, offsetHeight: height } = menu.current;
+    const gap = 6;
+    const below = anchor.bottom + gap;
+    const top =
+      below + height <= window.innerHeight - gap ? below : Math.max(gap, anchor.top - gap - height);
+    // Growing from the button towards the middle of the row, as before: the
+    // button sits at the row's left end in this RTL layout. Kept on screen.
+    const left = Math.min(Math.max(gap, anchor.left), window.innerWidth - width - gap);
+    setPlace({ top, left });
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -42,11 +66,19 @@ export function RowActions({ label, actions }: { label: string; actions: RowActi
       if (event.key === 'Escape') setOpen(false);
     };
 
+    // A fixed menu would float away from its row on scroll, so it closes.
+    const onScroll = () => setOpen(false);
+
     document.addEventListener('mousedown', onPointerDown);
     document.addEventListener('keydown', onKey);
+    window.addEventListener('scroll', onScroll, true);
+    window.addEventListener('resize', onScroll);
     return () => {
       document.removeEventListener('mousedown', onPointerDown);
       document.removeEventListener('keydown', onKey);
+      window.removeEventListener('scroll', onScroll, true);
+      window.removeEventListener('resize', onScroll);
+      setPlace(null);
     };
   }, [open]);
 
@@ -62,6 +94,7 @@ export function RowActions({ label, actions }: { label: string; actions: RowActi
         // Icon-only, so it has to say what it acts on: "actions for cheque
         // 3000001", not just "actions".
         aria-label={`${t('common.actions')} — ${label}`}
+        ref={button}
         onClick={() => setOpen((value) => !value)}
         className="flex size-9 items-center justify-center rounded-lg border border-line text-ink-muted hover:bg-subtle hover:text-ink"
       >
@@ -70,8 +103,13 @@ export function RowActions({ label, actions }: { label: string; actions: RowActi
 
       {open ? (
         <div
+          ref={menu}
           role="menu"
-          className="absolute end-0 top-11 z-30 w-48 overflow-hidden rounded-xl border border-line bg-surface p-1 shadow-lg"
+          className="fixed z-50 w-48 overflow-hidden rounded-xl border border-line bg-surface p-1 shadow-lg"
+          // Hidden for the one layout pass before it is measured and placed.
+          style={
+            place ? { top: place.top, left: place.left } : { top: 0, left: 0, visibility: 'hidden' }
+          }
         >
           {plain.map((action) =>
             action.href ? (
