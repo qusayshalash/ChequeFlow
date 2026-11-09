@@ -57,7 +57,7 @@ export function ChequeActionsPanel({
       switch (selected) {
         case ChequeAction.RECEIVE:
           return api.receiveCheque(cheque.id, {
-            fromContactId: contactId,
+            ...(contactId ? { fromContactId: contactId } : {}),
             toLocationId: locationId,
             notes: reason || undefined,
             version,
@@ -137,6 +137,9 @@ export function ChequeActionsPanel({
             variant={action === name ? 'primary' : 'secondary'}
             onClick={() => {
               setAction(action === name ? null : name);
+              // Receiving starts from the source the cheque was entered with,
+              // rather than asking for it a second time.
+              setContactId(name === ChequeAction.RECEIVE ? (cheque.originalSourceId ?? '') : '');
               setError(null);
             }}
           >
@@ -164,10 +167,18 @@ export function ChequeActionsPanel({
           >
             <div className="flex-1 space-y-5 overflow-y-auto p-6">
               {NEEDS_CONTACT.has(action) ? (
-                <Field label={t('cheque.originalSource')} htmlFor="action-contact" required>
+                <Field
+                  label={
+                    action === ChequeAction.RECEIVE
+                      ? t('cheque.originalSource')
+                      : t('cheque.currentRecipient')
+                  }
+                  htmlFor="action-contact"
+                  required={action !== ChequeAction.RECEIVE}
+                >
                   <select
                     id="action-contact"
-                    required
+                    required={action !== ChequeAction.RECEIVE}
                     className={inputClassName}
                     value={contactId}
                     onChange={(event) => setContactId(event.target.value)}

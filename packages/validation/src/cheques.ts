@@ -231,8 +231,12 @@ const actionBaseSchema = z.object({
 });
 
 export const receiveChequeSchema = actionBaseSchema.extend({
-  /** Contact the cheque was received from. */
-  fromContactId: uuidSchema,
+  /**
+   * Contact the cheque was received from. Optional: a cheque usually names its
+   * source when it is entered, and receiving keeps that one unless told
+   * otherwise.
+   */
+  fromContactId: uuidSchema.optional(),
   /** Where the cheque is now stored. */
   toLocationId: uuidSchema,
   /** Employee who physically holds it, defaults to the acting user. */

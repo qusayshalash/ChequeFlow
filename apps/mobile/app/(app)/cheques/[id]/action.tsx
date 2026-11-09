@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 
 import { ApiClientError } from '@cheque-flow/api-client';
@@ -64,6 +64,13 @@ export default function PerformActionScreen() {
     queryFn: () => api.getCheque(id),
     enabled: Boolean(id),
   });
+
+  // Receiving starts from the source the cheque was entered with, rather than
+  // asking for it a second time.
+  const knownSource = cheque.data?.originalSourceId ?? null;
+  useEffect(() => {
+    if (selected === ChequeAction.RECEIVE) setContactId(knownSource);
+  }, [selected, knownSource]);
   const contacts = useQuery({
     queryKey: ['contacts', 'picker'],
     queryFn: () => api.listContacts({ pageSize: 100, isActive: true }),
@@ -78,7 +85,7 @@ export default function PerformActionScreen() {
       switch (action) {
         case ChequeAction.RECEIVE:
           return api.receiveCheque(id, {
-            fromContactId: contactId ?? '',
+            ...(contactId ? { fromContactId: contactId } : {}),
             toLocationId: locationId ?? '',
             notes,
             version,
@@ -139,7 +146,14 @@ export default function PerformActionScreen() {
 
   /** Everything the chosen action requires must be filled before submitting. */
   function missingInput(action: string): boolean {
-    if (NEEDS_CONTACT.has(action) && action !== ChequeAction.RETURN && !contactId) return true;
+    if (
+      NEEDS_CONTACT.has(action) &&
+      action !== ChequeAction.RETURN &&
+      action !== ChequeAction.RECEIVE &&
+      !contactId
+    ) {
+      return true;
+    }
     if (NEEDS_LOCATION.has(action) && action !== ChequeAction.HANDOVER && !locationId) return true;
     if (NEEDS_REASON.has(action) && reason.trim().length === 0) return true;
     if (NEEDS_NEW_DUE_DATE.has(action) && !isValidDate(newDueDate)) return true;
@@ -170,7 +184,7 @@ export default function PerformActionScreen() {
                   ? t('cheque.originalSource')
                   : t('cheque.currentRecipient')
               }
-              required={selected !== ChequeAction.RETURN}
+              required={selected !== ChequeAction.RETURN && selected !== ChequeAction.RECEIVE}
               options={(contacts.data?.data ?? []).map((contact) => ({
                 value: contact.id,
                 label: contact.name,

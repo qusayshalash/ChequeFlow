@@ -386,7 +386,10 @@ export class ChequeActionsService {
 
     switch (transition.action) {
       case ChequeAction.RECEIVE:
-        changes.originalSourceId = payload.fromContactId ?? null;
+        // Only when one is given. Writing `?? null` erased the source the
+        // cheque was entered with whenever none came with the action, which a
+        // bulk receive with no contact chosen did to every cheque it touched.
+        if (payload.fromContactId) changes.originalSourceId = payload.fromContactId;
         changes.currentHolderId = payload.toUserId ?? user.id;
         changes.currentLocationId = payload.toLocationId ?? null;
         changes.currentRecipientId = null;
