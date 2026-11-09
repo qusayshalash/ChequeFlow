@@ -41,15 +41,18 @@ const NEEDS_DATE: ReadonlySet<BulkAction> = new Set(['POSTPONE']);
 export function BulkActionBar({
   selected,
   onClear,
+  initialAction = 'DEPOSIT',
 }: {
   selected: ReadonlySet<string>;
   onClear: () => void;
+  /** What the page is for: the review queue opens on receiving. */
+  initialAction?: BulkAction;
 }) {
   const api = useApi();
   const t = useTranslator();
   const queryClient = useQueryClient();
 
-  const [action, setAction] = useState<BulkAction>('DEPOSIT');
+  const [action, setAction] = useState<BulkAction>(initialAction);
   const [locationId, setLocationId] = useState('');
   const [contactId, setContactId] = useState('');
   const [effectiveDate, setEffectiveDate] = useState('');

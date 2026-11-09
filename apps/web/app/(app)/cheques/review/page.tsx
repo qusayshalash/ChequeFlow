@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { ChequeStatus } from '@cheque-flow/shared-types';
 import { Card, ErrorState, LoadingState } from '@cheque-flow/ui';
 
+import { BulkActionBar } from '@/components/bulk-action-bar';
 import { ChequeTable } from '@/components/cheque-table';
 import { PageHeader } from '@/components/page-header';
 import { Pagination } from '@/components/pagination';
@@ -19,6 +20,30 @@ export default function ReviewQueuePage() {
   const ocrOff = useSession().data?.ocrEnabled === false;
 
   const [page, setPage] = useState(1);
+  // The queue is where new cheques wait to be received, usually several at a
+  // time from one customer, so it selects like the main list and acts on all
+  // of them at once instead of one cheque page after another.
+  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
+
+  function toggle(id: string): void {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll(keys: string[]): void {
+    setSelected((current) => {
+      const allOn = keys.length > 0 && keys.every((key) => current.has(key));
+      const next = new Set(current);
+      for (const key of keys) {
+        if (allOn) next.delete(key);
+        else next.add(key);
+      }
+      return next;
+    });
+  }
 
   const query = useQuery({
     queryKey: ['cheques', 'pending-review', page],
@@ -50,11 +75,32 @@ export default function ReviewQueuePage() {
       {query.data ? (
         <>
           <Panel bodyClassName="">
-            <ChequeTable cheques={query.data.data} />
+            <ChequeTable
+              cheques={query.data.data}
+              selection={{
+                selected,
+                onToggle: toggle,
+                onToggleAll: toggleAll,
+                selectAllLabel: t('bulk.selectAll'),
+              }}
+            />
           </Panel>
-          <Pagination meta={query.data.meta} onPageChange={setPage} />
+          <Pagination
+            meta={query.data.meta}
+            onPageChange={(next) => {
+              setPage(next);
+              // Per page: a bulk action applies to the rows on screen.
+              setSelected(new Set());
+            }}
+          />
         </>
       ) : null}
+
+      <BulkActionBar
+        selected={selected}
+        onClear={() => setSelected(new Set())}
+        initialAction="RECEIVE"
+      />
     </div>
   );
 }
