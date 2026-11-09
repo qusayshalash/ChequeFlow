@@ -66,14 +66,30 @@ describe('the all-cheques card', () => {
     });
   });
 
-  it('gives one figure in the books currency when everything converts', () => {
+  it('keeps each currency on its own even when everything converts', () => {
     const converted = summary(
       [block('ILS', { count: 2, total: '500.00' }), block('USD', { count: 1, total: '100.00' })],
       { count: 3, total: '870.00', unconvertedCount: 0 },
     );
     expect(headlineTotal(converted, null)).toEqual({
       count: 3,
-      amounts: [{ currency: 'ILS', total: '870.00' }],
+      amounts: [
+        { currency: 'ILS', total: '500.00' },
+        { currency: 'USD', total: '100.00' },
+      ],
     });
+  });
+
+  it('agrees with each currency picked on its own', () => {
+    const mixed = summary(
+      [
+        block('ILS', { count: 1, total: '10000.00' }),
+        block('USD', { count: 17, total: '73002.00' }),
+      ],
+      { count: 17, total: '64005.00', unconvertedCount: 0 },
+    );
+    const all = headlineTotal(mixed, null).amounts;
+    expect(all).toContainEqual(headlineTotal(mixed, 'USD').amounts[0]);
+    expect(all).toContainEqual(headlineTotal(mixed, 'ILS').amounts[0]);
   });
 });

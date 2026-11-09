@@ -4,10 +4,7 @@ import { addMoney } from './money.js';
 export interface HeadlineTotal {
   /** Every outstanding cheque in scope, converted or not. */
   count: number;
-  /**
-   * One figure in the books' currency when every cheque in scope converts;
-   * otherwise one per currency, since a sum that leaves cheques out is wrong.
-   */
+  /** One total per currency, never converted into another. */
   amounts: Array<{ currency: string; total: string }>;
 }
 
@@ -33,13 +30,15 @@ export function headlineTotal(summary: DashboardSummary, currency: string | null
     .filter((entry) => entry.count > 0);
 
   const count = perCurrency.reduce((sum, entry) => sum + entry.count, 0);
-  const base = summary.baseTotal;
 
-  if (!currency && count > 0 && base.unconvertedCount === 0) {
-    return { count, amounts: [{ currency: base.currency, total: base.total }] };
-  }
+  // Each currency on its own, as the owner asked: a figure converted into the
+  // books' currency depends on rates that were often never recorded, and the
+  // same cheques read differently under "all" and under their own currency.
   if (perCurrency.length === 0) {
-    return { count: 0, amounts: [{ currency: currency ?? base.currency, total: '0.00' }] };
+    return {
+      count: 0,
+      amounts: [{ currency: currency ?? summary.defaultCurrency, total: '0.00' }],
+    };
   }
   return {
     count,
