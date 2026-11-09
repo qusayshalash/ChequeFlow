@@ -23,7 +23,7 @@ import {
 
 import { createPrismaClient } from '../src/client.js';
 import { DEFAULT_LOCATIONS } from './default-locations.js';
-import { REFERENCE_BANKS } from './reference-banks.js';
+import { ensureReferenceBanks } from './reference-banks.js';
 
 loadEnv({ path: path.resolve(__dirname, '../../../.env'), quiet: true });
 
@@ -33,7 +33,6 @@ loadEnv({ path: path.resolve(__dirname, '../../../.env'), quiet: true });
  * A starting point, not a closed list: `bankNameRaw` accepts any name typed by
  * hand, so a cheque from a bank that is not here is still recordable.
  */
-const DEMO_BANKS = REFERENCE_BANKS;
 
 const DEMO_CONTACTS = [
   { type: ContactType.CUSTOMER, name: 'أحمد بن سالم', companyName: 'مؤسسة النخبة للتجارة' },
@@ -84,13 +83,7 @@ async function main(): Promise<void> {
     const permissionIdByKey = new Map(permissionRecords.map((p) => [p.key, p.id]));
 
     // ── banks (reference data) ──────────────────────────────────────────────
-    for (const bank of DEMO_BANKS) {
-      await prisma.bank.upsert({
-        where: { country_code: { country: bank.country, code: bank.code } },
-        update: { name: bank.name },
-        create: { country: bank.country, code: bank.code, name: bank.name },
-      });
-    }
+    await ensureReferenceBanks(prisma);
 
     // ── organization ────────────────────────────────────────────────────────
     const organizationName = requireEnv('SEED_ORG_NAME', 'شركة التجارة النموذجية');

@@ -831,8 +831,13 @@ export class ChequeService {
     }
 
     if (refs.bankId) {
-      const bank = await this.prisma.db.bank.findUnique({
-        where: { id: refs.bankId },
+      // Reference banks or this organization's own; another organization's
+      // bank does not exist from here.
+      const bank = await this.prisma.db.bank.findFirst({
+        where: {
+          id: refs.bankId,
+          OR: [{ organizationId: null }, { organizationId }],
+        },
         select: { id: true },
       });
       if (!bank) throw AppError.notFound('Bank', refs.bankId);

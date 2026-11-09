@@ -140,6 +140,7 @@ model Organization {
   roles        Role[]
   contacts     Contact[]
   bankAccounts BankAccount[]
+  banks        Bank[]
   locations    Location[]
   cheques      Cheque[]
   auditLogs    AuditLog[]
@@ -321,17 +322,27 @@ model Contact {
   @@map("contacts")
 }
 
+/// A bank a cheque can be drawn on. With no organization it is reference
+/// data every organization sees (the list a new organization starts with);
+/// with one it is that organization's own addition, editable and hideable by
+/// it alone. Codes are unique among the reference banks and within each
+/// organization, by partial indexes in the migration that added this.
 model Bank {
-  id      String  @id @default(uuid()) @db.Uuid
-  country String  @db.Char(2)
-  name    String
-  code    String
-  logoUrl String? @map("logo_url")
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String?  @map("organization_id") @db.Uuid
+  country        String   @db.Char(2)
+  name           String
+  code           String
+  logoUrl        String?  @map("logo_url")
+  /// Hidden from the pickers; cheques already drawn on it keep it.
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   bankAccounts BankAccount[]
   cheques      Cheque[]
 
-  @@unique([country, code])
+  @@index([organizationId])
   @@map("banks")
 }
 

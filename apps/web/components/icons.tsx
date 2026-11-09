@@ -136,6 +136,16 @@ export function IconSafe(props: IconProps) {
   );
 }
 
+export function IconBank(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M3 9.5 12 4l9 5.5" />
+      <path d="M5 10v7M9.5 10v7M14.5 10v7M19 10v7" />
+      <path d="M3.5 20h17" />
+    </Icon>
+  );
+}
+
 export function IconShield(props: IconProps) {
   return (
     <Icon {...props}>

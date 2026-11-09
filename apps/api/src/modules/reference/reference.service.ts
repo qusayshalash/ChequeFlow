@@ -1,14 +1,36 @@
 import { Injectable } from '@nestjs/common';
 
-import type { BankView, BranchView, LocationView } from '@cheque-flow/shared-types';
+import {
+  ApiErrorCode,
+  type BankSettingsView,
+  type BankView,
+  type BranchView,
+  type LocationView,
+} from '@cheque-flow/shared-types';
+import type { CreateBankInput, UpdateBankInput } from '@cheque-flow/validation';
 
+import { AppError } from '../../common/errors/app-error';
 import type { RequestUser } from '../../common/types/request-user';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AuditAction, AuditService, type AuditContext } from '../audit/audit.service';
 
-/** Read-only reference data: branches, banks and storage locations. */
+/**
+ * Reference data: branches, banks and storage locations.
+ *
+ * Banks are the shared reference list (no organization) plus each
+ * organization's own additions, which only that organization sees and edits.
+ */
 @Injectable()
 export class ReferenceService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
+
+  /** The banks this organization can draw cheques on: reference plus its own. */
+  static visibleBanks(organizationId: string) {
+    return { OR: [{ organizationId: null }, { organizationId }] };
+  }
 
   async listBranches(user: RequestUser): Promise<BranchView[]> {
     const branches = await this.prisma.db.branch.findMany({
@@ -25,10 +47,14 @@ export class ReferenceService {
     }));
   }
 
-  /** Banks are global reference data, optionally narrowed by country. */
-  async listBanks(country?: string): Promise<BankView[]> {
+  /** The banks offered in the pickers: visible to this organization and not hidden. */
+  async listBanks(user: RequestUser, country?: string): Promise<BankView[]> {
     const banks = await this.prisma.db.bank.findMany({
-      where: country ? { country } : {},
+      where: {
+        ...ReferenceService.visibleBanks(user.organizationId),
+        isActive: true,
+        ...(country ? { country } : {}),
+      },
       orderBy: { name: 'asc' },
     });
     return banks.map((bank) => ({
@@ -38,6 +64,159 @@ export class ReferenceService {
       code: bank.code,
       logoUrl: bank.logoUrl,
     }));
+  }
+
+  /** Every bank this organization sees, hidden ones included, for the settings page. */
+  async listBanksForSettings(user: RequestUser): Promise<BankSettingsView[]> {
+    const [banks, counts] = await Promise.all([
+      this.prisma.db.bank.findMany({
+        where: ReferenceService.visibleBanks(user.organizationId),
+        orderBy: [{ organizationId: { sort: 'asc', nulls: 'first' } }, { name: 'asc' }],
+      }),
+      this.prisma.db.cheque.groupBy({
+        by: ['bankId'],
+        where: { organizationId: user.organizationId, deletedAt: null, bankId: { not: null } },
+        _count: { _all: true },
+      }),
+    ]);
+    const countByBank = new Map(counts.map((row) => [row.bankId, row._count._all]));
+    return banks.map((bank) => ({
+      id: bank.id,
+      country: bank.country,
+      name: bank.name,
+      code: bank.code,
+      logoUrl: bank.logoUrl,
+      isReference: bank.organizationId === null,
+      isActive: bank.isActive,
+      chequeCount: countByBank.get(bank.id) ?? 0,
+    }));
+  }
+
+  async createBank(
+    user: RequestUser,
+    input: CreateBankInput,
+    auditMeta: Partial<AuditContext> = {},
+  ): Promise<BankSettingsView> {
+    const organization = await this.prisma.db.organization.findUniqueOrThrow({
+      where: { id: user.organizationId },
+      select: { country: true },
+    });
+    const country = input.country ?? organization.country;
+    await this.assertNameFree(user.organizationId, input.name);
+
+    // A code is made up when none is given; bank codes are a filing detail
+    // most people never see.
+    const code = input.code ?? `B${Date.now().toString(36).toUpperCase()}`;
+    const clash = await this.prisma.db.bank.findFirst({
+      where: { ...ReferenceService.visibleBanks(user.organizationId), country, code },
+      select: { id: true },
+    });
+    if (clash) {
+      throw new AppError(ApiErrorCode.VALIDATION_ERROR, 'A bank with this code exists', {
+        fieldErrors: [{ path: 'code', message: 'validation.bank.codeTaken' }],
+      });
+    }
+
+    const bank = await this.prisma.db.$transaction(async (tx) => {
+      const created = await tx.bank.create({
+        data: { organizationId: user.organizationId, country, code, name: input.name },
+      });
+      await this.audit.recordWithin(tx, {
+        organizationId: user.organizationId,
+        userId: user.id,
+        action: AuditAction.BANK_CREATED,
+        entityType: 'bank',
+        entityId: created.id,
+        after: { name: created.name, code: created.code, country: created.country },
+        ipAddress: auditMeta.ipAddress ?? null,
+        deviceInfo: auditMeta.deviceInfo ?? null,
+      });
+      return created;
+    });
+
+    return {
+      id: bank.id,
+      country: bank.country,
+      name: bank.name,
+      code: bank.code,
+      logoUrl: bank.logoUrl,
+      isReference: false,
+      isActive: bank.isActive,
+      chequeCount: 0,
+    };
+  }
+
+  async updateBank(
+    user: RequestUser,
+    id: string,
+    input: UpdateBankInput,
+    auditMeta: Partial<AuditContext> = {},
+  ): Promise<BankSettingsView> {
+    const existing = await this.prisma.db.bank.findFirst({
+      where: { id, ...ReferenceService.visibleBanks(user.organizationId) },
+    });
+    if (!existing) throw AppError.notFound('Bank', id);
+    // Shared by every organization on the server: one of them renaming or
+    // hiding it would change it for all the others.
+    if (existing.organizationId === null) {
+      throw AppError.forbidden('Reference banks are shared and cannot be changed');
+    }
+    if (input.name !== undefined && input.name !== existing.name) {
+      await this.assertNameFree(user.organizationId, input.name, id);
+    }
+
+    const updated = await this.prisma.db.$transaction(async (tx) => {
+      const row = await tx.bank.update({
+        where: { id },
+        data: {
+          ...(input.name !== undefined ? { name: input.name } : {}),
+          ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
+        },
+      });
+      await this.audit.recordWithin(tx, {
+        organizationId: user.organizationId,
+        userId: user.id,
+        action: AuditAction.BANK_UPDATED,
+        entityType: 'bank',
+        entityId: id,
+        before: { name: existing.name, isActive: existing.isActive },
+        after: { name: row.name, isActive: row.isActive },
+        ipAddress: auditMeta.ipAddress ?? null,
+        deviceInfo: auditMeta.deviceInfo ?? null,
+      });
+      return row;
+    });
+
+    const chequeCount = await this.prisma.db.cheque.count({
+      where: { organizationId: user.organizationId, deletedAt: null, bankId: id },
+    });
+    return {
+      id: updated.id,
+      country: updated.country,
+      name: updated.name,
+      code: updated.code,
+      logoUrl: updated.logoUrl,
+      isReference: false,
+      isActive: updated.isActive,
+      chequeCount,
+    };
+  }
+
+  /** Two banks of one name in a picker cannot be told apart. */
+  private async assertNameFree(organizationId: string, name: string, exceptId?: string) {
+    const taken = await this.prisma.db.bank.findFirst({
+      where: {
+        ...ReferenceService.visibleBanks(organizationId),
+        name: { equals: name.trim(), mode: 'insensitive' },
+        ...(exceptId ? { id: { not: exceptId } } : {}),
+      },
+      select: { id: true },
+    });
+    if (taken) {
+      throw new AppError(ApiErrorCode.VALIDATION_ERROR, 'A bank with this name exists', {
+        fieldErrors: [{ path: 'name', message: 'validation.bank.nameTaken' }],
+      });
+    }
   }
 
   async listLocations(user: RequestUser, branchId?: string): Promise<LocationView[]> {

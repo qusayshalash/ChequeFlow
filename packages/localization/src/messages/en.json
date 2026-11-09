@@ -597,7 +597,8 @@
     "roles": "Roles",
     "settings": "Settings",
     "users": "Users",
-    "workspace": "Workspace"
+    "workspace": "Workspace",
+    "banks": "Banks"
   },
   "ocr": {
     "confidence": "Confidence",
@@ -625,7 +626,8 @@
     "reports": "Operational summaries for custody and expected cash flow decisions",
     "review": "Verify new cheques and approve extracted data before processing",
     "roles": "Compare default permissions by role and review your own access",
-    "users": "Manage team members, roles, and access status"
+    "users": "Manage team members, roles, and access status",
+    "banks": "Banks cheques are drawn on: the reference list and the ones your organization added"
   },
   "period": {
     "next30": "Next 30 days",
@@ -866,6 +868,13 @@
       "emailTaken": "That sign-in name is already taken",
       "unknownRole": "Unknown role",
       "lastOwner": "The organization must keep at least one owner"
+    },
+    "bank": {
+      "nameRequired": "Enter the bank name",
+      "codeInvalid": "2 to 12 capital letters and digits",
+      "nothingToChange": "Nothing to change",
+      "nameTaken": "A bank with this name exists",
+      "codeTaken": "A bank with this code exists"
     }
   },
   "week": {
@@ -907,7 +916,9 @@
     "user_status_changed": "User enabled or disabled",
     "user_password_reset": "User password reset",
     "user_role_changed": "User role changed",
-    "settings_changed": "Settings changed"
+    "settings_changed": "Settings changed",
+    "bank_created": "Bank added",
+    "bank_updated": "Bank edited"
   },
   "auditEntity": {
     "cheque": "Cheque",
@@ -915,6 +926,24 @@
     "contact": "Contact",
     "organization": "Organization",
     "session": "Session",
-    "user": "User"
+    "user": "User",
+    "bank": "Bank"
+  },
+  "bank": {
+    "add": "Add bank",
+    "name": "Bank name",
+    "code": "Code",
+    "codeHint": "Optional — made up if left empty",
+    "reference": "Reference",
+    "own": "Your banks",
+    "hidden": "Hidden",
+    "hide": "Hide",
+    "show": "Show",
+    "rename": "Rename",
+    "save": "Save",
+    "cheques": "cheques",
+    "referenceHint": "Reference banks are shared and fixed",
+    "empty": "No banks added yet",
+    "hiddenHint": "Hidden banks are left out of the pickers; cheques drawn on them keep them"
   }
 }

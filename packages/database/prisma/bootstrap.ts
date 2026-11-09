@@ -30,7 +30,7 @@ import {
 
 import { createPrismaClient } from '../src/client.js';
 import { DEFAULT_LOCATIONS } from './default-locations.js';
-import { REFERENCE_BANKS } from './reference-banks.js';
+import { ensureReferenceBanks } from './reference-banks.js';
 
 function required(name: string): string {
   const value = process.env[name]?.trim();
@@ -90,13 +90,7 @@ async function main(): Promise<void> {
       (await prisma.permission.findMany()).map((permission) => [permission.key, permission.id]),
     );
 
-    for (const bank of REFERENCE_BANKS) {
-      await prisma.bank.upsert({
-        where: { country_code: { country: bank.country, code: bank.code } },
-        update: { name: bank.name },
-        create: { country: bank.country, code: bank.code, name: bank.name },
-      });
-    }
+    await ensureReferenceBanks(prisma);
 
     const passwordHash = await argon2.hash(ownerPassword, { type: argon2.argon2id });
 

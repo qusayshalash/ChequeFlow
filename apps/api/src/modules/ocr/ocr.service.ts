@@ -110,7 +110,13 @@ export class OcrService {
 
     // Text-only providers match the scanned text against banks the
     // organization already deals with instead of guessing.
-    const banks = await this.prisma.db.bank.findMany({ select: { name: true } });
+    const banks = await this.prisma.db.bank.findMany({
+      where: {
+        OR: [{ organizationId: null }, { organizationId: cheque.organizationId }],
+        isActive: true,
+      },
+      select: { name: true },
+    });
 
     let result: ChequeExtractionResult;
     try {

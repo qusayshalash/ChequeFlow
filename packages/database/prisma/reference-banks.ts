@@ -13,3 +13,32 @@ export const REFERENCE_BANKS = [
   { country: 'PS', code: 'CAIR', name: 'بنك القاهرة عمان' },
   { country: 'PS', code: 'JOBA', name: 'بنك الأردن' },
 ] as const;
+
+/**
+ * Inserts the reference banks, or renames them to the current spelling.
+ *
+ * By lookup rather than upsert: the code is unique only among banks with no
+ * organization, which is a partial index Prisma cannot address by name.
+ */
+export async function ensureReferenceBanks(db: {
+  bank: {
+    findFirst(args: {
+      where: { country: string; code: string; organizationId: null };
+      select: { id: true };
+    }): Promise<{ id: string } | null>;
+    update(args: { where: { id: string }; data: { name: string } }): Promise<unknown>;
+    create(args: { data: { country: string; code: string; name: string } }): Promise<unknown>;
+  };
+}): Promise<void> {
+  for (const bank of REFERENCE_BANKS) {
+    const existing = await db.bank.findFirst({
+      where: { country: bank.country, code: bank.code, organizationId: null },
+      select: { id: true },
+    });
+    if (existing) {
+      await db.bank.update({ where: { id: existing.id }, data: { name: bank.name } });
+    } else {
+      await db.bank.create({ data: { country: bank.country, code: bank.code, name: bank.name } });
+    }
+  }
+}

@@ -8,6 +8,7 @@ import { Permission } from '@cheque-flow/shared-types';
 
 import {
   IconBell,
+  IconBank,
   IconBranch,
   IconCalendar,
   IconCheque,
@@ -75,6 +76,12 @@ const SETTINGS_NAV: NavItem[] = [
   { href: '/contacts', labelKey: 'nav.contacts', Icon: IconContacts },
   { href: '/branches', labelKey: 'nav.branches', Icon: IconBranch },
   { href: '/locations', labelKey: 'nav.locations', Icon: IconSafe },
+  {
+    href: '/banks',
+    labelKey: 'nav.banks',
+    Icon: IconBank,
+    permission: Permission.SETTINGS_MANAGE,
+  },
   {
     href: '/users',
     labelKey: 'nav.users',

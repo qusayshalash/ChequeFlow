@@ -1,5 +1,6 @@
 import type {
   AuthTokens,
+  BankSettingsView,
   BankView,
   BranchView,
   ChequeDetailView,
@@ -17,6 +18,7 @@ import type {
   UserView,
 } from '@cheque-flow/shared-types';
 import type {
+  CreateBankInput,
   BounceChequeInput,
   BulkChequeActionInput,
   RestoreBackupInput,
@@ -44,6 +46,7 @@ import type {
   UpdateChequeInput,
   UpdateContactInput,
   UpdateUserInput,
+  UpdateBankInput,
 } from '@cheque-flow/validation';
 
 import { ApiClientError } from './errors.js';
@@ -502,6 +505,19 @@ export class ChequeFlowApiClient {
 
   listBanks(country?: string) {
     return this.request<BankView[]>('/banks', { query: { country } });
+  }
+
+  /** Every bank this organization sees, hidden ones included (settings). */
+  listBanksForSettings() {
+    return this.request<BankSettingsView[]>('/banks/manage');
+  }
+
+  createBank(input: CreateBankInput) {
+    return this.request<BankSettingsView>('/banks', { method: 'POST', body: input });
+  }
+
+  updateBank(id: string, input: UpdateBankInput) {
+    return this.request<BankSettingsView>(`/banks/${id}`, { method: 'PATCH', body: input });
   }
 
   listLocations(branchId?: string) {

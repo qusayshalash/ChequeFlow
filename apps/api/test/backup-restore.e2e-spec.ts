@@ -309,4 +309,70 @@ describeWithDb('backup restore (e2e)', () => {
 
     await cleanupFixtures(prisma, empty.organizationId);
   });
+
+  it("brings an organization's own bank back as the restoring organization's", async () => {
+    const bank = await request(app.getHttpServer())
+      .post(`${API}/banks`)
+      .set(auth(sourceToken))
+      .send({ name: 'Backup Own Bank', code: 'BKOWN' })
+      .expect(201);
+    await request(app.getHttpServer())
+      .post(`${API}/cheques`)
+      .set(auth(sourceToken))
+      .send({
+        direction: 'INCOMING',
+        chequeNumber: 'R-OWN',
+        amount: '300.00',
+        currency: 'USD',
+        dueDate: '2026-12-31',
+        bankId: bank.body.id,
+      })
+      .expect(201);
+    const exported = await request(app.getHttpServer())
+      .get(`${API}/backup/export`)
+      .set(auth(sourceToken))
+      .expect(200);
+    const withBank = JSON.parse(exported.text) as {
+      data: { banks: Array<Record<string, unknown>> };
+    };
+    // Only this organization's banks and the shared ones travel.
+    expect(
+      withBank.data.banks.every(
+        (row) => row.organizationId === null || row.organizationId === source.organizationId,
+      ),
+    ).toBe(true);
+
+    const fresh = await seedFixtures(prisma);
+    const login = await request(app.getHttpServer())
+      .post(`${API}/auth/login`)
+      .send({ email: fresh.ownerEmail, password: fresh.password })
+      .expect(200);
+    await prisma.db.contact.deleteMany({ where: { organizationId: fresh.organizationId } });
+    await prisma.db.location.deleteMany({ where: { organizationId: fresh.organizationId } });
+    await prisma.db.branch.deleteMany({ where: { organizationId: fresh.organizationId } });
+
+    await request(app.getHttpServer())
+      .post(`${API}/backup/restore`)
+      .set(auth(login.body.accessToken))
+      .send({ archive: withBank, confirm: true })
+      .expect(200);
+
+    const restored = await prisma.db.cheque.findFirstOrThrow({
+      where: { organizationId: fresh.organizationId, chequeNumber: 'R-OWN' },
+      include: { bank: true },
+    });
+    expect(restored.bank).toMatchObject({
+      name: 'Backup Own Bank',
+      organizationId: fresh.organizationId,
+    });
+    // A copy, not a move: the source keeps its own.
+    expect(restored.bankId).not.toBe(bank.body.id);
+    // Cheques on a reference bank keep pointing at the shared row.
+    const onReference = await prisma.db.cheque.findFirstOrThrow({
+      where: { organizationId: fresh.organizationId, chequeNumber: 'R-1' },
+    });
+    expect(onReference.bankId).toBe(source.bankId);
+
+    await cleanupFixtures(prisma, fresh.organizationId);
+  });
 });

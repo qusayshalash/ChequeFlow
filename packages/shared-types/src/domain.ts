@@ -142,6 +142,16 @@ export interface BankView {
   logoUrl: string | null;
 }
 
+/** A bank as the banks settings page lists it. */
+export interface BankSettingsView extends BankView {
+  /** Shared reference data: listed, never edited or hidden by one organization. */
+  isReference: boolean;
+  /** False when hidden from the pickers. */
+  isActive: boolean;
+  /** This organization's cheques drawn on it. */
+  chequeCount: number;
+}
+
 export interface ChequeImageView {
   id: string;
   side: ChequeImageSide;

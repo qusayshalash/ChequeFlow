@@ -29,6 +29,8 @@ export const AuditAction = {
   USER_PASSWORD_RESET: 'user.password_reset',
   ROLE_CHANGED: 'user.role.changed',
   SETTINGS_CHANGED: 'settings.changed',
+  BANK_CREATED: 'bank.created',
+  BANK_UPDATED: 'bank.updated',
 } as const;
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 
@@ -47,6 +49,7 @@ export function auditActionKey(action: string): string {
 
 /** Record kinds the trail refers to. */
 export const AUDIT_ENTITY_TYPES = [
+  'bank',
   'cheque',
   'cheque_image',
   'contact',

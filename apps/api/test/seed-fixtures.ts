@@ -138,11 +138,9 @@ export async function seedFixtures(prisma: PrismaService): Promise<Fixtures> {
     data: { organizationId: organization.id, type: ContactType.SUPPLIER, name: 'Supplier One' },
   });
 
-  const bank = await db.bank.upsert({
-    where: { country_code: { country: 'PS', code: 'E2E' } },
-    update: {},
-    create: { country: 'PS', code: 'E2E', name: 'E2E Bank' },
-  });
+  const bank =
+    (await db.bank.findFirst({ where: { country: 'PS', code: 'E2E', organizationId: null } })) ??
+    (await db.bank.create({ data: { country: 'PS', code: 'E2E', name: 'E2E Bank' } }));
 
   return {
     organizationId: organization.id,

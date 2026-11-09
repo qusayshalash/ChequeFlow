@@ -82,7 +82,9 @@ export class BackupService {
         db.branch.findMany({ where: { organizationId } }),
         db.location.findMany({ where: { organizationId } }),
         db.contact.findMany({ where: { organizationId } }),
-        db.bank.findMany(),
+        // The shared reference list and this organization's own; another
+        // organization's banks are its business.
+        db.bank.findMany({ where: { OR: [{ organizationId: null }, { organizationId }] } }),
         db.cheque.findMany({ where: { organizationId } }),
         db.chequeEvent.findMany({ where: { cheque: { organizationId } } }),
         db.reminder.findMany({ where: { cheque: { organizationId } } }),
@@ -280,11 +282,36 @@ export class BackupService {
         },
       });
 
-      // Banks are shared reference data rather than organization records, so
-      // they keep their ids and existing rows are left alone.
-      const banks = rows('banks');
-      if (banks.length > 0) {
-        await tx.bank.createMany({ data: banks as never, skipDuplicates: true });
+      // Banks are matched by country and code rather than by id: a reference
+      // bank exists on every server under an id of its own, and an
+      // organization's bank becomes this organization's. A bank with no
+      // organization field comes from an archive made before banks could
+      // belong to one, when every bank was reference data.
+      const bankIds = new Map<string, string>();
+      for (const row of rows('banks')) {
+        if (typeof row.id !== 'string' || typeof row.code !== 'string') continue;
+        const country = String(row.country);
+        const own = typeof row.organizationId === 'string';
+        const scope = own ? { organizationId } : { organizationId: null };
+        const existing = await tx.bank.findFirst({
+          where: { ...scope, country, code: row.code },
+          select: { id: true },
+        });
+        if (existing) {
+          bankIds.set(row.id, existing.id);
+          continue;
+        }
+        const created = await tx.bank.create({
+          data: {
+            ...(own ? { organizationId } : {}),
+            country,
+            code: row.code,
+            name: typeof row.name === 'string' ? row.name : row.code,
+            isActive: row.isActive !== false,
+          },
+          select: { id: true },
+        });
+        bankIds.set(row.id, created.id);
       }
 
       const branchRows = await tx.branch.createMany({
@@ -338,6 +365,7 @@ export class BackupService {
           id: chequeIds.get(row.id as string)!,
           organizationId,
           branchId: ref(branchIds, row.branchId),
+          bankId: ref(bankIds, row.bankId),
           originalSourceId: ref(contactIds, row.originalSourceId),
           currentRecipientId: ref(contactIds, row.currentRecipientId),
           currentLocationId: ref(locationIds, row.currentLocationId),
