@@ -458,7 +458,9 @@
     "upcomingCheques": "الشيكات القادمة",
     "upcomingTitle": "الشيكات القادمة",
     "viewAllAlerts": "عرض جميع التنبيهات",
-    "viewAllCheques": "عرض جميع الشيكات"
+    "viewAllCheques": "عرض جميع الشيكات",
+    "totalIncoming": "إجمالي الشيكات الواردة",
+    "totalOutgoing": "إجمالي الشيكات الصادرة"
   },
   "diagnostics": {
     "database": "قاعدة البيانات",

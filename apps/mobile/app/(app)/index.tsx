@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { useMemo, type ReactElement } from 'react';
+import { useMemo, useState, type ReactElement } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -21,7 +21,15 @@ import {
 } from '@/components/icons';
 import { BankMark } from '@/components/marks';
 import { useApi, useApp, useTranslator } from '@/components/providers';
-import { Amount, Banner, ErrorView, LoadingView, ScreenHeader, StatusPill } from '@/components/ui';
+import {
+  Amount,
+  Banner,
+  ErrorView,
+  LoadingView,
+  ScreenHeader,
+  SegmentedTabs,
+  StatusPill,
+} from '@/components/ui';
 import { useStyles, useTheme } from '@/theme-context';
 import { TAP, elevation, radius, space, type, type Palette } from '@/theme';
 import { useToday } from '@/lib/today';
@@ -74,8 +82,10 @@ export default function DashboardScreen() {
 
   // Not tied to any chart window: "what is coming" is its own question, and on
   // a book whose next cheque is three weeks out a short horizon shows nothing.
-  // Every outstanding cheque, converted or not; see headlineTotal.
-  const headline = query.data ? headlineTotal(query.data, null) : null;
+  // Incoming by default, outgoing on request: one side at a time keeps the
+  // card's single amount line.
+  const [direction, setDirection] = useState<'incoming' | 'outgoing'>('incoming');
+  const headline = query.data ? headlineTotal(query.data, null)[direction] : null;
 
   const due = useQuery({
     queryKey: ['dashboard-due'],
@@ -157,21 +167,29 @@ export default function DashboardScreen() {
 
       {query.data ? (
         <>
+          <SegmentedTabs
+            options={[
+              { value: 'incoming', label: t('cheque.tabIncoming') },
+              { value: 'outgoing', label: t('cheque.tabOutgoing') },
+            ]}
+            value={direction}
+            onChange={(next) => setDirection(next === 'outgoing' ? 'outgoing' : 'incoming')}
+          />
           <View style={styles.statGrid}>
             <StatCard
-              label={t('dashboard.totalCheques')}
+              label={
+                direction === 'incoming'
+                  ? t('dashboard.totalIncoming')
+                  : t('dashboard.totalOutgoing')
+              }
               value={String(headline?.count ?? 0)}
               amountLabel={t('dashboard.totalAmount')}
-              breakdown={(['incoming', 'outgoing'] as const).map((side) => ({
-                label: t(`dashboard.${side}`),
-                value:
-                  (headline?.[side].amounts ?? [])
-                    .map((entry) => money(entry.total, entry.currency))
-                    .join(' · ') || '—',
-              }))}
+              amount={(headline?.amounts ?? [])
+                .map((entry) => money(entry.total, entry.currency))
+                .join(' · ')}
               tone="teal"
               Icon={IconCheque}
-              onPress={() => open('tab=ALL')}
+              onPress={() => open(direction === 'incoming' ? 'tab=INCOMING' : 'tab=OUTGOING')}
             />
             <StatCard
               label={t('dashboard.dueWithin7Days')}

@@ -458,7 +458,9 @@
     "upcomingCheques": "Upcoming cheques",
     "upcomingTitle": "Upcoming cheques",
     "viewAllAlerts": "View all alerts",
-    "viewAllCheques": "View all cheques"
+    "viewAllCheques": "View all cheques",
+    "totalIncoming": "Incoming cheques",
+    "totalOutgoing": "Outgoing cheques"
   },
   "diagnostics": {
     "database": "Database",

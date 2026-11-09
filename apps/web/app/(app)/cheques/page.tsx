@@ -52,7 +52,11 @@ export default function ChequesPage() {
   const t = useTranslator();
   const searchParams = useSearchParams();
 
-  const [tab, setTab] = useState<Tab>('ALL');
+  // A link can open the list on a tab, as the dashboard's cards do.
+  const [tab, setTab] = useState<Tab>(() => {
+    const asked = searchParams.get('tab');
+    return TABS.find((entry) => entry.key === asked)?.key ?? 'ALL';
+  });
   const [search, setSearch] = useState(searchParams.get('search') ?? '');
   const [status, setStatus] = useState<string>('');
   const [bankId, setBankId] = useState<string>('');

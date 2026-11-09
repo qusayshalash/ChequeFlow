@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
   ChequeStatus,
@@ -57,6 +57,28 @@ export default function DashboardPage() {
 
   const today = useToday();
   const [currency, setCurrency] = useState<string | null>(null);
+  // Incoming by default; outgoing on request. Shown one side at a time so
+  // the card keeps its single line, and remembered on this browser only.
+  const [direction, setDirection] = useState<'incoming' | 'outgoing'>('incoming');
+  // Read after the first render: the server renders without storage, and a
+  // different first frame on the client would be a hydration mismatch.
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem('dashboard.direction') === 'outgoing') {
+        setDirection('outgoing');
+      }
+    } catch {
+      // Private mode or blocked storage: incoming, as for a first visit.
+    }
+  }, []);
+  const chooseDirection = (next: 'incoming' | 'outgoing') => {
+    setDirection(next);
+    try {
+      window.localStorage.setItem('dashboard.direction', next);
+    } catch {
+      // Private mode or blocked storage: the choice simply lasts this visit.
+    }
+  };
   const [windowDays, setWindowDays] = useState<number>(30);
 
   // Centred on today: half the window behind, half ahead. The chart's job is
@@ -222,27 +244,45 @@ export default function DashboardPage() {
         title={t('dashboard.title')}
         subtitle={t('dashboard.subtitle')}
         actions={
-          currencies.length > 1 ? (
+          <div className="flex flex-wrap items-center gap-2">
             <div
               className="inline-flex rounded-xl border border-line bg-surface p-1"
               role="group"
-              aria-label={t('cheque.currency')}
+              aria-label={t('cheque.direction')}
             >
               <CurrencyChip
-                label={t('cheque.tabAll')}
-                active={currency === null}
-                onClick={() => setCurrency(null)}
+                label={t('cheque.tabIncoming')}
+                active={direction === 'incoming'}
+                onClick={() => chooseDirection('incoming')}
               />
-              {currencies.map((code) => (
-                <CurrencyChip
-                  key={code}
-                  label={code}
-                  active={currency === code}
-                  onClick={() => setCurrency(code)}
-                />
-              ))}
+              <CurrencyChip
+                label={t('cheque.tabOutgoing')}
+                active={direction === 'outgoing'}
+                onClick={() => chooseDirection('outgoing')}
+              />
             </div>
-          ) : undefined
+            {currencies.length > 1 ? (
+              <div
+                className="inline-flex rounded-xl border border-line bg-surface p-1"
+                role="group"
+                aria-label={t('cheque.currency')}
+              >
+                <CurrencyChip
+                  label={t('cheque.tabAll')}
+                  active={currency === null}
+                  onClick={() => setCurrency(null)}
+                />
+                {currencies.map((code) => (
+                  <CurrencyChip
+                    key={code}
+                    label={code}
+                    active={currency === code}
+                    onClick={() => setCurrency(code)}
+                  />
+                ))}
+              </div>
+            ) : null}
+          </div>
         }
       />
 
@@ -250,18 +290,19 @@ export default function DashboardPage() {
           coming, then what is late, then what is not yet confirmed. */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <StatCard
-          label={t('dashboard.totalCheques')}
-          value={String(headline.count)}
-          breakdown={(['incoming', 'outgoing'] as const).map((side) => ({
-            label: t(`dashboard.${side}`),
-            value:
-              headline[side].amounts
-                .map((entry) => money(locale, entry.total, entry.currency))
-                .join(' · ') || '—',
-          }))}
+          label={
+            direction === 'incoming' ? t('dashboard.totalIncoming') : t('dashboard.totalOutgoing')
+          }
+          value={String(headline[direction].count)}
+          amountLabel={t('dashboard.totalAmount')}
+          amount={
+            headline[direction].amounts
+              .map((entry) => money(locale, entry.total, entry.currency))
+              .join(' · ') || undefined
+          }
           tone="teal"
           Icon={IconCheque}
-          href="/cheques"
+          href={direction === 'incoming' ? '/cheques?tab=INCOMING' : '/cheques?tab=OUTGOING'}
         />
         <StatCard
           label={t('dashboard.dueWithin7Days')}
