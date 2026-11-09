@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
 import {
-  ChequeDirection,
   ChequeStatus,
   OUTSTANDING_CHEQUE_STATUSES,
   todayIn,
@@ -374,25 +373,34 @@ export class ContactsService {
       SELECT contact_id,
              currency,
              COUNT(*)::bigint AS cheque_count,
-             -- Incoming counts towards us, outgoing against us, and only while
-             -- the cheque is still open: a cleared cheque is not a balance.
+             -- Only while the cheque is open: a cleared one is not a balance.
+             -- As its source, a contact owes us an incoming cheque and is owed
+             -- an outgoing one. As the party we handed a cheque to, it is owed
+             -- it: we paid them with it, as with a cheque of our own. Signing
+             -- by direction alone made a supplier owe us for the customer's
+             -- cheque we endorsed over to them.
              COALESCE(
                SUM(
                  CASE WHEN status = ANY(${OUTSTANDING_CHEQUE_STATUSES}::"ChequeStatus"[])
-                      THEN CASE WHEN direction = 'INCOMING' THEN amount ELSE -amount END
+                      THEN CASE WHEN is_source AND direction = 'INCOMING' THEN amount
+                                ELSE -amount END
                       ELSE 0 END
                ),
                0
              ) AS net
       FROM (
-        SELECT DISTINCT c.id, party.contact_id, c.currency, c.status, c.direction, c.amount
+        -- One row per cheque and contact, so a cheque that went back to the
+        -- contact it came from counts once, as theirs.
+        SELECT c.id, party.contact_id, c.currency, c.status, c.direction, c.amount,
+               bool_or(party.is_source) AS is_source
         FROM cheques c
         CROSS JOIN LATERAL (
-          VALUES (c.original_source_id), (c.current_recipient_id)
-        ) AS party(contact_id)
+          VALUES (c.original_source_id, true), (c.current_recipient_id, false)
+        ) AS party(contact_id, is_source)
         WHERE c.organization_id = ${organizationId}::uuid
           AND c.deleted_at IS NULL
           AND party.contact_id = ANY(${ids}::uuid[])
+        GROUP BY c.id, party.contact_id, c.currency, c.status, c.direction, c.amount
       ) involved
       GROUP BY contact_id, currency
       ORDER BY contact_id, currency
@@ -426,7 +434,7 @@ export class ContactsService {
       OR: [{ originalSourceId: id }, { currentRecipientId: id }],
     };
 
-    const [grouped, rows, totalCheques] = await Promise.all([
+    const [grouped, rows, totalCheques, stats] = await Promise.all([
       this.prisma.db.cheque.groupBy({
         // Direction as well as status, because the net balance signs each
         // cheque: what came from them counts towards us, what went to them
@@ -446,6 +454,9 @@ export class ContactsService {
       // Reporting the true count lets the client say so instead of implying
       // the contact has only as many cheques as happen to fit.
       this.prisma.db.cheque.count({ where: involved }),
+      // The net, from the same query as the contacts list, so the two
+      // screens cannot disagree about what a contact owes.
+      this.chequeStats(user.organizationId, [id]),
     ]);
 
     const byCurrency = new Map<string, ContactStatementCurrency>();
@@ -473,16 +484,14 @@ export class ContactsService {
         total: moneyToString(toMoney(current.total).plus(amount)),
       };
 
-      // Only outstanding cheques move the balance. A cleared one is money that
-      // already arrived, and a bounced or draft one is not money at all.
-      if (OUTSTANDING_CHEQUE_STATUSES.includes(row.status)) {
-        const net = toMoney(entry.net);
-        entry.net = moneyToString(
-          row.direction === ChequeDirection.INCOMING ? net.plus(amount) : net.minus(amount),
-        );
-      }
-
       byCurrency.set(row.currency, entry);
+    }
+
+    // The net by role, not by direction: see chequeStats.
+    for (const balance of stats.get(id)?.balances ?? []) {
+      const entry = byCurrency.get(balance.currency) ?? blank(balance.currency);
+      entry.net = balance.net;
+      byCurrency.set(balance.currency, entry);
     }
 
     const today = todayIn(user.timeZone);
