@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import type { ComponentType, SVGProps } from 'react';
+import { useEffect, useRef, useState, type ComponentType, type SVGProps } from 'react';
 
 import { IconDots } from '@/components/icons';
 import { useTranslator } from '@/components/providers';
@@ -39,6 +39,7 @@ export function StatCard({
   tone = 'neutral',
   Icon,
   href,
+  menu,
 }: {
   label: string;
   value: string;
@@ -49,9 +50,35 @@ export function StatCard({
   tone?: StatTone;
   Icon: ComponentType<SVGProps<SVGSVGElement>>;
   href?: string;
+  /**
+   * Choices behind the card's "…", which is otherwise a plain mark. Used by
+   * the headline card to switch between incoming and outgoing cheques.
+   */
+  menu?: {
+    label: string;
+    items: ReadonlyArray<{ key: string; label: string; active: boolean; onSelect: () => void }>;
+  };
 }) {
   const t = useTranslator();
   const palette = TONES[tone];
+  const [open, setOpen] = useState(false);
+  const holder = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (holder.current && !holder.current.contains(event.target as Node)) setOpen(false);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
 
   const body = (
     <>
@@ -75,9 +102,48 @@ export function StatCard({
             opens the list this figure counts. Rendered as a plain mark rather
             than a menu button so it never looks like an action that is
             missing its menu. */}
-        <span className="-me-1 -mt-1 hidden shrink-0 text-ink-faint sm:block" aria-hidden="true">
-          <IconDots width="16" height="16" />
-        </span>
+        {menu ? (
+          <div ref={holder} className="pointer-events-auto relative z-10 -me-1.5 -mt-1.5 shrink-0">
+            <button
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={open}
+              aria-label={menu.label}
+              onClick={() => setOpen((value) => !value)}
+              className="flex size-8 items-center justify-center rounded-lg text-ink-muted hover:bg-subtle hover:text-ink"
+            >
+              <IconDots width="16" height="16" />
+            </button>
+            {open ? (
+              <div
+                role="menu"
+                className="absolute end-0 top-9 z-30 w-40 overflow-hidden rounded-xl border border-line bg-surface p-1 shadow-lg"
+              >
+                {menu.items.map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={item.active}
+                    onClick={() => {
+                      item.onSelect();
+                      setOpen(false);
+                    }}
+                    className={`block w-full rounded-lg px-3 py-2.5 text-start text-sm hover:bg-subtle ${
+                      item.active ? 'font-semibold text-primary-ink' : 'text-ink-soft'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <span className="-me-1 -mt-1 hidden shrink-0 text-ink-faint sm:block" aria-hidden="true">
+            <IconDots width="16" height="16" />
+          </span>
+        )}
       </div>
 
       {amount ? (
@@ -97,6 +163,20 @@ export function StatCard({
     'block rounded-2xl border border-line/90 bg-surface p-3 sm:p-4 shadow-[0_1px_2px_rgb(16_24_40/0.04)]';
 
   if (!href) return <div className={shell}>{body}</div>;
+
+  // A menu cannot sit inside a link: clicking it would follow the link. So the
+  // link covers the card from behind and the content is laid over it, letting
+  // clicks through everywhere except the menu.
+  if (menu) {
+    return (
+      <div
+        className={`${shell} relative transition hover:border-line-strong hover:shadow-[0_10px_26px_-20px_rgb(16_24_40/0.45)]`}
+      >
+        <Link href={href} aria-label={label} className="absolute inset-0 rounded-2xl" />
+        <div className="pointer-events-none relative">{body}</div>
+      </div>
+    );
+  }
 
   return (
     <Link

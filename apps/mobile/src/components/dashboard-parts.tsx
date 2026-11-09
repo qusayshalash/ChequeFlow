@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { IconBell, IconChevronEnd, type IconProps } from '@/components/icons';
+import { IconBell, IconChevronEnd, IconMore, type IconProps } from '@/components/icons';
 import { Amount } from '@/components/ui';
 import { useStyles, useTheme } from '@/theme-context';
 import { TAP, elevation, radius, space, type, type Palette } from '@/theme';
@@ -63,10 +64,16 @@ export function StatCard({
   tone = 'neutral',
   Icon,
   onPress,
+  menu,
 }: {
   label: string;
   value: string;
   amountLabel: string;
+  /** Choices behind a "…" on the card, as on the web headline card. */
+  menu?: {
+    label: string;
+    items: ReadonlyArray<{ key: string; label: string; active: boolean; onSelect: () => void }>;
+  };
   /** Already formatted, and per currency where there is more than one. */
   amount?: string;
   tone?: StatTone;
@@ -76,6 +83,7 @@ export function StatCard({
   const c = useTheme();
   const styles = useStyles(makeStyles);
   const palette = (c.dark ? DARK_TONES : TONES)[tone];
+  const [open, setOpen] = useState(false);
 
   return (
     <Pressable
@@ -97,6 +105,39 @@ export function StatCard({
           </Text>
         </View>
       </View>
+
+      {menu ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={menu.label}
+          accessibilityState={{ expanded: open }}
+          hitSlop={10}
+          onPress={() => setOpen((value) => !value)}
+          style={styles.statMenuButton}
+        >
+          <IconMore size={18} color={c.text.secondary} />
+        </Pressable>
+      ) : null}
+      {menu && open ? (
+        <View style={styles.statMenu} accessibilityRole="menu">
+          {menu.items.map((item) => (
+            <Pressable
+              key={item.key}
+              accessibilityRole="menuitem"
+              accessibilityState={{ selected: item.active }}
+              onPress={() => {
+                item.onSelect();
+                setOpen(false);
+              }}
+              style={({ pressed }) => [styles.statMenuItem, pressed && styles.pressed]}
+            >
+              <Text style={[styles.statMenuText, item.active && styles.statMenuTextActive]}>
+                {item.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
 
       {/* An absent amount prints its caption and a dash rather than collapsing:
           cards of two different heights in one row read as a layout fault. */}
@@ -219,6 +260,32 @@ const makeStyles = (c: Palette) =>
     statLabel: { ...type.caption, color: c.text.secondary, textAlign: 'right' },
     statValue: { ...type.title, color: c.text.primary, textAlign: 'right' },
     statFoot: { alignItems: 'flex-end' },
+    statMenuButton: {
+      position: 'absolute',
+      top: space['2'],
+      left: space['2'],
+      width: 32,
+      height: 32,
+      borderRadius: radius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    statMenu: {
+      position: 'absolute',
+      top: 44,
+      left: space['2'],
+      zIndex: 10,
+      minWidth: 140,
+      backgroundColor: c.surface.card,
+      borderRadius: radius.md,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.surface.lineStrong,
+      ...elevation[3],
+      padding: 4,
+    },
+    statMenuItem: { paddingVertical: 10, paddingHorizontal: 12, borderRadius: radius.sm },
+    statMenuText: { ...type.body, color: c.text.secondary, textAlign: 'right' },
+    statMenuTextActive: { color: c.accent.dark, fontWeight: '600' },
     statAmountLabel: { ...type.caption, fontSize: 11, color: c.text.faint },
     statAmount: { ...type.label, textAlign: 'right' },
 

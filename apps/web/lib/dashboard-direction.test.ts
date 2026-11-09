@@ -23,6 +23,14 @@ describe('the headline card', () => {
     expect(page).not.toMatch(/breakdown=/);
   });
 
+  it("switches from the card's own menu, not a control above the cards", () => {
+    expect(page).toMatch(/menu=\{\{[\s\S]*?chooseDirection\('outgoing'\)/);
+    expect(page).not.toMatch(/aria-label=\{t\('cheque\.direction'\)\}/);
+    const card = read('components/stat-card.tsx');
+    // The menu is not nested in the link, or clicking it would follow it.
+    expect(card).toMatch(/<Link href=\{href\} aria-label=\{label\} className="absolute inset-0/);
+  });
+
   it('opens the list on the same side', () => {
     expect(page).toMatch(/'\/cheques\?tab=INCOMING' : '\/cheques\?tab=OUTGOING'/);
     expect(read('app/(app)/cheques/page.tsx')).toMatch(/searchParams\.get\('tab'\)/);

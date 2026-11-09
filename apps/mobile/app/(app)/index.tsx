@@ -21,15 +21,7 @@ import {
 } from '@/components/icons';
 import { BankMark } from '@/components/marks';
 import { useApi, useApp, useTranslator } from '@/components/providers';
-import {
-  Amount,
-  Banner,
-  ErrorView,
-  LoadingView,
-  ScreenHeader,
-  SegmentedTabs,
-  StatusPill,
-} from '@/components/ui';
+import { Amount, Banner, ErrorView, LoadingView, ScreenHeader, StatusPill } from '@/components/ui';
 import { useStyles, useTheme } from '@/theme-context';
 import { TAP, elevation, radius, space, type, type Palette } from '@/theme';
 import { useToday } from '@/lib/today';
@@ -167,14 +159,6 @@ export default function DashboardScreen() {
 
       {query.data ? (
         <>
-          <SegmentedTabs
-            options={[
-              { value: 'incoming', label: t('cheque.tabIncoming') },
-              { value: 'outgoing', label: t('cheque.tabOutgoing') },
-            ]}
-            value={direction}
-            onChange={(next) => setDirection(next === 'outgoing' ? 'outgoing' : 'incoming')}
-          />
           <View style={styles.statGrid}>
             <StatCard
               label={
@@ -190,6 +174,23 @@ export default function DashboardScreen() {
               tone="teal"
               Icon={IconCheque}
               onPress={() => open(direction === 'incoming' ? 'tab=INCOMING' : 'tab=OUTGOING')}
+              menu={{
+                label: t('common.actions'),
+                items: [
+                  {
+                    key: 'incoming',
+                    label: t('cheque.tabIncoming'),
+                    active: direction === 'incoming',
+                    onSelect: () => setDirection('incoming'),
+                  },
+                  {
+                    key: 'outgoing',
+                    label: t('cheque.tabOutgoing'),
+                    active: direction === 'outgoing',
+                    onSelect: () => setDirection('outgoing'),
+                  },
+                ],
+              }}
             />
             <StatCard
               label={t('dashboard.dueWithin7Days')}

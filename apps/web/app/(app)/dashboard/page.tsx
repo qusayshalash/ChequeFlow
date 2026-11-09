@@ -244,45 +244,27 @@ export default function DashboardPage() {
         title={t('dashboard.title')}
         subtitle={t('dashboard.subtitle')}
         actions={
-          <div className="flex flex-wrap items-center gap-2">
+          currencies.length > 1 ? (
             <div
               className="inline-flex rounded-xl border border-line bg-surface p-1"
               role="group"
-              aria-label={t('cheque.direction')}
+              aria-label={t('cheque.currency')}
             >
               <CurrencyChip
-                label={t('cheque.tabIncoming')}
-                active={direction === 'incoming'}
-                onClick={() => chooseDirection('incoming')}
+                label={t('cheque.tabAll')}
+                active={currency === null}
+                onClick={() => setCurrency(null)}
               />
-              <CurrencyChip
-                label={t('cheque.tabOutgoing')}
-                active={direction === 'outgoing'}
-                onClick={() => chooseDirection('outgoing')}
-              />
-            </div>
-            {currencies.length > 1 ? (
-              <div
-                className="inline-flex rounded-xl border border-line bg-surface p-1"
-                role="group"
-                aria-label={t('cheque.currency')}
-              >
+              {currencies.map((code) => (
                 <CurrencyChip
-                  label={t('cheque.tabAll')}
-                  active={currency === null}
-                  onClick={() => setCurrency(null)}
+                  key={code}
+                  label={code}
+                  active={currency === code}
+                  onClick={() => setCurrency(code)}
                 />
-                {currencies.map((code) => (
-                  <CurrencyChip
-                    key={code}
-                    label={code}
-                    active={currency === code}
-                    onClick={() => setCurrency(code)}
-                  />
-                ))}
-              </div>
-            ) : null}
-          </div>
+              ))}
+            </div>
+          ) : undefined
         }
       />
 
@@ -303,6 +285,23 @@ export default function DashboardPage() {
           tone="teal"
           Icon={IconCheque}
           href={direction === 'incoming' ? '/cheques?tab=INCOMING' : '/cheques?tab=OUTGOING'}
+          menu={{
+            label: t('common.actions'),
+            items: [
+              {
+                key: 'incoming',
+                label: t('cheque.tabIncoming'),
+                active: direction === 'incoming',
+                onSelect: () => chooseDirection('incoming'),
+              },
+              {
+                key: 'outgoing',
+                label: t('cheque.tabOutgoing'),
+                active: direction === 'outgoing',
+                onSelect: () => chooseDirection('outgoing'),
+              },
+            ],
+          }}
         />
         <StatCard
           label={t('dashboard.dueWithin7Days')}

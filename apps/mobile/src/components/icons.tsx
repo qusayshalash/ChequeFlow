@@ -52,6 +52,7 @@ function make(name: FeatherName) {
 
 export const IconDashboard = make('grid');
 export const IconCheque = make('file-text');
+export const IconMore = make('more-horizontal');
 export const IconSearch = make('search');
 export const IconCalendar = make('calendar');
 export const IconReturn = make('corner-up-left');
