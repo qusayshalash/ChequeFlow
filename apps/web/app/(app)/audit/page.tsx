@@ -103,7 +103,37 @@ function AuditPageBody() {
 
         {query.data && query.data.data.length > 0 ? (
           <>
-            <div className="overflow-auto">
+            {/* Cards on a phone. The 880px table showed the date and the user
+                and cut the action in half; the record and its origin were off
+                screen behind a sideways scroll. */}
+            <ul className="flex flex-col gap-2.5 p-3 md:hidden">
+              {query.data.data.map((row) => (
+                <li key={row.id} className="rounded-2xl border border-line/90 bg-surface p-3.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <Badge tone="info">{named(auditActionKey(row.action), row.action)}</Badge>
+                    <span className="shrink-0 text-xs text-ink-muted tabular-nums">
+                      {formatDateTime(locale, row.createdAt)}
+                    </span>
+                  </div>
+                  <p className="mt-2.5 text-sm">
+                    <span className="font-semibold text-ink">
+                      {row.userName ?? t('common.unknown')}
+                    </span>
+                    <span className="text-ink-muted">
+                      {' · '}
+                      {named(`auditEntity.${row.entityType}`, row.entityType)}
+                    </span>
+                  </p>
+                  {row.ipAddress || row.deviceInfo ? (
+                    <p className="mt-1 truncate text-xs text-ink-muted" dir="ltr">
+                      {[row.ipAddress, row.deviceInfo].filter(Boolean).join(' · ')}
+                    </p>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+
+            <div className="hidden overflow-auto md:block">
               <table className="w-full min-w-[880px] border-separate border-spacing-0 text-sm">
                 <thead className="bg-subtle/95 text-ink-muted">
                   <tr>

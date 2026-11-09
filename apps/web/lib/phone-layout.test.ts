@@ -36,4 +36,18 @@ describe('phone layout', () => {
   it('drops the keyboard shortcut from the search box on a phone', () => {
     expect(read('components/top-bar.tsx')).toMatch(/<kbd className="[^"]*hidden[^"]*sm:block/);
   });
+
+  it('turns every other table into cards below md', () => {
+    const table = read('components/data-table.tsx');
+    expect(table).toMatch(/<ul className="[^"]*md:hidden"/);
+    expect(table).toMatch(/cards \? 'hidden md:block' : ''/);
+    expect(read('components/cheque-table.tsx')).toMatch(/mobileCards=\{false\}/);
+  });
+
+  it('shows the audit trail as cards and the report tabs on their own row', () => {
+    const audit = read('app/(app)/audit/page.tsx');
+    expect(audit).toMatch(/<ul className="[^"]*md:hidden"/);
+    expect(audit).toMatch(/<div className="hidden overflow-auto md:block">/);
+    expect(read('app/(app)/reports/page.tsx')).toMatch(/w-full min-w-0 sm:w-auto sm:flex-1/);
+  });
 });

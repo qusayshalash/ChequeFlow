@@ -73,6 +73,7 @@ export function DataTable<Row>({
   selection,
   rowLabel,
   sort,
+  mobileCards = true,
 }: {
   columns: ReadonlyArray<Column<Row>>;
   rows: readonly Row[];
@@ -82,6 +83,12 @@ export function DataTable<Row>({
   /** What a row's checkbox is called out loud — the key is a uuid, which is not. */
   rowLabel?: (row: Row) => string;
   sort?: TableSort;
+  /**
+   * Below `md`, each row as a card: the first column is its title and every
+   * other column a labelled field. On by default; a caller with cards of its
+   * own turns it off.
+   */
+  mobileCards?: boolean;
 }) {
   if (rows.length === 0 && empty) return <>{empty}</>;
 
@@ -91,120 +98,179 @@ export function DataTable<Row>({
   // has looked at.
   const allSelected = keys.length > 0 && keys.every((key) => selection?.selected.has(key));
 
-  return (
-    <div className="max-h-[70vh] overflow-auto">
-      <table className="w-full min-w-[760px] border-separate border-spacing-0 text-sm">
-        <thead className="sticky top-0 z-10 bg-subtle/95 backdrop-blur-sm">
-          <tr className="text-ink-muted">
-            {selection ? (
-              <th scope="col" className="w-12 border-b border-line px-2 py-1.5">
-                {/* The box stays 16px; the label around it is what you hit. */}
-                <label className="flex size-11 cursor-pointer items-center justify-center">
+  // A 760px table in a 375px phone showed two columns and hid the rest behind
+  // a sideways scroll: a contact's phone and balance, a user's role and status.
+  const [title, ...fields] = columns;
+  const isControl = (column: Column<Row>) => column.key === 'actions' || column.header === '';
+  const cards =
+    mobileCards && title ? (
+      <ul className="flex flex-col gap-2.5 p-3 md:hidden">
+        {rows.map((row) => {
+          const key = rowKey(row);
+          const isSelected = selection?.selected.has(key) ?? false;
+          return (
+            <li
+              key={key}
+              className={`rounded-2xl border p-3.5 ${
+                isSelected ? 'border-primary bg-primary-soft/60' : 'border-line/90 bg-surface'
+              }`}
+            >
+              <div className="flex min-w-0 items-center gap-2.5">
+                {selection ? (
                   <input
                     type="checkbox"
-                    aria-label={selection.selectAllLabel}
-                    checked={allSelected}
-                    onChange={() => selection.onToggleAll(keys)}
-                    className="size-4 rounded accent-teal-700"
+                    aria-label={rowLabel ? rowLabel(row) : key}
+                    checked={isSelected}
+                    onChange={() => selection.onToggle(key)}
+                    className="size-5 shrink-0 rounded accent-teal-700"
                   />
-                </label>
-              </th>
-            ) : null}
-            {columns.map((column) => {
-              const activeSort = Boolean(sort && column.sortKey === sort.key);
-              return (
-                <th
-                  key={column.key}
-                  scope="col"
-                  aria-sort={
-                    activeSort
-                      ? sort?.direction === 'asc'
-                        ? 'ascending'
-                        : 'descending'
-                      : undefined
-                  }
-                  className="whitespace-nowrap border-b border-line px-4 py-3.5 text-start text-[11px] font-bold tracking-wide text-ink-muted"
-                >
-                  {sort && column.sortKey ? (
-                    <button
-                      type="button"
-                      className={`inline-flex items-center gap-1.5 rounded-md py-1 hover:text-ink ${
-                        activeSort ? 'text-primary-ink' : ''
-                      }`}
-                      onClick={() =>
-                        sort.onChange(
-                          column.sortKey!,
-                          activeSort && sort.direction === 'asc' ? 'desc' : 'asc',
-                        )
-                      }
-                    >
-                      {column.header}
-                      <IconChevronDown
-                        width="14"
-                        height="14"
-                        className={`${
-                          activeSort ? 'opacity-100' : 'opacity-35'
-                        } ${activeSort && sort.direction === 'asc' ? 'rotate-180' : ''}`}
-                      />
-                    </button>
-                  ) : (
-                    column.header
-                  )}
+                ) : null}
+                <div className="min-w-0 flex-1 font-semibold text-ink">{title.cell(row)}</div>
+              </div>
+              <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                {fields
+                  .filter((column) => !isControl(column))
+                  .map((column) => (
+                    <div key={column.key} className="min-w-0">
+                      <dt className="text-[11px] font-semibold text-ink-muted">{column.header}</dt>
+                      <dd
+                        className={`mt-0.5 truncate text-ink-soft ${
+                          column.numeric ? 'tabular-nums' : ''
+                        }`}
+                      >
+                        {column.cell(row)}
+                      </dd>
+                    </div>
+                  ))}
+              </dl>
+              {fields.filter(isControl).map((column) => (
+                <div key={column.key} className="mt-3 border-t border-line-soft pt-3">
+                  {column.cell(row)}
+                </div>
+              ))}
+            </li>
+          );
+        })}
+      </ul>
+    ) : null;
+
+  return (
+    <>
+      {cards}
+      <div className={`max-h-[70vh] overflow-auto ${cards ? 'hidden md:block' : ''}`}>
+        <table className="w-full min-w-[760px] border-separate border-spacing-0 text-sm">
+          <thead className="sticky top-0 z-10 bg-subtle/95 backdrop-blur-sm">
+            <tr className="text-ink-muted">
+              {selection ? (
+                <th scope="col" className="w-12 border-b border-line px-2 py-1.5">
+                  {/* The box stays 16px; the label around it is what you hit. */}
+                  <label className="flex size-11 cursor-pointer items-center justify-center">
+                    <input
+                      type="checkbox"
+                      aria-label={selection.selectAllLabel}
+                      checked={allSelected}
+                      onChange={() => selection.onToggleAll(keys)}
+                      className="size-4 rounded accent-teal-700"
+                    />
+                  </label>
                 </th>
-              );
-            })}
-          </tr>
-        </thead>
-        <tbody onFocus={selection ? keepFocusClearOfFixedBar : undefined}>
-          {rows.map((row) => {
-            const key = rowKey(row);
-            const isSelected = selection?.selected.has(key) ?? false;
-            return (
-              <tr
-                key={key}
-                className={`group transition-colors ${
-                  isSelected ? 'bg-primary-soft/80' : 'bg-surface hover:bg-subtle/80'
-                }`}
-              >
-                {selection ? (
-                  <td className="border-b border-line-soft px-2 py-1.5">
-                    {/* The visible box is 16px, which is under the 24px WCAG 2.2
+              ) : null}
+              {columns.map((column) => {
+                const activeSort = Boolean(sort && column.sortKey === sort.key);
+                return (
+                  <th
+                    key={column.key}
+                    scope="col"
+                    aria-sort={
+                      activeSort
+                        ? sort?.direction === 'asc'
+                          ? 'ascending'
+                          : 'descending'
+                        : undefined
+                    }
+                    className="whitespace-nowrap border-b border-line px-4 py-3.5 text-start text-[11px] font-bold tracking-wide text-ink-muted"
+                  >
+                    {sort && column.sortKey ? (
+                      <button
+                        type="button"
+                        className={`inline-flex items-center gap-1.5 rounded-md py-1 hover:text-ink ${
+                          activeSort ? 'text-primary-ink' : ''
+                        }`}
+                        onClick={() =>
+                          sort.onChange(
+                            column.sortKey!,
+                            activeSort && sort.direction === 'asc' ? 'desc' : 'asc',
+                          )
+                        }
+                      >
+                        {column.header}
+                        <IconChevronDown
+                          width="14"
+                          height="14"
+                          className={`${
+                            activeSort ? 'opacity-100' : 'opacity-35'
+                          } ${activeSort && sort.direction === 'asc' ? 'rotate-180' : ''}`}
+                        />
+                      </button>
+                    ) : (
+                      column.header
+                    )}
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody onFocus={selection ? keepFocusClearOfFixedBar : undefined}>
+            {rows.map((row) => {
+              const key = rowKey(row);
+              const isSelected = selection?.selected.has(key) ?? false;
+              return (
+                <tr
+                  key={key}
+                  className={`group transition-colors ${
+                    isSelected ? 'bg-primary-soft/80' : 'bg-surface hover:bg-subtle/80'
+                  }`}
+                >
+                  {selection ? (
+                    <td className="border-b border-line-soft px-2 py-1.5">
+                      {/* The visible box is 16px, which is under the 24px WCAG 2.2
                         asks of a pointer target and is a poor thing to hit on a
                         touch screen — and it is the only way into the whole bulk
                         workflow. The label around it is the target instead, so
                         the row still looks the same and 44px of it is clickable. */}
-                    <label className="flex size-11 cursor-pointer items-center justify-center">
-                      <input
-                        type="checkbox"
-                        aria-label={rowLabel ? rowLabel(row) : key}
-                        checked={isSelected}
-                        onChange={() => selection.onToggle(key)}
-                        className="size-4 rounded accent-teal-700"
-                        // The action bar sticks to the bottom of the list, so a
-                        // checkbox the browser scrolls "into view" can land
-                        // underneath it — WCAG 2.2 calls that focus obscured. The
-                        // bar publishes its own height, so this stays right
-                        // however it is restyled.
-                        style={{ scrollMarginBottom: 'calc(var(--bulk-bar-height, 0px) + 1rem)' }}
-                      />
-                    </label>
-                  </td>
-                ) : null}
-                {columns.map((column) => (
-                  <td
-                    key={column.key}
-                    className={`whitespace-nowrap border-b border-line-soft px-4 py-3.5 text-ink-soft ${
-                      column.numeric ? 'tabular-nums' : ''
-                    }`}
-                  >
-                    {column.cell(row)}
-                  </td>
-                ))}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+                      <label className="flex size-11 cursor-pointer items-center justify-center">
+                        <input
+                          type="checkbox"
+                          aria-label={rowLabel ? rowLabel(row) : key}
+                          checked={isSelected}
+                          onChange={() => selection.onToggle(key)}
+                          className="size-4 rounded accent-teal-700"
+                          // The action bar sticks to the bottom of the list, so a
+                          // checkbox the browser scrolls "into view" can land
+                          // underneath it — WCAG 2.2 calls that focus obscured. The
+                          // bar publishes its own height, so this stays right
+                          // however it is restyled.
+                          style={{ scrollMarginBottom: 'calc(var(--bulk-bar-height, 0px) + 1rem)' }}
+                        />
+                      </label>
+                    </td>
+                  ) : null}
+                  {columns.map((column) => (
+                    <td
+                      key={column.key}
+                      className={`whitespace-nowrap border-b border-line-soft px-4 py-3.5 text-ink-soft ${
+                        column.numeric ? 'tabular-nums' : ''
+                      }`}
+                    >
+                      {column.cell(row)}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }

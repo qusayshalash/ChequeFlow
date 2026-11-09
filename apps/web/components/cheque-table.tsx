@@ -253,6 +253,8 @@ export function ChequeTable({
 
   const table = (
     <DataTable<ChequeSummaryView>
+      // This list has cards of its own, shaped for a cheque.
+      mobileCards={false}
       rows={cheques}
       rowKey={(cheque) => cheque.id}
       {...(selection ? { selection } : {})}

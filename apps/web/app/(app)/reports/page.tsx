@@ -202,7 +202,9 @@ function ReportsPageBody() {
       {/* Controls. The old page had none: the window, the grouping and the
           currency were all fixed in the source. */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="min-w-0 flex-1">
+        {/* A full row on a phone: beside the grouping it had 175px, and the
+            period names were cut at the edge. */}
+        <div className="w-full min-w-0 sm:w-auto sm:flex-1">
           <Tabs
             tabs={RANGES.map((entry) => ({ key: entry.key, label: t(entry.labelKey) }))}
             active={rangeKey}
