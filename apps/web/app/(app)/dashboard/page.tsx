@@ -252,10 +252,13 @@ export default function DashboardPage() {
         <StatCard
           label={t('dashboard.totalCheques')}
           value={String(headline.count)}
-          amountLabel={t('dashboard.totalAmount')}
-          amount={headline.amounts
-            .map((entry) => money(locale, entry.total, entry.currency))
-            .join(' · ')}
+          breakdown={(['incoming', 'outgoing'] as const).map((side) => ({
+            label: t(`dashboard.${side}`),
+            value:
+              headline[side].amounts
+                .map((entry) => money(locale, entry.total, entry.currency))
+                .join(' · ') || '—',
+          }))}
           tone="teal"
           Icon={IconCheque}
           href="/cheques"

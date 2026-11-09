@@ -63,10 +63,13 @@ export function StatCard({
   tone = 'neutral',
   Icon,
   onPress,
+  breakdown,
 }: {
   label: string;
   value: string;
   amountLabel: string;
+  /** Labelled lines in place of the single amount, e.g. incoming and outgoing. */
+  breakdown?: ReadonlyArray<{ label: string; value: string }>;
   /** Already formatted, and per currency where there is more than one. */
   amount?: string;
   tone?: StatTone;
@@ -100,12 +103,30 @@ export function StatCard({
 
       {/* An absent amount prints its caption and a dash rather than collapsing:
           cards of two different heights in one row read as a layout fault. */}
-      <View style={styles.statFoot}>
-        <Text style={styles.statAmountLabel}>{amountLabel}</Text>
-        <Amount style={[styles.statAmount, { color: amount ? palette.amount : c.text.faint }]}>
-          {amount || '—'}
-        </Amount>
-      </View>
+      {breakdown ? (
+        <View style={styles.statFoot}>
+          {breakdown.map((line) => (
+            <View key={line.label}>
+              <Text style={styles.statAmountLabel}>{line.label}</Text>
+              <Amount
+                style={[
+                  styles.statAmount,
+                  { color: line.value === '—' ? c.text.faint : palette.amount },
+                ]}
+              >
+                {line.value}
+              </Amount>
+            </View>
+          ))}
+        </View>
+      ) : (
+        <View style={styles.statFoot}>
+          <Text style={styles.statAmountLabel}>{amountLabel}</Text>
+          <Amount style={[styles.statAmount, { color: amount ? palette.amount : c.text.faint }]}>
+            {amount || '—'}
+          </Amount>
+        </View>
+      )}
     </Pressable>
   );
 }

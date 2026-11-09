@@ -39,6 +39,7 @@ export function StatCard({
   tone = 'neutral',
   Icon,
   href,
+  breakdown,
 }: {
   label: string;
   value: string;
@@ -49,6 +50,8 @@ export function StatCard({
   tone?: StatTone;
   Icon: ComponentType<SVGProps<SVGSVGElement>>;
   href?: string;
+  /** Labelled lines in place of the single amount, e.g. incoming and outgoing. */
+  breakdown?: ReadonlyArray<{ label: string; value: string }>;
 }) {
   const t = useTranslator();
   const palette = TONES[tone];
@@ -80,7 +83,16 @@ export function StatCard({
         </span>
       </div>
 
-      {amount ? (
+      {breakdown ? (
+        <dl className="mt-4 space-y-1.5">
+          {breakdown.map((line) => (
+            <div key={line.label} className="flex items-baseline justify-between gap-3">
+              <dt className="text-[11px] font-medium text-ink-muted">{line.label}</dt>
+              <dd className={`text-sm font-bold tabular-nums ${palette.amount}`}>{line.value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : amount ? (
         <div className="mt-4">
           <span className="block text-[11px] font-medium text-ink-muted">
             {amountLabel ?? t('common.amount')}

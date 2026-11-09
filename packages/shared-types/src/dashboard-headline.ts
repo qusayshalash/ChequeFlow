@@ -1,47 +1,47 @@
 import type { DashboardSummary } from './domain.js';
 import { addMoney } from './money.js';
 
-export interface HeadlineTotal {
-  /** Every outstanding cheque in scope, converted or not. */
+export interface DirectionTotal {
   count: number;
-  /** One total per currency, never converted into another. */
+  /** One total per currency with cheques in it; empty when there are none. */
   amounts: Array<{ currency: string; total: string }>;
+}
+
+export interface HeadlineTotal {
+  /** Every outstanding cheque in scope, both directions. */
+  count: number;
+  /** Cheques we hold from others: money coming to us. */
+  incoming: DirectionTotal;
+  /** Cheques we issued: money going out. */
+  outgoing: DirectionTotal;
 }
 
 /**
  * The "all cheques" card.
  *
- * It showed the base-currency aggregate: a count of the cheques that carry an
- * exchange rate and their converted sum. With every cheque in dollars and none
- * converted, it read "0" and "ILS 0.00" beside cards counting those same
- * cheques, and it ignored the currency the reader had picked.
+ * Each currency on its own, never converted: a figure in the books' currency
+ * depended on rates that were often never recorded, and read differently
+ * under "all" and under the currency itself. Incoming and outgoing apart:
+ * added together, a 1,000 cheque received and a 1,000 cheque issued read as
+ * 2,000, though one is money owed to us and the other money we owe.
  */
 export function headlineTotal(summary: DashboardSummary, currency: string | null): HeadlineTotal {
   const blocks = currency
     ? summary.currencies.filter((entry) => entry.currency === currency)
     : summary.currencies;
 
-  const perCurrency = blocks
-    .map((entry) => ({
-      currency: entry.currency,
-      count: entry.incoming.count + entry.outgoing.count,
-      total: addMoney([entry.incoming.total, entry.outgoing.total]),
-    }))
-    .filter((entry) => entry.count > 0);
-
-  const count = perCurrency.reduce((sum, entry) => sum + entry.count, 0);
-
-  // Each currency on its own, as the owner asked: a figure converted into the
-  // books' currency depends on rates that were often never recorded, and the
-  // same cheques read differently under "all" and under their own currency.
-  if (perCurrency.length === 0) {
+  const side = (key: 'incoming' | 'outgoing'): DirectionTotal => {
+    const present = blocks.filter((entry) => entry[key].count > 0);
     return {
-      count: 0,
-      amounts: [{ currency: currency ?? summary.defaultCurrency, total: '0.00' }],
+      count: present.reduce((sum, entry) => sum + entry[key].count, 0),
+      amounts: present.map((entry) => ({
+        currency: entry.currency,
+        total: addMoney([entry[key].total]),
+      })),
     };
-  }
-  return {
-    count,
-    amounts: perCurrency.map(({ currency: code, total }) => ({ currency: code, total })),
   };
+
+  const incoming = side('incoming');
+  const outgoing = side('outgoing');
+  return { count: incoming.count + outgoing.count, incoming, outgoing };
 }

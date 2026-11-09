@@ -24,72 +24,53 @@ const block = (
   outgoing,
 });
 
-const summary = (
-  currencies: DashboardCurrencyTotals[],
-  base: { count: number; total: string; unconvertedCount: number },
-): DashboardSummary => ({
-  defaultCurrency: 'ILS',
-  baseCurrency: 'ILS',
-  baseTotal: { currency: 'ILS', ...base },
+const summary = (currencies: DashboardCurrencyTotals[]): DashboardSummary => ({
+  defaultCurrency: 'USD',
+  baseCurrency: 'USD',
+  // Ignored: nothing on the card is converted.
+  baseTotal: { currency: 'USD', count: 0, total: '64005.00', unconvertedCount: 0 },
   currencies,
   recentEvents: [],
 });
 
 describe('the all-cheques card', () => {
-  // What a screenshot showed: eight dollar cheques, none with a rate.
-  const dollarsOnly = summary(
-    [
-      block('ILS', empty),
-      block('USD', { count: 6, total: '21000.00' }, { count: 2, total: '1000.50' }),
-    ],
-    { count: 0, total: '0.00', unconvertedCount: 8 },
-  );
+  const book = summary([
+    block('ILS', { count: 1, total: '10000.00' }),
+    block('USD', { count: 17, total: '73002.00' }, { count: 2, total: '1500.00' }),
+  ]);
 
-  it('counts every outstanding cheque, converted or not', () => {
-    expect(headlineTotal(dollarsOnly, null).count).toBe(8);
+  it('counts every outstanding cheque, both directions', () => {
+    expect(headlineTotal(book, null).count).toBe(20);
   });
 
-  it('lists the money per currency when some of it cannot be converted', () => {
-    expect(headlineTotal(dollarsOnly, null).amounts).toEqual([
-      { currency: 'USD', total: '22000.50' },
-    ]);
-  });
-
-  it('follows the currency the reader picked', () => {
-    expect(headlineTotal(dollarsOnly, 'USD')).toEqual({
-      count: 8,
-      amounts: [{ currency: 'USD', total: '22000.50' }],
-    });
-    expect(headlineTotal(dollarsOnly, 'ILS')).toEqual({
-      count: 0,
-      amounts: [{ currency: 'ILS', total: '0.00' }],
-    });
-  });
-
-  it('keeps each currency on its own even when everything converts', () => {
-    const converted = summary(
-      [block('ILS', { count: 2, total: '500.00' }), block('USD', { count: 1, total: '100.00' })],
-      { count: 3, total: '870.00', unconvertedCount: 0 },
-    );
-    expect(headlineTotal(converted, null)).toEqual({
-      count: 3,
+  it('keeps what we hold apart from what we issued', () => {
+    const all = headlineTotal(book, null);
+    expect(all.incoming).toEqual({
+      count: 18,
       amounts: [
-        { currency: 'ILS', total: '500.00' },
-        { currency: 'USD', total: '100.00' },
+        { currency: 'ILS', total: '10000.00' },
+        { currency: 'USD', total: '73002.00' },
       ],
+    });
+    expect(all.outgoing).toEqual({ count: 2, amounts: [{ currency: 'USD', total: '1500.00' }] });
+  });
+
+  it('never converts one currency into another', () => {
+    const all = headlineTotal(book, null);
+    expect(JSON.stringify(all)).not.toContain('64005');
+  });
+
+  it('follows the currency picked', () => {
+    expect(headlineTotal(book, 'ILS')).toEqual({
+      count: 1,
+      incoming: { count: 1, amounts: [{ currency: 'ILS', total: '10000.00' }] },
+      outgoing: { count: 0, amounts: [] },
     });
   });
 
   it('agrees with each currency picked on its own', () => {
-    const mixed = summary(
-      [
-        block('ILS', { count: 1, total: '10000.00' }),
-        block('USD', { count: 17, total: '73002.00' }),
-      ],
-      { count: 17, total: '64005.00', unconvertedCount: 0 },
-    );
-    const all = headlineTotal(mixed, null).amounts;
-    expect(all).toContainEqual(headlineTotal(mixed, 'USD').amounts[0]);
-    expect(all).toContainEqual(headlineTotal(mixed, 'ILS').amounts[0]);
+    const all = headlineTotal(book, null).incoming.amounts;
+    expect(all).toContainEqual(headlineTotal(book, 'USD').incoming.amounts[0]);
+    expect(all).toContainEqual(headlineTotal(book, 'ILS').incoming.amounts[0]);
   });
 });

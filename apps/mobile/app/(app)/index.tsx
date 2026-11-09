@@ -162,9 +162,13 @@ export default function DashboardScreen() {
               label={t('dashboard.totalCheques')}
               value={String(headline?.count ?? 0)}
               amountLabel={t('dashboard.totalAmount')}
-              amount={(headline?.amounts ?? [])
-                .map((entry) => money(entry.total, entry.currency))
-                .join(' · ')}
+              breakdown={(['incoming', 'outgoing'] as const).map((side) => ({
+                label: t(`dashboard.${side}`),
+                value:
+                  (headline?.[side].amounts ?? [])
+                    .map((entry) => money(entry.total, entry.currency))
+                    .join(' · ') || '—',
+              }))}
               tone="teal"
               Icon={IconCheque}
               onPress={() => open('tab=ALL')}
