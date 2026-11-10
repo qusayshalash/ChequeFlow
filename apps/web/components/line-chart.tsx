@@ -57,7 +57,10 @@ export function LineChart({
   const max = rawMax === 0 ? 1 : niceCeiling(rawMax);
 
   const stepCount = Math.max(labels.length - 1, 1);
-  const x = (index: number) => padding.start + (plotWidth * index) / stepCount;
+  // Mirrored for the right-to-left page: the first date at the right edge,
+  // time running leftward, the value axis on the right. The same reading
+  // order as the dashboard's projected balance.
+  const x = (index: number) => width - padding.start - (plotWidth * index) / stepCount;
   const y = (value: number) => padding.top + plotHeight - (plotHeight * value) / max;
 
   const gridLines = [0, 0.25, 0.5, 0.75, 1];
@@ -75,17 +78,17 @@ export function LineChart({
           return (
             <g key={ratio}>
               <line
-                x1={padding.start}
-                x2={width - padding.end}
+                x1={padding.end}
+                x2={width - padding.start}
                 y1={lineY}
                 y2={lineY}
                 stroke="var(--app-border)"
                 strokeWidth="1"
               />
               <text
-                x={padding.start - 10}
+                x={width - padding.start + 10}
                 y={lineY + 4}
-                textAnchor="end"
+                textAnchor="start"
                 className="fill-slate-400"
                 fontSize="11"
               >
@@ -172,7 +175,7 @@ export function LineChart({
         )}
 
         {axisLabel ? (
-          <text x={padding.start - 38} y={12} className="fill-slate-400" fontSize="10">
+          <text x={width - 4} y={12} textAnchor="end" className="fill-slate-400" fontSize="10">
             {axisLabel}
           </text>
         ) : null}

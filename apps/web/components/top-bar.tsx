@@ -1,5 +1,7 @@
 'use client';
 
+import { Permission } from '@cheque-flow/shared-types';
+
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -17,6 +19,7 @@ import {
   IconSettings,
   IconShield,
 } from '@/components/icons';
+import { ThemeChoiceControl } from '@/components/theme-choice';
 import { useApi, useTranslator } from '@/components/providers';
 
 /**
@@ -206,15 +209,26 @@ export function TopBar({ onOpenMenu }: { onOpenMenu: () => void }) {
                 {user?.email ?? ''}
               </span>
             </p>
-            <Link
-              role="menuitem"
-              href="/settings"
-              onClick={() => setAccountOpen(false)}
-              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-ink-soft hover:bg-subtle"
-            >
-              <IconSettings width="18" height="18" className="text-ink-muted" />
-              {t('nav.settings')}
-            </Link>
+            {/* Only for those who can open it: for anyone else it led to a
+                "not allowed" page. */}
+            {user?.permissions.includes(Permission.SETTINGS_MANAGE) ? (
+              <Link
+                role="menuitem"
+                href="/settings"
+                onClick={() => setAccountOpen(false)}
+                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-ink-soft hover:bg-subtle"
+              >
+                <IconSettings width="18" height="18" className="text-ink-muted" />
+                {t('nav.settings')}
+              </Link>
+            ) : null}
+            {/* The theme is this browser's, not the organization's, so every
+                user chooses it here; it used to sit only on the owner's
+                settings page. */}
+            <div className="px-3 py-2">
+              <p className="mb-1.5 text-xs text-ink-muted">{t('theme.label')}</p>
+              <ThemeChoiceControl compact />
+            </div>
             {/* Every user, whatever their role: Settings is for managers, and
                 changing your own password is not a management task. */}
             <Link

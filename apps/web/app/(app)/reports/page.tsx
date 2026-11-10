@@ -13,13 +13,13 @@ import {
 } from '@cheque-flow/shared-types';
 import { EmptyState, ErrorState, LoadingState } from '@cheque-flow/ui';
 
-import { IconAlert, IconCalendar, IconReturn, IconSafe } from '@/components/icons';
+import { IconAlert, IconCalendar, IconReturn, IconSafe, IconShield } from '@/components/icons';
 import { loadErrorRequestId, loadErrorTitle } from '@/lib/query-error';
 import { LineChart } from '@/components/line-chart';
 import { PageHeader } from '@/components/page-header';
 import { Panel } from '@/components/panel';
 import { useApi, useApp, useTranslator } from '@/components/providers';
-import { RequirePermission } from '@/components/session';
+import { RequirePermission, useSession } from '@/components/session';
 import { Tabs } from '@/components/tabs';
 import { formatDate, formatDayMonth, money } from '@/lib/format';
 import { useToday } from '@/lib/today';
@@ -96,6 +96,8 @@ export default function ReportsPagePage() {
 function ReportsPageBody() {
   const api = useApi();
   const t = useTranslator();
+  const { data: session } = useSession();
+  const canAudit = session?.permissions.includes(Permission.AUDIT_VIEW) ?? false;
   const { locale } = useApp();
 
   const today = useToday();
@@ -233,6 +235,40 @@ function ReportsPageBody() {
     <div className="mx-auto flex max-w-[1440px] flex-col gap-4">
       <PageHeader title={t('reports.title')} subtitle={t('pageDescription.reports')} />
 
+      {/* The other reports, which used to be found only by knowing the URL or
+          spotting a card halfway down: each with the figure it answers. */}
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <ReportLink
+          href="/reports/deposit-slip"
+          Icon={IconSafe}
+          title={t('reports.depositSlipTitle')}
+          note={t('reports.depositSlipShort')}
+        />
+        <ReportLink
+          href="/reports/bounced"
+          Icon={IconReturn}
+          title={t('bounced.title')}
+          note={
+            bounced.data
+              ? bounced.data.count === 0
+                ? t('bounced.empty')
+                : bounced.data.byCurrency
+                    .map((entry) => money(locale, entry.remaining, entry.currency))
+                    .join(' · ')
+              : '…'
+          }
+          tone={bounced.data && bounced.data.count > 0 ? 'danger' : 'neutral'}
+        />
+        {canAudit ? (
+          <ReportLink
+            href="/audit"
+            Icon={IconShield}
+            title={t('nav.auditLogs')}
+            note={t('reports.auditShort')}
+          />
+        ) : null}
+      </div>
+
       {/* Controls. The old page had none: the window, the grouping and the
           currency were all fixed in the source. */}
       <div className="flex flex-wrap items-center gap-2">
@@ -286,171 +322,164 @@ function ReportsPageBody() {
         {formatDate(locale, from)} — {formatDate(locale, to)} · {t('reports.perCurrencyNote')}
       </p>
 
-      {/* ── Cash flow ─────────────────────────────────────────────────── */}
-      <Panel title={`${t('reports.cashFlowTitle')}${shown ? ` — ${shown}` : ''}`}>
-        <p className="-mt-1 mb-3 text-sm text-ink-muted">{t('reports.cashFlowHint')}</p>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.8fr)_minmax(320px,1fr)] xl:items-start">
+        <div className="min-w-0">
+          {/* ── Cash flow ─────────────────────────────────────────────────── */}
+          <Panel title={`${t('reports.cashFlowTitle')}${shown ? ` — ${shown}` : ''}`}>
+            <p className="-mt-1 mb-3 text-sm text-ink-muted">{t('reports.cashFlowHint')}</p>
 
-        {cashFlow.isPending ? <LoadingState label={t('common.loading')} /> : null}
-        {cashFlow.isError ? (
-          <ErrorState
-            title={loadErrorTitle(t, cashFlow.error)}
-            requestId={loadErrorRequestId(cashFlow.error)}
-            onRetry={() => void cashFlow.refetch()}
-            retryLabel={t('common.retry')}
-          />
-        ) : null}
-
-        {!cashFlow.isPending && !chart ? <EmptyState title={t('reports.empty')} /> : null}
-
-        {chart ? (
-          <>
-            {chart.empty ? (
-              <p className="mb-3 rounded-xl bg-subtle px-4 py-3 text-sm text-ink-muted">
-                {t('reports.noCurrencyData')}
-              </p>
+            {cashFlow.isPending ? <LoadingState label={t('common.loading')} /> : null}
+            {cashFlow.isError ? (
+              <ErrorState
+                title={loadErrorTitle(t, cashFlow.error)}
+                requestId={loadErrorRequestId(cashFlow.error)}
+                onRetry={() => void cashFlow.refetch()}
+                retryLabel={t('common.retry')}
+              />
             ) : null}
 
-            <div className="flex flex-wrap items-center gap-4 text-[11px] text-ink-muted">
-              {chart.series.map((entry) => (
-                <span key={entry.label} className="inline-flex items-center gap-1.5">
-                  <span
-                    aria-hidden
-                    className="inline-block h-[3px] w-4 rounded-full"
-                    style={{ backgroundColor: entry.color }}
-                  />
-                  {entry.label}
-                </span>
-              ))}
-            </div>
+            {!cashFlow.isPending && !chart ? <EmptyState title={t('reports.empty')} /> : null}
 
-            <LineChart
-              series={chart.series}
-              labels={chart.labels}
-              height={240}
-              showPoints={chart.labels.length <= 16}
-              labelEvery={Math.max(1, Math.round(chart.labels.length / 7))}
-            />
+            {chart ? (
+              <>
+                {chart.empty ? (
+                  <p className="mb-3 rounded-xl bg-subtle px-4 py-3 text-sm text-ink-muted">
+                    {t('reports.noCurrencyData')}
+                  </p>
+                ) : null}
 
-            <div className="mt-4 grid grid-cols-1 gap-px overflow-hidden rounded-xl bg-line/70 sm:grid-cols-3">
-              <Figure
-                label={t('reports.inflow')}
-                value={money(locale, chart.totals.inflow, shown!)}
-                tone="text-primary-ink"
-              />
-              <Figure
-                label={t('reports.outflow')}
-                value={money(locale, chart.totals.outflow, shown!)}
-                tone="text-danger"
-              />
-              <Figure
-                label={t('reports.net')}
-                value={money(locale, chart.totals.net, shown!)}
-                tone={isNegativeMoney(chart.totals.net) ? 'text-danger' : 'text-primary-ink'}
-              />
-            </div>
-
-            {chart.table.length > 0 ? <ForecastTable rows={chart.table} currency={shown!} /> : null}
-          </>
-        ) : null}
-      </Panel>
-
-      {/* ── Bounced, still to be recovered ────────────────────────────── */}
-      {bounced.data ? (
-        <Link href="/reports/bounced" className="block rounded-2xl hover:shadow-md">
-          <Callout
-            Icon={IconReturn}
-            tone="red"
-            count={bounced.data.count}
-            label={t('bounced.title')}
-            lines={bounced.data.byCurrency.map((entry) =>
-              money(locale, entry.remaining, entry.currency),
-            )}
-          />
-        </Link>
-      ) : null}
-
-      {/* ── Due in the window ─────────────────────────────────────────── */}
-      <Panel title={t('reports.dueTitle')}>
-        <p className="-mt-1 mb-3 text-sm text-ink-muted">{t('reports.dueHint')}</p>
-
-        {due.isPending ? <LoadingState label={t('common.loading')} /> : null}
-
-        {due.data ? (
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Callout
-              Icon={IconCalendar}
-              tone="teal"
-              count={due.data.count}
-              label={t('reports.dueTitle')}
-              lines={due.data.byCurrency.map(
-                (entry) => `${money(locale, entry.total, entry.currency)}`,
-              )}
-            />
-            <Callout
-              Icon={IconAlert}
-              tone="red"
-              count={due.data.overdueCount}
-              label={t('cheque.tabOverdue')}
-              lines={due.data.overdueByCurrency.map(
-                (entry) => `${money(locale, entry.total, entry.currency)}`,
-              )}
-            />
-          </div>
-        ) : null}
-      </Panel>
-
-      {/* ── Custody ───────────────────────────────────────────────────── */}
-      <Panel title={t('reports.custodyTitle')}>
-        <p className="-mt-1 mb-3 text-sm text-ink-muted">{t('reports.custodyHint')}</p>
-
-        {custody.isPending ? <LoadingState label={t('common.loading')} /> : null}
-        {custody.isError ? (
-          <ErrorState
-            title={loadErrorTitle(t, custody.error)}
-            requestId={loadErrorRequestId(custody.error)}
-            onRetry={() => void custody.refetch()}
-            retryLabel={t('common.retry')}
-          />
-        ) : null}
-
-        {custody.data && custody.data.entries.length === 0 ? (
-          <EmptyState title={t('reports.empty')} />
-        ) : null}
-
-        <div className="flex flex-col gap-3">
-          {(custody.data?.entries ?? []).map((entry, index) => {
-            const share = custodyTotal > 0 ? entry.count / custodyTotal : 0;
-            return (
-              <div key={index} className="flex flex-col gap-1.5">
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <span className="flex items-center gap-2 text-sm font-semibold text-ink">
-                    <IconSafe width="16" height="16" className="text-ink-muted" />
-                    {entry.locationName ?? entry.holderName ?? t('common.unknown')}
-                  </span>
-                  <span className="text-xs text-ink-muted tabular-nums">
-                    {entry.count} · {Math.round(share * 100)}% {t('reports.ofTotal')}
-                  </span>
+                <div className="flex flex-wrap items-center gap-4 text-[11px] text-ink-muted">
+                  {chart.series.map((entry) => (
+                    <span key={entry.label} className="inline-flex items-center gap-1.5">
+                      <span
+                        aria-hidden
+                        className="inline-block h-[3px] w-4 rounded-full"
+                        style={{ backgroundColor: entry.color }}
+                      />
+                      {entry.label}
+                    </span>
+                  ))}
                 </div>
 
-                {/* A bar, not just a number. "Twenty in the safe" means little
-                    until you can see it is most of them. */}
-                <div className="h-2 overflow-hidden rounded-full bg-sunken">
-                  <div
-                    className="h-full rounded-full bg-primary"
-                    style={{ width: `${Math.max(share * 100, 2)}%` }}
+                <LineChart
+                  series={chart.series}
+                  labels={chart.labels}
+                  height={240}
+                  showPoints={chart.labels.length <= 16}
+                  labelEvery={Math.max(1, Math.round(chart.labels.length / 7))}
+                />
+
+                <div className="mt-4 grid grid-cols-1 gap-px overflow-hidden rounded-xl bg-line/70 sm:grid-cols-3">
+                  <Figure
+                    label={t('reports.inflow')}
+                    value={money(locale, chart.totals.inflow, shown!)}
+                    tone="text-primary-ink"
+                  />
+                  <Figure
+                    label={t('reports.outflow')}
+                    value={money(locale, chart.totals.outflow, shown!)}
+                    tone="text-danger"
+                  />
+                  <Figure
+                    label={t('reports.net')}
+                    value={money(locale, chart.totals.net, shown!)}
+                    tone={isNegativeMoney(chart.totals.net) ? 'text-danger' : 'text-primary-ink'}
                   />
                 </div>
 
-                <p className="text-xs text-ink-muted tabular-nums">
-                  {entry.byCurrency
-                    .map((row) => money(locale, row.total, row.currency))
-                    .join(' · ')}
-                </p>
-              </div>
-            );
-          })}
+                {chart.table.length > 0 ? (
+                  <ForecastTable rows={chart.table} currency={shown!} />
+                ) : null}
+              </>
+            ) : null}
+          </Panel>
         </div>
-      </Panel>
+
+        <div className="flex min-w-0 flex-col gap-4">
+          {/* ── Due in the window ─────────────────────────────────────────── */}
+          <Panel title={t('reports.dueTitle')}>
+            <p className="-mt-1 mb-3 text-sm text-ink-muted">{t('reports.dueHint')}</p>
+
+            {due.isPending ? <LoadingState label={t('common.loading')} /> : null}
+
+            {due.data ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Callout
+                  Icon={IconCalendar}
+                  tone="teal"
+                  count={due.data.count}
+                  label={t('reports.dueTitle')}
+                  lines={due.data.byCurrency.map(
+                    (entry) => `${money(locale, entry.total, entry.currency)}`,
+                  )}
+                />
+                <Callout
+                  Icon={IconAlert}
+                  tone="red"
+                  count={due.data.overdueCount}
+                  label={t('cheque.tabOverdue')}
+                  lines={due.data.overdueByCurrency.map(
+                    (entry) => `${money(locale, entry.total, entry.currency)}`,
+                  )}
+                />
+              </div>
+            ) : null}
+          </Panel>
+
+          {/* ── Custody ───────────────────────────────────────────────────── */}
+          <Panel title={t('reports.custodyTitle')}>
+            <p className="-mt-1 mb-3 text-sm text-ink-muted">{t('reports.custodyHint')}</p>
+
+            {custody.isPending ? <LoadingState label={t('common.loading')} /> : null}
+            {custody.isError ? (
+              <ErrorState
+                title={loadErrorTitle(t, custody.error)}
+                requestId={loadErrorRequestId(custody.error)}
+                onRetry={() => void custody.refetch()}
+                retryLabel={t('common.retry')}
+              />
+            ) : null}
+
+            {custody.data && custody.data.entries.length === 0 ? (
+              <EmptyState title={t('reports.empty')} />
+            ) : null}
+
+            <div className="flex flex-col gap-3">
+              {(custody.data?.entries ?? []).map((entry, index) => {
+                const share = custodyTotal > 0 ? entry.count / custodyTotal : 0;
+                return (
+                  <div key={index} className="flex flex-col gap-1.5">
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <span className="flex items-center gap-2 text-sm font-semibold text-ink">
+                        <IconSafe width="16" height="16" className="text-ink-muted" />
+                        {entry.locationName ?? entry.holderName ?? t('common.unknown')}
+                      </span>
+                      <span className="text-xs text-ink-muted tabular-nums">
+                        {entry.count} · {Math.round(share * 100)}% {t('reports.ofTotal')}
+                      </span>
+                    </div>
+
+                    {/* A bar, not just a number. "Twenty in the safe" means little
+                    until you can see it is most of them. */}
+                    <div className="h-2 overflow-hidden rounded-full bg-sunken">
+                      <div
+                        className="h-full rounded-full bg-primary"
+                        style={{ width: `${Math.max(share * 100, 2)}%` }}
+                      />
+                    </div>
+
+                    <p className="text-xs text-ink-muted tabular-nums">
+                      {entry.byCurrency
+                        .map((row) => money(locale, row.total, row.currency))
+                        .join(' · ')}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </Panel>
+        </div>
+      </div>
     </div>
   );
 }
@@ -529,6 +558,43 @@ function ForecastTable({
         </table>
       </div>
     </div>
+  );
+}
+
+function ReportLink({
+  href,
+  Icon,
+  title,
+  note,
+  tone = 'neutral',
+}: {
+  href: string;
+  Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  title: string;
+  note: string;
+  tone?: 'neutral' | 'danger';
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-3 rounded-2xl border border-line/90 bg-surface p-4 transition hover:border-line-strong hover:bg-subtle/40"
+    >
+      <span
+        className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${
+          tone === 'danger' ? 'bg-danger-soft text-danger' : 'bg-primary-soft text-primary-ink'
+        }`}
+      >
+        <Icon width="20" height="20" />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm font-bold text-ink">{title}</span>
+        <span
+          className={`mt-0.5 block truncate text-xs ${tone === 'danger' ? 'text-danger' : 'text-ink-muted'}`}
+        >
+          {note}
+        </span>
+      </span>
+    </Link>
   );
 }
 

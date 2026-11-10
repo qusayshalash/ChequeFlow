@@ -34,7 +34,7 @@ import { BottomNav } from '@/components/bottom-nav';
 import { TopBar } from '@/components/top-bar';
 import { useSession } from '@/components/session';
 
-interface NavItem {
+export interface NavItem {
   href: string;
   labelKey: string;
   Icon: ComponentType<SVGProps<SVGSVGElement>>;
@@ -80,7 +80,8 @@ const REPORTS_NAV: NavItem[] = [
   },
 ];
 
-const SETTINGS_NAV: NavItem[] = [
+/** Also the settings page's list of management areas, so the two cannot drift. */
+export const SETTINGS_NAV: NavItem[] = [
   { href: '/contacts', labelKey: 'nav.contacts', Icon: IconContacts },
   { href: '/branches', labelKey: 'nav.branches', Icon: IconBranch },
   { href: '/locations', labelKey: 'nav.locations', Icon: IconSafe },

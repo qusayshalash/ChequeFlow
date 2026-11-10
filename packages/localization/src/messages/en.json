@@ -798,15 +798,15 @@
     "short": "Short",
     "throughToday": "Today",
     "throughSevenDays": "Next 7 days",
-    "throughMonthEnd": "To month end"
+    "throughMonthEnd": "To month end",
+    "depositSlipShort": "What goes to each bank today or this week",
+    "auditShort": "Everything done in the system: who, what, when"
   },
   "settings": {
     "appearanceTitle": "Appearance",
-    "branchId": "Branch identifier",
     "languageHint": "The interface language and local formatting used across the product",
-    "organizationId": "Organization identifier",
-    "organizationTitle": "Organization and branch",
-    "subtitle": "Manage system health, backups, and organization preferences"
+    "subtitle": "Contacts, banks and users, appearance, and backups",
+    "manageTitle": "Manage"
   },
   "role": {
     "ACCOUNTANT": "Accountant",
@@ -819,7 +819,7 @@
   },
   "theme": {
     "label": "Theme",
-    "hint": "Dark follows your device unless you choose otherwise here.",
+    "hint": "Dark is the default; choose light or \"follow the system\" if you prefer.",
     "system": "System",
     "light": "Light",
     "dark": "Dark"
@@ -1091,5 +1091,14 @@
     "handed": "Handed on",
     "cleared": "Cleared",
     "cameBack": "Came back"
+  },
+  "settingsHub": {
+    "contacts": "Customers and suppliers, their balances and statements",
+    "branches": "The organization's branches",
+    "locations": "Safes and where cheques are kept",
+    "banks": "Reference banks and the ones you added",
+    "users": "Staff accounts and their roles",
+    "roles": "What each role may do",
+    "audit": "A record of everything done in the system"
   }
 }

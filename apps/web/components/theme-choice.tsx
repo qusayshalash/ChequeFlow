@@ -29,7 +29,8 @@ import {
  * is applied by a script in `<head>` before the first paint, and this control
  * only catches up with what is already on screen.
  */
-export function ThemeChoiceControl() {
+/** `compact` fills a narrow box (the account menu) instead of sizing itself. */
+export function ThemeChoiceControl({ compact = false }: { compact?: boolean }) {
   const t = useTranslator();
   const [choice, setChoice] = useState<ThemeChoice | null>(null);
 
@@ -47,7 +48,7 @@ export function ThemeChoiceControl() {
     <div
       role="radiogroup"
       aria-label={t('theme.label')}
-      className="inline-flex rounded-xl border border-line bg-subtle p-1"
+      className={`${compact ? 'grid w-full grid-cols-3' : 'inline-flex'} rounded-xl border border-line bg-subtle p-1`}
     >
       {THEME_CHOICES.map((value) => {
         // Until the effect has run there is no answer to show. Marking the
@@ -61,7 +62,7 @@ export function ThemeChoiceControl() {
             role="radio"
             aria-checked={selected}
             onClick={() => pick(value)}
-            className={`min-h-9 min-w-20 rounded-lg px-3 text-sm font-semibold ${
+            className={`min-h-9 rounded-lg font-semibold ${compact ? 'px-1 text-xs' : 'min-w-20 px-3 text-sm'} ${
               selected
                 ? 'bg-surface text-ink shadow-sm ring-1 ring-line'
                 : 'text-ink-muted hover:text-ink'
