@@ -4,6 +4,7 @@ import {
   ChequeDirection,
   ChequeStatus,
   OUTSTANDING_CHEQUE_STATUSES,
+  contactRiskLevel,
   todayIn,
   type BouncedChequeView,
   type ContactRiskView,
@@ -614,12 +615,6 @@ export class ReportsService {
       _sum: { amount: true },
     });
 
-    const levelOf = (decided: number, bounced: number, open: number): ContactRiskView['level'] =>
-      open > 0 || (decided >= 3 && bounced / decided >= 0.3)
-        ? 'high'
-        : bounced > 0
-          ? 'medium'
-          : 'low';
     const rank = { high: 0, medium: 1, low: 2 } as const;
 
     return watched
@@ -630,7 +625,7 @@ export class ReportsService {
         return {
           contactId: row.contact_id,
           name: row.name,
-          level: levelOf(decided, bounced, openBounced),
+          level: contactRiskLevel({ decided, bounced, openBounced }),
           decided,
           bounced,
           openBounced,

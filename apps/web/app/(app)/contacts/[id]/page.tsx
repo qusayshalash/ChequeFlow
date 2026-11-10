@@ -9,6 +9,8 @@ import { ApiClientError } from '@cheque-flow/api-client';
 import {
   OUTSTANDING_CHEQUE_STATUSES,
   Permission,
+  contactRiskLevel,
+  toWhatsAppNumber,
   type ContactStatementView,
 } from '@cheque-flow/shared-types';
 import { Badge, Button, ErrorState, LoadingState, SuccessBanner } from '@cheque-flow/ui';
@@ -142,6 +144,49 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
           </div>
         }
       />
+
+      {/* The contact at a glance: how to reach them, and how they have paid. */}
+      <section className="flex flex-wrap items-center gap-4 rounded-2xl border border-line/90 bg-gradient-to-bl from-surface-raised to-surface p-4 sm:p-5">
+        <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-subtle text-xl font-bold text-ink-soft">
+          {contact.name.trim().charAt(0)}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-ink-muted">{t('contact.riskLevel')}</span>
+            <span
+              className={`rounded-md px-2 py-0.5 text-[11px] font-bold ${RISK_TONE[contactRiskLevel(reliability)]}`}
+            >
+              {t(`dashboard.risk.${contactRiskLevel(reliability)}`)}
+            </span>
+          </div>
+          <p className="mt-1 text-sm text-ink-muted">
+            {[t(`contactType.${contact.type}`), contact.companyName, contact.address]
+              .filter(Boolean)
+              .join(' · ')}
+          </p>
+        </div>
+        {contact.phone ? (
+          <div className="flex flex-wrap gap-2">
+            <a
+              href={`tel:${contact.phone.replace(/[^\d+]/g, '')}`}
+              className="inline-flex h-10 items-center rounded-xl border border-line bg-surface px-3 text-sm font-semibold text-ink hover:border-line-strong"
+              dir="ltr"
+            >
+              {contact.phone}
+            </a>
+            {toWhatsAppNumber(contact.phone) ? (
+              <a
+                href={`https://wa.me/${toWhatsAppNumber(contact.phone)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-10 items-center rounded-xl bg-primary-soft px-3 text-sm font-semibold text-primary-ink hover:opacity-90"
+              >
+                {t('contact.whatsappChat')}
+              </a>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
 
       {notice ? <SuccessBanner message={notice} /> : null}
       {error ? <ErrorState title={error} /> : null}
@@ -421,3 +466,9 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
     </div>
   );
 }
+
+const RISK_TONE = {
+  high: 'bg-danger-soft text-danger',
+  medium: 'bg-warning-soft text-warning',
+  low: 'bg-success-soft text-success',
+} as const;

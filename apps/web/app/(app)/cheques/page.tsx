@@ -10,8 +10,7 @@ import {
   ChequeStatus,
   DEFAULT_CHEQUE_SORT,
   chequeSortOption,
-  type ChequeSummaryView,
-  type Paginated,
+  type ChequeListResult,
 } from '@cheque-flow/shared-types';
 import { Button, ErrorState, LoadingState } from '@cheque-flow/ui';
 
@@ -31,7 +30,8 @@ import { PageHeader } from '@/components/page-header';
 import { Pagination } from '@/components/pagination';
 import { Tabs } from '@/components/tabs';
 import { Panel } from '@/components/panel';
-import { useApi, useTranslator } from '@/components/providers';
+import { useApi, useApp, useTranslator } from '@/components/providers';
+import { money } from '@/lib/format';
 
 /** The tabs across the top, each a saved filter rather than a separate page. */
 const TABS = [
@@ -50,6 +50,7 @@ type ChequeSortKey = 'dueDate' | 'amount' | 'createdAt' | 'chequeNumber' | 'stat
 export default function ChequesPage() {
   const api = useApi();
   const t = useTranslator();
+  const { locale } = useApp();
   const searchParams = useSearchParams();
 
   // A link can open the list on a tab, as the dashboard's cards do.
@@ -106,7 +107,7 @@ export default function ChequesPage() {
                 ? { status: [ChequeStatus.CLEARED] }
                 : {};
 
-  const query = useQuery<Paginated<ChequeSummaryView>>({
+  const query = useQuery<ChequeListResult>({
     queryKey: [
       'cheques',
       {
@@ -493,6 +494,33 @@ export default function ChequesPage() {
           onRetry={() => void query.refetch()}
           retryLabel={t('common.retry')}
         />
+      ) : null}
+
+      {/* What the whole filtered list adds up to, not only this page: the
+          question a filter is usually asked to answer. One figure per
+          currency, never summed across them. */}
+      {query.data && query.data.meta.total > 0 ? (
+        <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-2xl border border-line/90 bg-surface px-4 py-3 text-sm">
+          <span className="font-semibold text-ink">
+            {t('cheque.resultsCount', { count: query.data.meta.total })}
+          </span>
+          {(['INCOMING', 'OUTGOING'] as const).map((side) => {
+            const rows = query.data.totals.filter((entry) => entry.direction === side);
+            if (rows.length === 0) return null;
+            return (
+              <span key={side} className="inline-flex flex-wrap items-center gap-x-2">
+                <span className={side === 'INCOMING' ? 'text-primary-ink' : 'text-warning'}>
+                  {t(`direction.${side}`)}:
+                </span>
+                {rows.map((entry) => (
+                  <span key={entry.currency} className="text-ink-soft tabular-nums" dir="ltr">
+                    {money(locale, entry.total, entry.currency)}
+                  </span>
+                ))}
+              </span>
+            );
+          })}
+        </div>
       ) : null}
 
       <Panel bodyClassName="">

@@ -261,7 +261,8 @@
     "title": "الشيك",
     "to": "إلى",
     "updateSuccess": "تم تحديث بيانات الشيك",
-    "withCompany": "بحوزة الشركة"
+    "withCompany": "بحوزة الشركة",
+    "resultsCount": "{count} شيك"
   },
   "common": {
     "actions": "الإجراءات",
@@ -403,7 +404,9 @@
     "printStatementHint": "لحفظه PDF: اختر «حفظ كـ PDF» من نافذة الطباعة، ثم أرسله للجهة.",
     "issuedOn": "تاريخ الإصدار",
     "from": "من",
-    "to": "إلى"
+    "to": "إلى",
+    "whatsappChat": "محادثة واتساب",
+    "riskLevel": "مستوى المتابعة"
   },
   "contactType": {
     "CUSTOMER": "عميل",
@@ -1079,5 +1082,14 @@
     "openBounced": "راجعة لم تُسوَّ",
     "warning": "تنبيه: رجع {bounced} من أصل {decided} شيك من هذه الجهة.",
     "warningOpen": "وعليها {count} شيك راجع لم يُسوَّ بعد."
+  },
+  "lifecycle": {
+    "title": "مراحل الشيك",
+    "entered": "أُدخل",
+    "inHand": "بحوزتك",
+    "atBank": "في البنك",
+    "handed": "سُلّم لجهة",
+    "cleared": "حُصّل",
+    "cameBack": "رجع"
   }
 }

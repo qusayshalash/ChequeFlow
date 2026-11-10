@@ -12,3 +12,4 @@ export * from './audit.js';
 export * from './money.js';
 export * from './dashboard-headline.js';
 export * from './bank-name.js';
+export * from './contact-risk.js';

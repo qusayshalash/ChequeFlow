@@ -6,6 +6,7 @@ import type {
   BranchView,
   ChequeDetailView,
   ChequeEventView,
+  ChequeListResult,
   ChequeImageView,
   ChequeSummaryView,
   ContactReliabilityView,
@@ -323,7 +324,7 @@ export class ChequeFlowApiClient {
   // ── cheques ───────────────────────────────────────────────────────────────
 
   listCheques(query: Partial<ListChequesQuery> = {}) {
-    return this.request<Paginated<ChequeSummaryView>>('/cheques', {
+    return this.request<ChequeListResult>('/cheques', {
       query: query,
     });
   }

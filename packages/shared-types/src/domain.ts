@@ -382,6 +382,32 @@ export interface BouncedChequeView {
   replacements: ChequeLinkView[];
 }
 
+/**
+ * A page of the cheque list, with what the whole filtered list adds up to:
+ * every matching cheque, not only this page, per currency and never summed
+ * across them.
+ */
+export interface ChequeListResult {
+  data: ChequeSummaryView[];
+  meta: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+    hasNextPage: boolean;
+  };
+  /**
+   * Split by direction as well: incoming and outgoing added together is a
+   * figure that means nothing, the same rule the dashboard follows.
+   */
+  totals: Array<{
+    direction: ChequeDirection;
+    currency: string;
+    count: number;
+    total: MoneyString;
+  }>;
+}
+
 /** One contact on the dashboard's risk list. */
 export interface ContactRiskView {
   contactId: string;

@@ -261,7 +261,8 @@
     "title": "Cheque",
     "to": "To",
     "updateSuccess": "Cheque updated",
-    "withCompany": "With the company"
+    "withCompany": "With the company",
+    "resultsCount": "{count} cheques"
   },
   "common": {
     "actions": "Actions",
@@ -403,7 +404,9 @@
     "printStatementHint": "To keep a PDF, choose “Save as PDF” in the print dialog, then send it to the contact.",
     "issuedOn": "Issued on",
     "from": "From",
-    "to": "To"
+    "to": "To",
+    "whatsappChat": "WhatsApp chat",
+    "riskLevel": "Watch level"
   },
   "contactType": {
     "CUSTOMER": "Customer",
@@ -1079,5 +1082,14 @@
     "openBounced": "Returned, unsettled",
     "warning": "Note: {bounced} of {decided} cheques from this contact came back.",
     "warningOpen": "{count} returned cheques are still unsettled."
+  },
+  "lifecycle": {
+    "title": "Cheque stages",
+    "entered": "Entered",
+    "inHand": "In hand",
+    "atBank": "At the bank",
+    "handed": "Handed on",
+    "cleared": "Cleared",
+    "cameBack": "Came back"
   }
 }

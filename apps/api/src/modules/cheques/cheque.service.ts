@@ -9,7 +9,7 @@ import {
   type ChequeDetailView,
   type ChequeSummaryView,
   type DuplicateChequeMatch,
-  type Paginated,
+  type ChequeListResult,
 } from '@cheque-flow/shared-types';
 import {
   Prisma,
@@ -478,7 +478,7 @@ export class ChequeService {
     return toChequeDetail(cheque, user.permissions, this.encryption, todayIn(user.timeZone));
   }
 
-  async list(user: RequestUser, query: ListChequesQuery): Promise<Paginated<ChequeSummaryView>> {
+  async list(user: RequestUser, query: ListChequesQuery): Promise<ChequeListResult> {
     // One reference day for the whole page, so overdue flags stay consistent.
     const today = todayIn(user.timeZone);
     const where = this.buildWhere(user, query);
@@ -494,8 +494,22 @@ export class ChequeService {
       }),
       this.prisma.db.cheque.count({ where }),
     ]);
+    // What the whole filtered list adds up to, summed in the database.
+    const sums = await this.prisma.db.cheque.groupBy({
+      by: ['direction', 'currency'],
+      where,
+      _count: { _all: true },
+      _sum: { amount: true },
+      orderBy: [{ direction: 'asc' }, { currency: 'asc' }],
+    });
 
     return {
+      totals: sums.map((entry) => ({
+        direction: entry.direction,
+        currency: entry.currency,
+        count: entry._count._all,
+        total: moneyToString(entry._sum.amount ?? toMoney('0')),
+      })),
       data: rows.map((row) => toChequeSummary(row, today)),
       meta: {
         page: query.page,

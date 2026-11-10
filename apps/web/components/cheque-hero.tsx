@@ -5,8 +5,82 @@ import { StatusBadge } from '@cheque-flow/ui';
 
 import { formatDueDistance } from '@cheque-flow/localization';
 
+import { BankMark } from '@/components/bank-mark';
 import { useApp, useTranslator } from '@/components/providers';
 import { formatDate, money } from '@/lib/format';
+
+/**
+ * Where a cheque is in its life, as four steps.
+ *
+ * Entered, in hand, then at the bank (or handed on to someone, for one we
+ * passed along), then the end: collected, or came back. A cancelled or lost
+ * cheque stops where it was and says so; the status badge carries the detail.
+ */
+function lifecycle(status: string): {
+  reached: number;
+  third: 'bank' | 'handed';
+  end: 'ok' | 'back' | 'stopped' | null;
+} {
+  switch (status) {
+    case 'DRAFT':
+    case 'PENDING_REVIEW':
+      return { reached: 0, third: 'bank', end: null };
+    case 'IN_HAND':
+    case 'RESERVED':
+    case 'POSTPONED':
+      return { reached: 1, third: 'bank', end: null };
+    case 'DEPOSITED':
+      return { reached: 2, third: 'bank', end: null };
+    case 'TRANSFERRED':
+      return { reached: 2, third: 'handed', end: null };
+    case 'CLEARED':
+      return { reached: 3, third: 'bank', end: 'ok' };
+    case 'BOUNCED':
+    case 'RETURNED':
+      return { reached: 3, third: 'bank', end: 'back' };
+    default:
+      return { reached: 1, third: 'bank', end: 'stopped' };
+  }
+}
+
+function Lifecycle({ status }: { status: string }) {
+  const t = useTranslator();
+  const { reached, third, end } = lifecycle(status);
+  const labels = [
+    t('lifecycle.entered'),
+    t('lifecycle.inHand'),
+    third === 'handed' ? t('lifecycle.handed') : t('lifecycle.atBank'),
+    end === 'back' ? t('lifecycle.cameBack') : t('lifecycle.cleared'),
+  ];
+  return (
+    <ol className="mt-5 grid grid-cols-4 gap-2" aria-label={t('lifecycle.title')}>
+      {labels.map((label, index) => {
+        const done = index <= reached && !(end === 'stopped' && index > reached);
+        const last = index === reached;
+        const tone =
+          last && end === 'back'
+            ? 'bg-danger-solid'
+            : last && end === 'stopped'
+              ? 'bg-ink-faint'
+              : done
+                ? 'bg-primary'
+                : 'bg-line';
+        return (
+          <li key={label} aria-current={last ? 'step' : undefined} className="min-w-0">
+            <span className={`block h-1.5 rounded-full ${tone}`} aria-hidden="true" />
+            <span
+              className={`mt-1.5 block truncate text-[11px] ${
+                last ? 'font-bold text-ink' : done ? 'text-ink-soft' : 'text-ink-faint'
+              }`}
+            >
+              {label}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
 
 /**
  * The band at the top of a cheque.
@@ -47,6 +121,27 @@ export function ChequeHero({ cheque, today }: { cheque: ChequeDetailView; today:
           {cheque.amountInWords ? (
             <p className="mt-1 text-sm text-ink-muted">{cheque.amountInWords}</p>
           ) : null}
+
+          {/* Who and which bank, in the band itself: the next two questions
+              after "how much", answered without scrolling to the cards. */}
+          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-ink-soft">
+            <span className="inline-flex items-center gap-2">
+              <BankMark name={cheque.bankName} size="sm" />
+              {cheque.bankName ?? t('common.unknown')}
+            </span>
+            {cheque.originalSourceName ? (
+              <span>
+                <span className="text-ink-muted">{t('contact.from')}: </span>
+                {cheque.originalSourceName}
+              </span>
+            ) : null}
+            {cheque.currentRecipientName ? (
+              <span>
+                <span className="text-ink-muted">{t('contact.to')}: </span>
+                {cheque.currentRecipientName}
+              </span>
+            ) : null}
+          </div>
         </div>
 
         <div className="flex min-w-48 flex-col items-start gap-3 sm:items-end">
@@ -69,6 +164,8 @@ export function ChequeHero({ cheque, today }: { cheque: ChequeDetailView; today:
           </div>
         </div>
       </div>
+
+      <Lifecycle status={cheque.status} />
     </section>
   );
 }
