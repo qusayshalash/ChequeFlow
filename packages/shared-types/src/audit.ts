@@ -32,6 +32,7 @@ export const AuditAction = {
   BANK_CREATED: 'bank.created',
   BANK_UPDATED: 'bank.updated',
   BANK_DELETED: 'bank.deleted',
+  ROLE_PERMISSIONS_CHANGED: 'role.permissions.changed',
 } as const;
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 
@@ -55,6 +56,7 @@ export const AUDIT_ENTITY_TYPES = [
   'cheque_image',
   'contact',
   'organization',
+  'role',
   'session',
   'user',
 ] as const;

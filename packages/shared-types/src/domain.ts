@@ -142,6 +142,15 @@ export interface BankView {
   logoUrl: string | null;
 }
 
+/** A role and the permissions it currently grants in this organization. */
+export interface RoleView {
+  id: string;
+  name: string;
+  permissions: string[];
+  /** The owner role always holds every permission and cannot be edited. */
+  isLocked: boolean;
+}
+
 /** A bank as the banks settings page lists it. */
 export interface BankSettingsView extends BankView {
   /** Shared reference data: listed, never edited or hidden by one organization. */

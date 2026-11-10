@@ -625,7 +625,7 @@
     "notifications": "Items that need attention now and reminders coming up next",
     "reports": "Operational summaries for custody and expected cash flow decisions",
     "review": "Verify new cheques and approve extracted data before processing",
-    "roles": "Compare default permissions by role and review your own access",
+    "roles": "What each role grants in your organization",
     "users": "Manage team members, roles, and access status",
     "banks": "Banks cheques are drawn on: the reference list and the ones your organization added"
   },
@@ -889,7 +889,16 @@
   },
   "rolesPage": {
     "permission": "Permission",
-    "youHave": "Yours"
+    "youHave": "Yours",
+    "edit": "Edit permissions",
+    "save": "Save",
+    "cancel": "Cancel",
+    "reset": "Defaults",
+    "locked": "The owner always holds every permission",
+    "ownerOnly": "Only the owner can edit roles",
+    "saved": "Role permissions saved",
+    "hint": "Changes apply at once to everyone with this role",
+    "custom": "Customized"
   },
   "auditAction": {
     "auth_login_success": "Signed in",
@@ -923,7 +932,8 @@
     "settings_changed": "Settings changed",
     "bank_created": "Bank added",
     "bank_updated": "Bank edited",
-    "bank_deleted": "Bank deleted"
+    "bank_deleted": "Bank deleted",
+    "role_permissions_changed": "Role permissions changed"
   },
   "auditEntity": {
     "cheque": "Cheque",
@@ -932,7 +942,8 @@
     "organization": "Organization",
     "session": "Session",
     "user": "User",
-    "bank": "Bank"
+    "bank": "Bank",
+    "role": "Role"
   },
   "bank": {
     "add": "Add bank",

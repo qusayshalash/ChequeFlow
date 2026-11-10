@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
-import { SystemRole, UserStatus } from '@cheque-flow/shared-types';
+import {
+  ALL_PERMISSIONS,
+  SystemRole,
+  UserStatus,
+  type Permission,
+} from '@cheque-flow/shared-types';
 
 import { passwordSchema } from './auth.js';
 import {
@@ -43,6 +48,15 @@ export const updateUserSchema = z.object({
   reason: optionalText(500).optional(),
 });
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+
+/** The full set of permissions a role should hold after the change. */
+export const updateRolePermissionsSchema = z.object({
+  permissions: z
+    .array(z.enum(ALL_PERMISSIONS as [Permission, ...Permission[]]))
+    .max(ALL_PERMISSIONS.length)
+    .transform((keys) => [...new Set(keys)]),
+});
+export type UpdateRolePermissionsInput = z.infer<typeof updateRolePermissionsSchema>;
 
 export const listUsersQuerySchema = paginationSchema.extend({
   search: z.string().trim().max(120).optional(),

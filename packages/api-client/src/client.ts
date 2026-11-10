@@ -15,6 +15,7 @@ import type {
   DuplicateChequeMatch,
   LocationView,
   Paginated,
+  RoleView,
   UserView,
 } from '@cheque-flow/shared-types';
 import type {
@@ -518,6 +519,19 @@ export class ChequeFlowApiClient {
 
   updateBank(id: string, input: UpdateBankInput) {
     return this.request<BankSettingsView>(`/banks/${id}`, { method: 'PATCH', body: input });
+  }
+
+  /** Each role and what it grants in this organization. */
+  listRolePermissions() {
+    return this.request<RoleView[]>('/roles');
+  }
+
+  /** Replaces what a role grants. Owner only; the owner role is fixed. */
+  updateRolePermissions(id: string, permissions: string[]) {
+    return this.request<RoleView>(`/roles/${id}/permissions`, {
+      method: 'PATCH',
+      body: { permissions },
+    });
   }
 
   /** Only an organization's own bank that no cheque uses can be deleted. */
