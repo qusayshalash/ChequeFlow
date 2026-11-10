@@ -51,14 +51,14 @@ export class ReferenceController {
   }
 
   @Get('banks/manage')
-  @RequirePermissions(Permission.SETTINGS_MANAGE)
+  @RequirePermissions(Permission.BANK_MANAGE)
   @ApiOperation({ summary: 'Every bank this organization sees, hidden ones included' })
   banksForSettings(@CurrentUser() user: RequestUser) {
     return this.reference.listBanksForSettings(user);
   }
 
   @Post('banks')
-  @RequirePermissions(Permission.SETTINGS_MANAGE)
+  @RequirePermissions(Permission.BANK_MANAGE)
   @ApiOperation({ summary: "Add a bank of this organization's own" })
   createBank(
     @CurrentUser() user: RequestUser,
@@ -69,7 +69,7 @@ export class ReferenceController {
   }
 
   @Patch('banks/:id')
-  @RequirePermissions(Permission.SETTINGS_MANAGE)
+  @RequirePermissions(Permission.BANK_MANAGE)
   @ApiOperation({ summary: "Rename or hide one of this organization's own banks" })
   updateBank(
     @CurrentUser() user: RequestUser,
@@ -82,7 +82,7 @@ export class ReferenceController {
 
   @Delete('banks/:id')
   @HttpCode(204)
-  @RequirePermissions(Permission.SETTINGS_MANAGE)
+  @RequirePermissions(Permission.BANK_MANAGE)
   @ApiOperation({ summary: "Delete one of this organization's own banks that has no cheques" })
   async deleteBank(
     @CurrentUser() user: RequestUser,

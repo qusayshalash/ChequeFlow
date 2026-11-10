@@ -276,4 +276,23 @@ describeWithDb('organization banks (e2e)', () => {
       .expect(403);
     await request(app.getHttpServer()).delete(`${API}/banks/${bankId}`).set(as(ownerB)).expect(404);
   });
+
+  // Last: it promotes this organization's viewer.
+  it('lets an admin manage banks without holding the settings permission', async () => {
+    const viewer = await prisma.db.user.findFirstOrThrow({ where: { email: orgA.viewerEmail } });
+    const admin = await prisma.db.role.findFirstOrThrow({
+      where: { organizationId: orgA.organizationId, name: 'ADMIN' },
+    });
+    await prisma.db.userRole.deleteMany({ where: { userId: viewer.id } });
+    await prisma.db.userRole.create({ data: { userId: viewer.id, roleId: admin.id } });
+    const adminToken = await login(orgA.viewerEmail, orgA.password);
+
+    await request(app.getHttpServer())
+      .post(`${API}/banks`)
+      .set(as(adminToken))
+      .send({ name: 'Admin Added Bank' })
+      .expect(201);
+    // Banks only: the rest of the settings stay with the owner.
+    await request(app.getHttpServer()).get(`${API}/backup/export`).set(as(adminToken)).expect(403);
+  });
 });

@@ -19,6 +19,7 @@ export const Permission = {
   AUDIT_VIEW: 'audit.view',
   USER_MANAGE: 'user.manage',
   SETTINGS_MANAGE: 'settings.manage',
+  BANK_MANAGE: 'bank.manage',
 } as const;
 export type Permission = (typeof Permission)[keyof typeof Permission];
 
@@ -45,6 +46,7 @@ export const PERMISSION_DESCRIPTIONS: Readonly<Record<Permission, string>> = {
   [Permission.AUDIT_VIEW]: 'View audit logs',
   [Permission.USER_MANAGE]: 'Manage users and roles',
   [Permission.SETTINGS_MANAGE]: 'Manage organization settings',
+  [Permission.BANK_MANAGE]: 'Manage banks',
 };
 
 const READ_ONLY: readonly Permission[] = [Permission.CHEQUE_VIEW, Permission.REPORT_VIEW];

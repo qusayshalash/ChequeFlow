@@ -53,7 +53,7 @@ function errorText(t: (key: string) => string, key: string, caught: unknown): st
  */
 export default function BanksPage() {
   return (
-    <RequirePermission permission={Permission.SETTINGS_MANAGE}>
+    <RequirePermission permission={Permission.BANK_MANAGE}>
       <BanksPageBody />
     </RequirePermission>
   );

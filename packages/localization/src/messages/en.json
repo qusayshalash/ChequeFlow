@@ -651,6 +651,9 @@
       "view": "View cheques",
       "view_image": "View or download cheque images"
     },
+    "bank": {
+      "manage": "Manage banks"
+    },
     "contact": {
       "manage": "Manage contacts"
     },

@@ -80,7 +80,7 @@ const SETTINGS_NAV: NavItem[] = [
     href: '/banks',
     labelKey: 'nav.banks',
     Icon: IconBank,
-    permission: Permission.SETTINGS_MANAGE,
+    permission: Permission.BANK_MANAGE,
   },
   {
     href: '/users',
