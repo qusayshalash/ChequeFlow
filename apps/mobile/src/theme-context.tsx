@@ -1,4 +1,14 @@
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { StatusBar } from 'expo-status-bar';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 import { useColorScheme, type StyleSheet } from 'react-native';
 
 import { darkPalette, lightPalette, type Palette } from '@/theme';
@@ -16,22 +26,67 @@ import { darkPalette, lightPalette, type Palette } from '@/theme';
  * cached, so switching themes does not rebuild every screen's styles on every
  * render, and staying in one theme costs a map lookup.
  *
- * The phone decides. There is no in-app switch: someone who wants dark at
- * night has already said so in Settings, and an app that asks again is an app
- * that ignores the answer.
+ * Dark unless someone chooses otherwise, as on the web: the product's look is
+ * the dark one. Light, or following the phone, is a choice on the More screen,
+ * kept on this phone. It used to follow the phone only; the product's look
+ * changed, and the phone's setting can no longer be the only answer.
  */
-const ThemeContext = createContext<Palette>(lightPalette);
+export const THEME_CHOICES = ['system', 'light', 'dark'] as const;
+export type ThemeChoice = (typeof THEME_CHOICES)[number];
+export const DEFAULT_THEME_CHOICE: ThemeChoice = 'dark';
+const THEME_KEY = 'chequeflow.theme';
+
+const ThemeContext = createContext<Palette>(darkPalette);
+const ChoiceContext = createContext<{
+  choice: ThemeChoice;
+  setChoice: (next: ThemeChoice) => void;
+}>({ choice: DEFAULT_THEME_CHOICE, setChoice: () => undefined });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const scheme = useColorScheme();
-  const palette = scheme === 'dark' ? darkPalette : lightPalette;
+  const [choice, setChoiceState] = useState<ThemeChoice>(DEFAULT_THEME_CHOICE);
 
-  return <ThemeContext.Provider value={palette}>{children}</ThemeContext.Provider>;
+  useEffect(() => {
+    AsyncStorage.getItem(THEME_KEY)
+      .then((stored) => {
+        if (stored && (THEME_CHOICES as readonly string[]).includes(stored)) {
+          setChoiceState(stored as ThemeChoice);
+        }
+      })
+      // Storage that refuses is not worth a broken start; dark it is.
+      .catch(() => undefined);
+  }, []);
+
+  const setChoice = useCallback((next: ThemeChoice) => {
+    setChoiceState(next);
+    AsyncStorage.setItem(THEME_KEY, next).catch(() => undefined);
+  }, []);
+
+  const dark = choice === 'dark' || (choice === 'system' && scheme !== 'light');
+  const palette = dark ? darkPalette : lightPalette;
+  const choiceValue = useMemo(() => ({ choice, setChoice }), [choice, setChoice]);
+
+  return (
+    <ChoiceContext.Provider value={choiceValue}>
+      <ThemeContext.Provider value={palette}>
+        {/* The bar's icons follow the app's ground, not the phone's setting:
+            a dark app on a phone set to light would otherwise draw dark icons
+            on a dark page. */}
+        <StatusBar style={palette.dark ? 'light' : 'dark'} />
+        {children}
+      </ThemeContext.Provider>
+    </ChoiceContext.Provider>
+  );
 }
 
 /** The current palette — for a gradient, a status bar, an icon's colour. */
 export function useTheme(): Palette {
   return useContext(ThemeContext);
+}
+
+/** The stored choice and its setter, for the More screen. */
+export function useThemeChoice() {
+  return useContext(ChoiceContext);
 }
 
 type Styles = ReturnType<typeof StyleSheet.create>;

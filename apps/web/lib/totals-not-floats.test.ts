@@ -22,6 +22,8 @@ describe('screen totals', () => {
   it.each(screens)('%s does not round a float sum into an amount', (path) => {
     const source = readFileSync(join(root, path), 'utf8');
     expect(source).not.toMatch(/\.toFixed\(2\)/);
-    expect(source).toMatch(/addMoney\(/);
+    // Exact sums: addMoney directly, or the shared projection, which sums
+    // with it (the dashboard's forecast is shared with the phone).
+    expect(source).toMatch(/addMoney\(|projectBalance\(/);
   });
 });

@@ -12,12 +12,13 @@ import { clearDrafts, listDrafts, type CaptureDraft } from '@/lib/draft-store';
 import { forgetThisDevice } from '@/lib/push';
 import { forgetCachedAnswers } from '@/lib/query-persistence';
 import { syncDrafts } from '@/lib/draft-sync';
-import { useStyles } from '@/theme-context';
+import { THEME_CHOICES, useStyles, useThemeChoice, type ThemeChoice } from '@/theme-context';
 import { elevation, fontFamily, radius, space, type, type Palette } from '@/theme';
 import { useToday } from '@/lib/today';
 
 export default function SettingsScreen() {
   const styles = useStyles(makeStyles);
+  const { choice: themeChoice, setChoice: setThemeChoice } = useThemeChoice();
   const api = useApi();
   const t = useTranslator();
   const {
@@ -149,6 +150,17 @@ export default function SettingsScreen() {
           options={LOCALES.map((value) => ({ value, label: LOCALE_LABELS[value] }))}
           value={locale}
           onChange={(next) => setLocale(next as (typeof LOCALES)[number])}
+        />
+      </Section>
+
+      <Section title={t('theme.label')}>
+        {/* This phone's choice, as on the web's account menu: dark by
+            default, light, or whatever the phone is set to. */}
+        <Picker
+          label={t('theme.label')}
+          options={THEME_CHOICES.map((value) => ({ value, label: t(`theme.${value}`) }))}
+          value={themeChoice}
+          onChange={(next) => setThemeChoice(next as ThemeChoice)}
         />
       </Section>
 

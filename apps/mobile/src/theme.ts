@@ -202,22 +202,23 @@ export const lightPalette: Palette = {
 
 export const darkPalette: Palette = {
   surface: {
-    // Lighter as it comes forward: a card is not a shadow away from the page
-    // in the dark, it is a shade nearer.
-    page: '#0C1513',
-    card: '#16211E',
-    sunken: '#111B19',
-    line: '#243430',
-    lineStrong: '#33453F',
+    // The web's dark set, so the two halves of the product are one product:
+    // a blue-black ground, each surface lighter as it comes forward.
+    page: '#0D1117',
+    card: '#151B24',
+    sunken: '#10151D',
+    line: '#253042',
+    lineStrong: '#34415A',
   },
   text: {
-    primary: '#E8EFEC',
-    secondary: '#A7B8B2',
-    faint: '#849690',
-    onBrand: '#04211C',
+    primary: '#E8EDF5',
+    secondary: '#B3BDCC',
+    faint: '#94A0B4',
+    onBrand: '#06231D',
   },
-  accent: { base: '#4FBFA5', dark: '#6FD3B9', wash: '#14322B' },
-  pageGradient: ['#0E1A17', '#0C1513', '#0A1211'],
+  // Mint, as on the web; lifted enough to carry text on the dark ground.
+  accent: { base: '#34D3A6', dark: '#5FE3BD', wash: '#12352D' },
+  pageGradient: ['#111823', '#0D1117', '#0A0E14'],
   // Shared with the web's own dark set, so a bounced cheque is one red across
   // both halves of the product.
   semantic: DARK_COLORS,

@@ -4,7 +4,12 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
-import { headlineTotal, addMoney, type DashboardSummary } from '@cheque-flow/shared-types';
+import {
+  forecastCurrency,
+  headlineTotal,
+  projectBalance,
+  type DashboardSummary,
+} from '@cheque-flow/shared-types';
 import { EmptyState, ErrorState, LoadingState } from '@cheque-flow/ui';
 
 import { loadErrorRequestId, loadErrorTitle } from '@/lib/query-error';
@@ -34,13 +39,6 @@ const HORIZONS = [
 /** `YYYY-MM-DD` shifted by whole days. */
 function addDays(iso: string, days: number): string {
   return new Date(Date.parse(`${iso}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
-}
-
-/** Every day from `from` to `to` inclusive. */
-function daysBetween(from: string, to: string): string[] {
-  const out: string[] = [];
-  for (let day = from; day <= to; day = addDays(day, 1)) out.push(day);
-  return out;
 }
 
 export default function DashboardPage() {
@@ -145,44 +143,15 @@ export default function DashboardPage() {
    * curve are for drawing only.
    */
   const projection = useMemo(() => {
-    // With "all" chosen, the currency the coming weeks are actually in: the
-    // first listed one may have nothing ahead, and a forecast of zero dollars
-    // beside a month of shekel cheques reads as "nothing coming".
-    const ahead = new Set(
-      (forecast.data?.periods ?? []).flatMap((period) =>
-        period.byCurrency.map((row) => row.currency),
-      ),
+    // Shared with the phone, so the two cannot disagree about a shortfall.
+    const periods = forecast.data?.periods ?? [];
+    const pick = forecastCurrency(
+      periods,
+      currencies,
+      currency,
+      dashboard.data?.defaultCurrency ?? null,
     );
-    const pick =
-      currency ??
-      currencies.find((code) => ahead.has(code)) ??
-      dashboard.data?.defaultCurrency ??
-      currencies[0];
-    if (!pick) return null;
-    const byDay = new Map(
-      (forecast.data?.periods ?? []).map((period) => [
-        period.period,
-        period.byCurrency.find((row) => row.currency === pick),
-      ]),
-    );
-    const days = daysBetween(today, forecastTo);
-    let running = '0.00';
-    const points = days.map((day) => {
-      running = addMoney([running, byDay.get(day)?.net ?? '0.00']);
-      return { day, balance: running };
-    });
-    const low = points.reduce(
-      (lowest, point) => (Number(point.balance) < Number(lowest.balance) ? point : lowest),
-      points[0] ?? { day: today, balance: '0.00' },
-    );
-    return {
-      currency: pick,
-      points,
-      low,
-      inflow: addMoney(days.map((day) => byDay.get(day)?.inflow)),
-      outflow: addMoney(days.map((day) => byDay.get(day)?.outflow)),
-      net: running,
-    };
+    return pick ? projectBalance(periods, pick, today, forecastTo) : null;
   }, [forecast.data, currency, currencies, dashboard.data, today, forecastTo]);
 
   const upcomingAll = (due.data?.cheques ?? []).filter((cheque) =>

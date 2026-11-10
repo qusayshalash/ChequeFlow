@@ -4,9 +4,15 @@ import { useMemo, useState, type ReactElement } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { headlineTotal, type DashboardSummary } from '@cheque-flow/shared-types';
+import {
+  forecastCurrency,
+  headlineTotal,
+  projectBalance,
+  type DashboardSummary,
+} from '@cheque-flow/shared-types';
 
-import { AttentionList, StatCard } from '@/components/dashboard-parts';
+import { StatCard } from '@/components/dashboard-parts';
+import { LiquidityCard, RiskList } from '@/components/liquidity';
 import {
   IconAlert,
   IconCalendar,
@@ -15,7 +21,6 @@ import {
   IconChevronEnd,
   IconClock,
   IconEdit,
-  IconReturn,
   IconWallet,
   type IconProps,
 } from '@/components/icons';
@@ -29,6 +34,8 @@ import { useToday } from '@/lib/today';
 /** How far ahead the upcoming list looks. */
 const UPCOMING_HORIZON_DAYS = 90;
 const UPCOMING_SHOWN = 5;
+/** How far ahead the projected balance looks, as on the web by default. */
+const FORECAST_DAYS = 30;
 
 function addDays(iso: string, days: number): string {
   return new Date(Date.parse(`${iso}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
@@ -89,6 +96,27 @@ export default function DashboardScreen() {
       }),
   });
 
+  // The liquidity card: the same report and the same projection as the web.
+  const forecastTo = addDays(today, FORECAST_DAYS);
+  const forecast = useQuery({
+    queryKey: ['dashboard-forecast', today, forecastTo],
+    queryFn: () => api.getCashFlowReport({ from: today, to: forecastTo, granularity: 'day' }),
+  });
+  const risk = useQuery({
+    queryKey: ['dashboard-contact-risk'],
+    queryFn: () => api.getContactRisk(),
+  });
+  const projection = useMemo(() => {
+    const periods = forecast.data?.periods ?? [];
+    const pick = forecastCurrency(
+      periods,
+      (query.data?.currencies ?? []).map((entry) => entry.currency),
+      null,
+      query.data?.defaultCurrency ?? null,
+    );
+    return pick ? projectBalance(periods, pick, today, forecastTo) : null;
+  }, [forecast.data, query.data, today, forecastTo]);
+
   const open = (params: string) => router.push(`/(app)/cheques?${params}`);
 
   /**
@@ -101,7 +129,7 @@ export default function DashboardScreen() {
   const totals = useMemo(() => {
     const blocks = query.data?.currencies ?? [];
 
-    const bucket = (key: 'draft' | 'dueWithin7Days' | 'overdue' | 'bounced') => ({
+    const bucket = (key: 'draft' | 'dueWithin7Days' | 'overdue' | 'bounced' | 'deposited') => ({
       count: blocks.reduce((sum, entry) => sum + entry[key].count, 0),
       money: blocks
         .filter((entry) => entry[key].count > 0)
@@ -114,6 +142,7 @@ export default function DashboardScreen() {
       dueSoon: bucket('dueWithin7Days'),
       overdue: bucket('overdue'),
       bounced: bucket('bounced'),
+      deposited: bucket('deposited'),
     };
   }, [query.data, money]);
 
@@ -130,6 +159,8 @@ export default function DashboardScreen() {
           onRefresh={() => {
             void query.refetch();
             void due.refetch();
+            void forecast.refetch();
+            void risk.refetch();
           }}
         />
       }
@@ -159,6 +190,32 @@ export default function DashboardScreen() {
 
       {query.data ? (
         <>
+          {projection ? (
+            <LiquidityCard
+              projection={projection}
+              horizon={FORECAST_DAYS}
+              figures={[
+                {
+                  label: t('dashboard.dueWithin7Days'),
+                  value: String(totals.dueSoon.count),
+                  note: totals.dueSoon.money || '—',
+                  tone: 'warning',
+                },
+                {
+                  label: t('dashboard.atBank'),
+                  value: String(totals.deposited.count),
+                  note: totals.deposited.money || '—',
+                },
+                {
+                  label: t('dashboard.bouncedCheques'),
+                  value: String(totals.bounced.count),
+                  note: totals.bounced.money || '—',
+                  tone: 'danger',
+                },
+              ]}
+            />
+          ) : null}
+
           <View style={styles.statGrid}>
             <StatCard
               label={
@@ -221,48 +278,9 @@ export default function DashboardScreen() {
             />
           </View>
 
-          <AttentionList
-            title={t('dashboard.needsYourAttention')}
-            footerLabel={t('dashboard.viewAllAlerts')}
-            onFooterPress={() => router.push('/(app)/more/notifications')}
-            items={[
-              {
-                key: 'overdue',
-                label: t('dashboard.overdueCheques'),
-                count: totals.overdue.count,
-                amount: totals.overdue.money,
-                tone: 'red',
-                Icon: IconAlert,
-                onPress: () => open('tab=OVERDUE'),
-              },
-              {
-                key: 'due-soon',
-                label: t('dashboard.chequesWithin7'),
-                count: totals.dueSoon.count,
-                amount: totals.dueSoon.money,
-                tone: 'amber',
-                Icon: IconCalendar,
-                onPress: () => open('tab=DUE'),
-              },
-              {
-                key: 'bounced',
-                label: t('dashboard.bouncedCheques'),
-                count: totals.bounced.count,
-                amount: totals.bounced.money,
-                tone: 'teal',
-                Icon: IconReturn,
-                onPress: () => open('tab=BOUNCED'),
-              },
-              {
-                key: 'pending',
-                label: t('dashboard.pendingConfirm'),
-                count: totals.draft.count,
-                amount: totals.draft.money,
-                tone: 'neutral',
-                Icon: IconClock,
-                onPress: () => open('tab=ALL'),
-              },
-            ]}
+          <RiskList
+            entries={risk.data ?? []}
+            onOpen={(contactId) => router.push(`/(app)/contacts/${contactId}`)}
           />
 
           <View style={styles.quickRow}>

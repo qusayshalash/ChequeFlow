@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Redirect, Tabs, type ErrorBoundaryProps } from 'expo-router';
-import { Platform, StyleSheet, type ColorValue } from 'react-native';
+import { Platform, StyleSheet, View, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MIN_TOUCH_TARGET } from '@cheque-flow/ui/tokens';
@@ -39,6 +39,33 @@ function tabIcon(Icon: (props: IconProps) => React.ReactElement) {
     return <Icon size={size} color={String(color)} />;
   };
 }
+
+/**
+ * The middle tab: raised and mint, as on the web's phone bar, because adding a
+ * cheque is what the app is for. Its label is spoken, not shown.
+ */
+function AddButton() {
+  const c = useTheme();
+  return (
+    <View
+      style={[addStyles.button, { backgroundColor: c.accent.base, borderColor: c.surface.page }]}
+    >
+      <IconPlus size={26} color={c.text.onBrand} />
+    </View>
+  );
+}
+
+const addStyles = StyleSheet.create({
+  button: {
+    width: 56,
+    height: 56,
+    marginTop: -26,
+    borderRadius: 18,
+    borderWidth: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
 
 /**
  * Guards every authenticated screen and provides the bottom navigation.
@@ -105,7 +132,7 @@ export default function AppLayout() {
         <Tabs.Screen
           name="index"
           options={{
-            title: t('common.home'),
+            title: t('nav.today'),
             tabBarIcon: tabIcon(IconDashboard),
           }}
         />
@@ -120,7 +147,9 @@ export default function AppLayout() {
           name="add"
           options={{
             title: t('common.add'),
-            tabBarIcon: tabIcon(IconPlus),
+            tabBarIcon: AddButton,
+            tabBarLabel: () => null,
+            tabBarAccessibilityLabel: t('common.add'),
           }}
         />
         <Tabs.Screen

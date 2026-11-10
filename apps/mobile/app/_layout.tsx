@@ -7,7 +7,6 @@ import {
 } from '@expo-google-fonts/ibm-plex-sans-arabic';
 import { Stack, type ErrorBoundaryProps } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { I18nManager } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -57,9 +56,6 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ThemeProvider>
         <Providers>
-          {/* `auto` rather than a fixed tint: the bar sits on the app's own
-            ground, which is now light or dark by the phone's setting. */}
-          <StatusBar style="auto" />
           <Stack screenOptions={{ headerTitleAlign: 'center' }}>
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="login" options={{ headerShown: false }} />

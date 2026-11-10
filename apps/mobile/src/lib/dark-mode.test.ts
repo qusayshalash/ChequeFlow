@@ -121,16 +121,26 @@ describe('dark mode', () => {
     }
   });
 
-  it('lets the phone decide, and does not ask again in the app', () => {
+  it('starts dark, as the web does, and keeps "follow the phone" as a choice', () => {
     const config = JSON.parse(readFileSync(join(process.cwd(), 'app.json'), 'utf8')) as {
       expo: { userInterfaceStyle?: string };
     };
+    // Native pieces (keyboard, alerts) still follow the phone.
     expect(config.expo.userInterfaceStyle).toBe('automatic');
 
-    // Someone who wants dark at night has already said so in Settings. An
-    // in-app switch is a second answer to a question already answered.
+    // The product's look is the dark one. The phone's setting is one of the
+    // choices, not the only answer; light is another.
     const context = readFileSync(join(SRC, 'theme-context.tsx'), 'utf8');
+    expect(context).toContain("DEFAULT_THEME_CHOICE: ThemeChoice = 'dark'");
     expect(context).toContain('useColorScheme');
-    expect(context).not.toContain('setTheme');
+    expect(context).toContain("choice === 'system' && scheme !== 'light'");
+  });
+
+  it("draws the status bar for the app's ground, not the phone's setting", () => {
+    const context = readFileSync(join(SRC, 'theme-context.tsx'), 'utf8');
+    expect(context).toContain("<StatusBar style={palette.dark ? 'light' : 'dark'} />");
+    expect(readFileSync(join(process.cwd(), 'app', '_layout.tsx'), 'utf8')).not.toContain(
+      '<StatusBar style="auto"',
+    );
   });
 });
