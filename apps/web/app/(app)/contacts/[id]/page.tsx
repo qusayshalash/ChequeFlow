@@ -6,10 +6,17 @@ import { useRouter } from 'next/navigation';
 import { use, useState } from 'react';
 
 import { ApiClientError } from '@cheque-flow/api-client';
-import { Permission, type ContactStatementView } from '@cheque-flow/shared-types';
+import {
+  OUTSTANDING_CHEQUE_STATUSES,
+  Permission,
+  type ContactStatementView,
+} from '@cheque-flow/shared-types';
 import { Badge, Button, ErrorState, LoadingState, SuccessBanner } from '@cheque-flow/ui';
 
 import { ChequeTable } from '@/components/cheque-table';
+import { ReliabilitySummary } from '@/components/contact-reliability';
+import { WhatsAppReminder } from '@/components/whatsapp-reminder';
+import { useToday } from '@/lib/today';
 import { ContactEditForm } from '@/components/contact-edit-form';
 import { Drawer } from '@/components/drawer';
 import { FactGrid } from '@/components/fact-grid';
@@ -38,6 +45,16 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
     queryKey: ['contact-statement', id],
     queryFn: () => api.getContactStatement(id),
   });
+  // Every cheque, not the latest fifty, for the reminder: the oldest overdue
+  // ones are exactly the ones a capped list would leave out. Only fetched
+  // when there is a number to send it to.
+  const hasPhone = Boolean(statement.data?.contact.phone);
+  const fullStatement = useQuery<ContactStatementView>({
+    queryKey: ['contact-statement', id, 'full'],
+    queryFn: () => api.getContactStatement(id, { full: true }),
+    enabled: hasPhone,
+  });
+  const today = useToday();
 
   const others = useQuery({
     queryKey: ['contacts', 'merge-targets'],
@@ -84,7 +101,21 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  const { contact, currencies, creditLimit, cheques, totalCheques } = statement.data;
+  const { contact, currencies, creditLimit, cheques, totalCheques, reliability } = statement.data;
+
+  // What a reminder names: cheques this contact gave us that are due within
+  // the week or already late, and those that came back and are still open.
+  const weekAhead = new Date(Date.parse(`${today}T00:00:00Z`) + 7 * 86_400_000)
+    .toISOString()
+    .slice(0, 10);
+  const remindable = (fullStatement.data?.cheques ?? []).filter(
+    (cheque) =>
+      cheque.direction === 'INCOMING' &&
+      cheque.originalSourceName === contact.name &&
+      ((OUTSTANDING_CHEQUE_STATUSES.includes(cheque.status) && cheque.dueDate <= weekAhead) ||
+        cheque.status === 'BOUNCED' ||
+        cheque.status === 'RETURNED'),
+  );
 
   return (
     <div className="mx-auto flex max-w-[1360px] flex-col gap-5">
@@ -321,6 +352,17 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
               );
             })}
           </div>
+        </Panel>
+      ) : null}
+
+      <Panel title={t('reliability.title')}>
+        <ReliabilitySummary reliability={reliability} />
+      </Panel>
+
+      {remindable.length > 0 ? (
+        <Panel title={t('reminders.whatsapp')}>
+          <p className="-mt-1 mb-3 text-sm text-ink-muted">{t('reminders.contactHint')}</p>
+          <WhatsAppReminder cheques={remindable} phone={contact.phone} contactName={contact.name} />
         </Panel>
       ) : null}
 

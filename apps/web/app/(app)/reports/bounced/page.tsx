@@ -10,6 +10,7 @@ import { PageHeader } from '@/components/page-header';
 import { Panel } from '@/components/panel';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { RequirePermission } from '@/components/session';
+import { WhatsAppReminder } from '@/components/whatsapp-reminder';
 import { formatDate, money } from '@/lib/format';
 import { loadErrorRequestId, loadErrorTitle } from '@/lib/query-error';
 
@@ -115,6 +116,16 @@ function BouncedReportBody() {
                       )}
                       {cheque.bankName ? ` · ${cheque.bankName}` : ''}
                     </p>
+                    {cheque.direction === 'INCOMING' ? (
+                      <div className="mt-1">
+                        <WhatsAppReminder
+                          compact
+                          cheques={[cheque]}
+                          phone={cheque.contactPhone}
+                          contactName={cheque.contactName}
+                        />
+                      </div>
+                    ) : null}
                     {cheque.bounceReason ? (
                       <p className="mt-0.5 text-xs text-ink-muted">{cheque.bounceReason}</p>
                     ) : null}

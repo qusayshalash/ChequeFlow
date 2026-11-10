@@ -1,11 +1,13 @@
 import { Injectable } from '@nestjs/common';
 
 import {
+  ChequeDirection,
   ChequeStatus,
   OUTSTANDING_CHEQUE_STATUSES,
   todayIn,
   ApiErrorCode,
   type ContactCreditStatus,
+  type ContactReliabilityView,
   type ContactStatementCurrency,
   type ContactStatementView,
   type ContactBalance,
@@ -434,7 +436,7 @@ export class ContactsService {
       OR: [{ originalSourceId: id }, { currentRecipientId: id }],
     };
 
-    const [grouped, rows, totalCheques, stats] = await Promise.all([
+    const [grouped, rows, totalCheques, stats, reliability] = await Promise.all([
       this.prisma.db.cheque.groupBy({
         // Direction as well as status, because the net balance signs each
         // cheque: what came from them counts towards us, what went to them
@@ -457,6 +459,7 @@ export class ContactsService {
       // The net, from the same query as the contacts list, so the two
       // screens cannot disagree about what a contact owes.
       this.chequeStats(user.organizationId, [id]),
+      this.reliabilityOf(user.organizationId, id),
     ]);
 
     const byCurrency = new Map<string, ContactStatementCurrency>();
@@ -505,7 +508,47 @@ export class ContactsService {
       creditLimit: ContactsService.creditStatus(contact, currencies),
       cheques: rows.map((row) => toChequeSummary(row, today)),
       totalCheques,
+      reliability,
     };
+  }
+
+  /** The contact's track record, for its page and for the cheque forms. */
+  async reliability(user: RequestUser, id: string): Promise<ContactReliabilityView> {
+    await this.findById(user, id);
+    return this.reliabilityOf(user.organizationId, id);
+  }
+
+  /**
+   * Counted on cheques this contact gave us: incoming, with it as the source.
+   * A cheque it was handed by us says nothing about how it pays.
+   */
+  private async reliabilityOf(
+    organizationId: string,
+    contactId: string,
+  ): Promise<ContactReliabilityView> {
+    const theirs: Prisma.ChequeWhereInput = {
+      organizationId,
+      deletedAt: null,
+      originalSourceId: contactId,
+      direction: ChequeDirection.INCOMING,
+    };
+    const cameBack: Prisma.ChequeWhereInput = {
+      events: {
+        some: { toStatus: { in: [ChequeStatus.BOUNCED, ChequeStatus.RETURNED] } },
+      },
+    };
+    const [decided, cleared, bounced, openBounced] = await Promise.all([
+      // One cheque may both have bounced and cleared later; it is one outcome.
+      this.prisma.db.cheque.count({
+        where: { ...theirs, OR: [{ status: ChequeStatus.CLEARED }, cameBack] },
+      }),
+      this.prisma.db.cheque.count({ where: { ...theirs, status: ChequeStatus.CLEARED } }),
+      this.prisma.db.cheque.count({ where: { ...theirs, ...cameBack } }),
+      this.prisma.db.cheque.count({
+        where: { ...theirs, status: { in: [ChequeStatus.BOUNCED, ChequeStatus.RETURNED] } },
+      }),
+    ]);
+    return { decided, cleared, bounced, openBounced };
   }
 
   /** Which statement bucket a status belongs to, or null if it belongs to none. */

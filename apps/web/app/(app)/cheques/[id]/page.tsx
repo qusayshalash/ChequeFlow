@@ -314,7 +314,7 @@ export default function ChequeDetailPage({ params }: { params: Promise<{ id: str
           {data.direction === 'INCOMING' && !settled.has(data.status) ? (
             <Panel title={t('reminders.whatsapp')}>
               <WhatsAppReminder
-                cheque={data}
+                cheques={[data]}
                 phone={source?.phone ?? null}
                 contactName={data.originalSourceName}
               />

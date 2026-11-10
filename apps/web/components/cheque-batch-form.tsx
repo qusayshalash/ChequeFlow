@@ -14,6 +14,7 @@ import {
 import { createChequeBatchSchema } from '@cheque-flow/validation';
 import { Button, ErrorState, Field, inputClassName } from '@cheque-flow/ui';
 
+import { ReliabilityNotice } from '@/components/contact-reliability';
 import { Panel } from '@/components/panel';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { formatMoney } from '@/lib/format';
@@ -430,6 +431,11 @@ export function ChequeBatchForm() {
               ))}
             </select>
           </Field>
+          {direction === 'INCOMING' && originalSourceId ? (
+            <div className="sm:col-span-2 lg:col-span-3">
+              <ReliabilityNotice contactId={originalSourceId} />
+            </div>
+          ) : null}
 
           <Field label={t('cheque.currentLocation')} htmlFor="batch-location">
             <select

@@ -13,6 +13,7 @@ import { Button, ErrorState, Field, SuccessBanner, inputClassName } from '@chequ
 import { ChequeBatchForm } from '@/components/cheque-batch-form';
 import { IconPlus } from '@/components/icons';
 import { PageHeader } from '@/components/page-header';
+import { ReliabilityNotice } from '@/components/contact-reliability';
 import { Stepper } from '@/components/stepper';
 import { Panel } from '@/components/panel';
 import { useApi, useApp, useTranslator } from '@/components/providers';
@@ -450,6 +451,11 @@ export default function NewChequePage() {
                   </Link>
                 </div>
               </Field>
+              {form.direction === 'INCOMING' && form.originalSourceId ? (
+                <div className="sm:col-span-2">
+                  <ReliabilityNotice contactId={form.originalSourceId} />
+                </div>
+              ) : null}
 
               <Field label={t('cheque.drawerName')} htmlFor="drawerName">
                 <input

@@ -92,6 +92,13 @@ export class ContactsController {
     return this.contacts.update(user, id, body, AuditService.contextFromRequest(request));
   }
 
+  @Get(':id/reliability')
+  @RequirePermissions(Permission.CHEQUE_VIEW)
+  @ApiOperation({ summary: "How a contact's cheques have gone: paid, bounced, still open" })
+  reliability(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.contacts.reliability(user, id);
+  }
+
   @Get(':id/statement')
   @RequirePermissions(Permission.CHEQUE_VIEW)
   @ApiOperation({ summary: 'Per-currency position and cheque history for one contact' })

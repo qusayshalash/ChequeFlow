@@ -704,9 +704,16 @@
     "whatsappBody": "A reminder about cheque {number} for {amount}, due on {dueDate}.",
     "whatsappClosing": "Thank you.",
     "whatsappGreeting": "Hello {name},",
-    "whatsappHint": "Opens your own WhatsApp with the message ready — you press send",
+    "whatsappHint": "Opens your WhatsApp with the message ready; you press send",
     "whatsappLogged": "Reminder logged",
-    "whatsappNoPhone": "No phone number on file for this contact"
+    "whatsappNoPhone": "No phone number on file for this contact",
+    "whatsappBounced": "We would like to let you know that cheque {number} for {amount} was returned by the bank. Please contact us to settle it.",
+    "whatsappListIntro": "A reminder about the following cheques:",
+    "whatsappLineDue": "due {dueDate}",
+    "whatsappLineOverdue": "overdue since {dueDate}",
+    "whatsappLineBounced": "returned by the bank",
+    "whatsappMany": "WhatsApp reminder ({count} cheques)",
+    "contactHint": "One message naming this contact's cheques due within a week, overdue, or returned."
   },
   "reports": {
     "audit": "Audit log",
@@ -1038,5 +1045,15 @@
       "bank": "Bank not found — add it on the banks page",
       "contact": "Contact not found"
     }
+  },
+  "reliability": {
+    "title": "Reliability",
+    "noHistory": "No history yet: no cheque from this contact has cleared or come back",
+    "rate": "Bounce rate",
+    "cleared": "Cleared",
+    "bounced": "Came back (at least once)",
+    "openBounced": "Returned, unsettled",
+    "warning": "Note: {bounced} of {decided} cheques from this contact came back.",
+    "warningOpen": "{count} returned cheques are still unsettled."
   }
 }

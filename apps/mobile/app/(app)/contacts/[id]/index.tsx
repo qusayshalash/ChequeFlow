@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ApiClientError } from '@cheque-flow/api-client';
-import type { ContactStatementView } from '@cheque-flow/shared-types';
+import { toWhatsAppNumber, type ContactStatementView } from '@cheque-flow/shared-types';
 
 import { IconMessage, IconPhone } from '@/components/icons';
 import { ContactAvatar } from '@/components/marks';
@@ -105,7 +105,14 @@ export default function ContactStatementScreen() {
   async function reach(scheme: 'tel' | 'whatsapp'): Promise<void> {
     const phone = contact.phone?.replace(/[^\d+]/g, '');
     if (!phone) return;
-    const url = scheme === 'tel' ? `tel:${phone}` : `https://wa.me/${phone.replace(/^\+/, '')}`;
+    // wa.me needs the international number: a local «0599…» opened a chat
+    // with nobody. The same rule as the web reminder, which refuses to guess.
+    const whatsapp = toWhatsAppNumber(contact.phone);
+    if (scheme === 'whatsapp' && !whatsapp) {
+      Alert.alert(t('reminders.whatsappNoPhone'));
+      return;
+    }
+    const url = scheme === 'tel' ? `tel:${phone}` : `https://wa.me/${whatsapp}`;
     const supported = await Linking.canOpenURL(url);
     if (supported) await Linking.openURL(url);
     else Alert.alert(t('errors.loadFailed'));

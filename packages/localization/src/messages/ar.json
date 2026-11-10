@@ -704,9 +704,16 @@
     "whatsappBody": "تذكير بشيك رقم {number} بمبلغ {amount}، مستحق بتاريخ {dueDate}.",
     "whatsappClosing": "شكرًا لتعاونكم.",
     "whatsappGreeting": "السلام عليكم {name}،",
-    "whatsappHint": "يفتح واتساب لديك والرسالة مكتوبة — أنتِ من يضغط إرسال",
+    "whatsappHint": "يفتح واتساب لديك والرسالة جاهزة، والإرسال بيدك",
     "whatsappLogged": "سُجّل التذكير",
-    "whatsappNoPhone": "لا يوجد رقم هاتف لهذه الجهة"
+    "whatsappNoPhone": "لا يوجد رقم هاتف لهذه الجهة",
+    "whatsappBounced": "نود إعلامكم بأن الشيك رقم {number} بمبلغ {amount} قد أُعيد من البنك. نرجو التواصل معنا لتسويته.",
+    "whatsappListIntro": "نذكّركم بالشيكات التالية:",
+    "whatsappLineDue": "مستحق في {dueDate}",
+    "whatsappLineOverdue": "متأخر منذ {dueDate}",
+    "whatsappLineBounced": "أُعيد من البنك",
+    "whatsappMany": "تذكير عبر واتساب ({count} شيك)",
+    "contactHint": "رسالة واحدة بكل شيكات هذه الجهة المستحقة خلال أسبوع أو المتأخرة أو الراجعة."
   },
   "reports": {
     "audit": "سجل التدقيق",
@@ -1038,5 +1045,15 @@
       "bank": "البنك غير موجود — أضفه من صفحة البنوك",
       "contact": "الجهة غير موجودة"
     }
+  },
+  "reliability": {
+    "title": "الموثوقية",
+    "noHistory": "لا يوجد سجل بعد: لم يُحصَّل أو يرجع أي شيك من هذه الجهة",
+    "rate": "نسبة الإرجاع",
+    "cleared": "حُصّلت",
+    "bounced": "رجعت (ولو مرة)",
+    "openBounced": "راجعة لم تُسوَّ",
+    "warning": "تنبيه: رجع {bounced} من أصل {decided} شيك من هذه الجهة.",
+    "warningOpen": "وعليها {count} شيك راجع لم يُسوَّ بعد."
   }
 }

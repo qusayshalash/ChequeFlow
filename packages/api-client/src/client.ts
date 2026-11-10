@@ -8,6 +8,7 @@ import type {
   ChequeEventView,
   ChequeImageView,
   ChequeSummaryView,
+  ContactReliabilityView,
   ContactStatementView,
   ContactListItemView,
   ContactView,
@@ -485,6 +486,10 @@ export class ChequeFlowApiClient {
 
   createContact(input: CreateContactInput) {
     return this.request<ContactView>('/contacts', { method: 'POST', body: input });
+  }
+
+  getContactReliability(id: string) {
+    return this.request<ContactReliabilityView>(`/contacts/${id}/reliability`);
   }
 
   /** `full` lists every cheque, for a printed statement; the screen shows the latest. */

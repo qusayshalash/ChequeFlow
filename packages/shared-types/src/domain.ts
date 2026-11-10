@@ -369,6 +369,7 @@ export interface BouncedChequeView {
   /** Who the money is to be chased from: the source of an incoming cheque. */
   contactId: string | null;
   contactName: string | null;
+  contactPhone: string | null;
   bankName: string | null;
   dueDate: IsoDateString;
   /** The day it came back, in the organization's time zone. */
@@ -426,6 +427,21 @@ export interface ContactStatementCurrency {
   net: MoneyString;
 }
 
+/**
+ * How a contact's cheques have gone, counted on the cheques they gave us.
+ *
+ * `bounced` counts every cheque that ever came back, including one later
+ * paid after all: that it bounced once is the fact a reader is weighing.
+ */
+export interface ContactReliabilityView {
+  /** Cheques with an outcome: paid, or came back at least once. */
+  decided: number;
+  cleared: number;
+  bounced: number;
+  /** Bounced or returned and still in that state. */
+  openBounced: number;
+}
+
 export interface ContactStatementView {
   contact: ContactView;
   currencies: ContactStatementCurrency[];
@@ -441,6 +457,7 @@ export interface ContactStatementView {
    * which cover everything, would look inconsistent with the list below them.
    */
   totalCheques: number;
+  reliability: ContactReliabilityView;
 }
 
 export interface DuplicateChequeMatch {
