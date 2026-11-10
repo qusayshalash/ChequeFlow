@@ -603,7 +603,8 @@
     "settings": "الإعدادات",
     "users": "المستخدمون",
     "workspace": "مساحة العمل",
-    "banks": "البنوك"
+    "banks": "البنوك",
+    "chequeImport": "استيراد من Excel"
   },
   "ocr": {
     "confidence": "درجة الثقة",
@@ -725,7 +726,7 @@
     "depositSlipPrepared": "أُعدّت في",
     "depositSlipPrint": "طباعة",
     "depositSlipSignature": "التوقيع",
-    "depositSlipTitle": "شيكات اليوم — قسيمة إيداع",
+    "depositSlipTitle": "قسيمة الإيداع",
     "deposited": "المودعة في البنك",
     "due": "المستحقة",
     "due30": "المستحقة خلال ٣٠ يومًا",
@@ -760,7 +761,10 @@
     "noShortPeriods": "لا توجد فترة يخرج فيها أكثر مما يدخل",
     "period": "الفترة",
     "running": "الرصيد التراكمي",
-    "short": "عجز"
+    "short": "عجز",
+    "throughToday": "اليوم",
+    "throughSevenDays": "خلال 7 أيام",
+    "throughMonthEnd": "حتى نهاية الشهر"
   },
   "settings": {
     "appearanceTitle": "المظهر",
@@ -984,5 +988,55 @@
     "daysSince": "منذ {count} يوم",
     "of": "من أصل",
     "today": "اليوم"
+  },
+  "import": {
+    "title": "استيراد شيكات من Excel",
+    "subtitle": "لإدخال الشيكات المسجلة سابقًا دفعة واحدة. تدخل كمسودات في «قيد المراجعة» لتستلمها من هناك.",
+    "step1": "١. الملف",
+    "chooseFile": "اختر ملف Excel أو CSV",
+    "template": "تنزيل نموذج جاهز",
+    "columnsHint": "الصف الأول عناوين الأعمدة. المطلوب: رقم الشيك، المبلغ، تاريخ الاستحقاق. اختياري: العملة، البنك، الجهة، النوع (وارد/صادر).",
+    "pasteInstead": "أو الصق الصفوف من Excel مباشرة",
+    "pastePlaceholder": "انسخ الصفوف مع صف العناوين من Excel والصقها هنا",
+    "pasted": "صفوف ملصقة",
+    "readPasted": "قراءة الصفوف",
+    "unreadable": "تعذرت قراءة الملف. احفظه بصيغة xlsx أو CSV وجرّب مرة أخرى.",
+    "defaultCurrency": "العملة الافتراضية",
+    "defaultDirection": "النوع الافتراضي",
+    "defaultHint": "للصفوف التي لا تحدد ذلك",
+    "createContacts": "إنشاء الجهات غير الموجودة تلقائيًا",
+    "missingColumns": "أعمدة مطلوبة غير موجودة في الملف",
+    "field": {
+      "chequeNumber": "رقم الشيك",
+      "amount": "المبلغ",
+      "currency": "العملة",
+      "dueDate": "تاريخ الاستحقاق",
+      "bank": "البنك",
+      "contact": "الجهة",
+      "direction": "النوع"
+    },
+    "step2": "٢. المراجعة والاستيراد",
+    "noRows": "لا توجد صفوف في الملف",
+    "summary": "{ready} صف جاهز، {errors} فيه أخطاء ولن يُستورد",
+    "newContacts": "ستُنشأ {count} جهة جديدة",
+    "openReview": "فتح «قيد المراجعة» لاستلامها",
+    "run": "استيراد {count} شيك",
+    "done": "أُضيف {created} شيك، وتُخطّي {duplicates} مكرر، وفشل {failed}.",
+    "line": "السطر",
+    "status": "الحالة",
+    "new": "جديدة",
+    "created": "أُضيف",
+    "duplicate": "مكرر — تم تخطيه",
+    "ready": "جاهز",
+    "error": {
+      "number": "رقم الشيك فارغ",
+      "amount": "مبلغ غير صالح",
+      "dueDate": "تاريخ غير مفهوم",
+      "currency": "عملة غير معروفة",
+      "direction": "النوع ليس وارد أو صادر",
+      "repeated": "مكرر في الملف",
+      "bank": "البنك غير موجود — أضفه من صفحة البنوك",
+      "contact": "الجهة غير موجودة"
+    }
   }
 }

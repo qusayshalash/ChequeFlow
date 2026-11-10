@@ -21,6 +21,15 @@ import { useToday } from '@/lib/today';
  * afterthought — the controls disappear, the page turns white, and each bank
  * gets its own sheet with a line to sign.
  */
+function plusDays(iso: string, days: number): string {
+  return new Date(Date.parse(`${iso}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
+}
+
+function monthEnd(iso: string): string {
+  const [year, month] = iso.split('-').map(Number) as [number, number];
+  return new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10);
+}
+
 export default function DepositSlipPage() {
   const api = useApi();
   const t = useTranslator();
@@ -72,7 +81,31 @@ export default function DepositSlipPage() {
 
             No card either: it is one control, and the bordered panel it lived
             in was the chrome the rest of the app has just shed. */}
-        <div className="mb-4 flex justify-end">
+        <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
+          {/* The day itself, or a run that sweeps up everything due over the
+              coming week or to the month's end: the questions "what goes to
+              the bank this week" and "this month" without counting dates. */}
+          {(
+            [
+              ['reports.throughToday', today],
+              ['reports.throughSevenDays', plusDays(today, 7)],
+              ['reports.throughMonthEnd', monthEnd(today)],
+            ] as const
+          ).map(([labelKey, date]) => (
+            <button
+              key={labelKey}
+              type="button"
+              aria-pressed={on === date}
+              onClick={() => setPicked(date === today ? null : date)}
+              className={`min-h-11 rounded-xl border px-3 text-sm font-semibold ${
+                on === date
+                  ? 'border-primary bg-primary-soft text-primary-ink'
+                  : 'border-line bg-surface text-ink-soft hover:border-line-strong'
+              }`}
+            >
+              {t(labelKey)}
+            </button>
+          ))}
           <label className="inline-flex h-11 items-center gap-3 rounded-xl border border-line bg-surface px-3 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10">
             <span className="text-xs font-medium text-ink-muted">
               {t('reports.depositSlipDate')}

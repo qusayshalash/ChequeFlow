@@ -13,6 +13,7 @@ import {
   IconCalendar,
   IconCheque,
   IconChevronEnd,
+  IconClipboard,
   IconClose,
   IconContacts,
   IconDashboard,
@@ -61,6 +62,12 @@ const CHEQUES_NAV: NavItem[] = [
 const MANAGE_NAV: NavItem[] = [
   { href: '/cheques/new', labelKey: 'nav.newCheque', Icon: IconPlus },
   { href: '/cheques/new?mode=batch', labelKey: 'nav.chequeBatch', Icon: IconLayers },
+  {
+    href: '/cheques/import',
+    labelKey: 'nav.chequeImport',
+    Icon: IconClipboard,
+    permission: Permission.CHEQUE_CREATE,
+  },
 ];
 
 const REPORTS_NAV: NavItem[] = [

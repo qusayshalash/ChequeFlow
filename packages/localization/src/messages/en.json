@@ -603,7 +603,8 @@
     "settings": "Settings",
     "users": "Users",
     "workspace": "Workspace",
-    "banks": "Banks"
+    "banks": "Banks",
+    "chequeImport": "Import from Excel"
   },
   "ocr": {
     "confidence": "Confidence",
@@ -725,7 +726,7 @@
     "depositSlipPrepared": "Prepared",
     "depositSlipPrint": "Print",
     "depositSlipSignature": "Signature",
-    "depositSlipTitle": "Today's cheques — deposit slip",
+    "depositSlipTitle": "Deposit slip",
     "deposited": "Deposited",
     "due": "Due",
     "due30": "Due within 30 days",
@@ -760,7 +761,10 @@
     "noShortPeriods": "No period pays out more than it takes in",
     "period": "Period",
     "running": "Running total",
-    "short": "Short"
+    "short": "Short",
+    "throughToday": "Today",
+    "throughSevenDays": "Next 7 days",
+    "throughMonthEnd": "To month end"
   },
   "settings": {
     "appearanceTitle": "Appearance",
@@ -984,5 +988,55 @@
     "daysSince": "{count} days ago",
     "of": "of",
     "today": "Today"
+  },
+  "import": {
+    "title": "Import cheques from Excel",
+    "subtitle": "For bringing in cheques recorded elsewhere, all at once. They arrive as drafts in the review queue, to be received from there.",
+    "step1": "1. The file",
+    "chooseFile": "Choose an Excel or CSV file",
+    "template": "Download a template",
+    "columnsHint": "The first row holds the column headers. Required: cheque number, amount, due date. Optional: currency, bank, contact, type (incoming/outgoing).",
+    "pasteInstead": "Or paste the rows straight from Excel",
+    "pastePlaceholder": "Copy the rows, header row included, from Excel and paste them here",
+    "pasted": "Pasted rows",
+    "readPasted": "Read rows",
+    "unreadable": "The file could not be read. Save it as xlsx or CSV and try again.",
+    "defaultCurrency": "Default currency",
+    "defaultDirection": "Default type",
+    "defaultHint": "For rows that do not say",
+    "createContacts": "Create contacts that do not exist yet",
+    "missingColumns": "Required columns missing from the file",
+    "field": {
+      "chequeNumber": "Cheque number",
+      "amount": "Amount",
+      "currency": "Currency",
+      "dueDate": "Due date",
+      "bank": "Bank",
+      "contact": "Contact",
+      "direction": "Type"
+    },
+    "step2": "2. Review and import",
+    "noRows": "The file has no rows",
+    "summary": "{ready} rows ready, {errors} with errors that will be skipped",
+    "newContacts": "{count} new contacts will be created",
+    "openReview": "Open the review queue to receive them",
+    "run": "Import {count} cheques",
+    "done": "{created} cheques added, {duplicates} duplicates skipped, {failed} failed.",
+    "line": "Line",
+    "status": "Status",
+    "new": "New",
+    "created": "Added",
+    "duplicate": "Duplicate — skipped",
+    "ready": "Ready",
+    "error": {
+      "number": "No cheque number",
+      "amount": "Invalid amount",
+      "dueDate": "Unreadable date",
+      "currency": "Unknown currency",
+      "direction": "Type is not incoming or outgoing",
+      "repeated": "Repeated in the file",
+      "bank": "Bank not found — add it on the banks page",
+      "contact": "Contact not found"
+    }
   }
 }
