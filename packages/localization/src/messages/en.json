@@ -398,7 +398,12 @@
     "unconfirmed": "Unconfirmed",
     "unconfirmedHint": "Entered but not yet received — not counted in the balance",
     "updateSuccess": "Contact updated",
-    "weOwe": "Owed by us"
+    "weOwe": "Owed by us",
+    "printStatement": "Print / save PDF",
+    "printStatementHint": "To keep a PDF, choose “Save as PDF” in the print dialog, then send it to the contact.",
+    "issuedOn": "Issued on",
+    "from": "From",
+    "to": "To"
   },
   "contactType": {
     "CUSTOMER": "Customer",
@@ -750,7 +755,12 @@
     "periodWeek": "Weekly",
     "range": "Period",
     "thisYear": "This year",
-    "title": "Reports"
+    "title": "Reports",
+    "shortPeriods": "{count} periods pay out more than they take in",
+    "noShortPeriods": "No period pays out more than it takes in",
+    "period": "Period",
+    "running": "Running total",
+    "short": "Short"
   },
   "settings": {
     "appearanceTitle": "Appearance",
@@ -963,5 +973,16 @@
     "hiddenHint": "Hidden banks are left out of the pickers; cheques drawn on them keep them",
     "delete": "Delete",
     "deleteConfirm": "Delete this bank? This cannot be undone."
+  },
+  "bounced": {
+    "title": "Bounced cheques to recover",
+    "subtitle": "Bounced and returned cheques not yet covered by a replacement, oldest first",
+    "remaining": "Still to recover",
+    "chequeCount": "{count} cheques",
+    "empty": "No bounced cheques waiting to be recovered",
+    "replacements": "Replacements",
+    "daysSince": "{count} days ago",
+    "of": "of",
+    "today": "Today"
   }
 }

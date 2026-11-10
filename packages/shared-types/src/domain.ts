@@ -358,6 +358,37 @@ export interface DepositSlipBank {
   cheques: ChequeSummaryView[];
 }
 
+/** A cheque that came back unpaid and is not yet covered by replacements. */
+export interface BouncedChequeView {
+  id: string;
+  chequeNumber: string;
+  status: ChequeStatus;
+  direction: ChequeDirection;
+  amount: MoneyString;
+  currency: string;
+  /** Who the money is to be chased from: the source of an incoming cheque. */
+  contactId: string | null;
+  contactName: string | null;
+  bankName: string | null;
+  dueDate: IsoDateString;
+  /** The day it came back, in the organization's time zone. */
+  bouncedOn: IsoDateString;
+  daysSince: number;
+  bounceReason: string | null;
+  /** Live replacements in the same currency, counted against the amount. */
+  covered: MoneyString;
+  remaining: MoneyString;
+  replacements: ChequeLinkView[];
+}
+
+export interface BouncedReportView {
+  count: number;
+  /** What is still to be recovered, per currency; never summed across them. */
+  byCurrency: Array<{ currency: string; count: number; remaining: MoneyString }>;
+  /** Longest outstanding first. */
+  cheques: BouncedChequeView[];
+}
+
 export interface DepositSlipView {
   /** The day the run is for; cheques due on or before it are included. */
   on: IsoDateString;

@@ -95,8 +95,14 @@ export class ContactsController {
   @Get(':id/statement')
   @RequirePermissions(Permission.CHEQUE_VIEW)
   @ApiOperation({ summary: 'Per-currency position and cheque history for one contact' })
-  statement(@CurrentUser() user: RequestUser, @Param('id', ParseUUIDPipe) id: string) {
-    return this.contacts.statement(user, id);
+  statement(
+    @CurrentUser() user: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('full') full?: string,
+  ) {
+    // The screen shows the latest fifty; a printed statement is handed to the
+    // contact as the whole account, so it carries every cheque.
+    return this.contacts.statement(user, id, full === 'true' ? 2000 : 50);
   }
 
   @Delete(':id')

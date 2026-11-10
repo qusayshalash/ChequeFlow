@@ -5,6 +5,8 @@ import {
   ChequeStatus,
   OUTSTANDING_CHEQUE_STATUSES,
   todayIn,
+  type BouncedChequeView,
+  type BouncedReportView,
   type Bucket,
   type DashboardCurrencyTotals,
   type DashboardSummary,
@@ -429,6 +431,130 @@ export class ReportsService {
     // Week buckets start on Monday.
     const weekday = (date.getUTCDay() + 6) % 7;
     return new Date(date.getTime() - weekday * 86_400_000).toISOString().slice(0, 10);
+  }
+
+  /**
+   * Cheques that came back unpaid and are not yet made good.
+   *
+   * Bounced, or returned to us after being handed on, both mean the money
+   * was not paid and someone has to be chased for it. A replacement cheque
+   * covers its amount only once it is in hand and alive: one still a draft or
+   * awaiting review is paper somebody typed in (the statement leaves those out
+   * of the balance for the same reason), and one that bounced too, or was
+   * cancelled or lost, covers nothing. And only in the same currency, as
+   * every figure here; a replacement in another currency is listed but not
+   * counted, because comparing the two would need a rate nobody agreed to.
+   */
+  async bounced(user: RequestUser): Promise<BouncedReportView> {
+    const NOT_COVERING: ChequeStatus[] = [
+      ChequeStatus.DRAFT,
+      ChequeStatus.PENDING_REVIEW,
+      ChequeStatus.BOUNCED,
+      ChequeStatus.RETURNED,
+      ChequeStatus.CANCELLED,
+      ChequeStatus.LOST,
+    ];
+    const rows = await this.prisma.db.cheque.findMany({
+      where: {
+        organizationId: user.organizationId,
+        deletedAt: null,
+        status: { in: [ChequeStatus.BOUNCED, ChequeStatus.RETURNED] },
+      },
+      select: {
+        id: true,
+        chequeNumber: true,
+        status: true,
+        direction: true,
+        amount: true,
+        currency: true,
+        dueDate: true,
+        bounceReason: true,
+        updatedAt: true,
+        originalSourceId: true,
+        originalSource: { select: { name: true } },
+        currentRecipientId: true,
+        currentRecipient: { select: { name: true } },
+        bank: { select: { name: true } },
+        replacedBy: {
+          where: { deletedAt: null },
+          select: { id: true, chequeNumber: true, status: true, amount: true, currency: true },
+          orderBy: { createdAt: 'asc' },
+        },
+        // The latest bounce or return: a cheque can bounce, be redeposited
+        // after a postponement, and bounce again.
+        events: {
+          where: { toStatus: { in: [ChequeStatus.BOUNCED, ChequeStatus.RETURNED] } },
+          select: { eventDate: true },
+          orderBy: { eventDate: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    const today = toDateOnly(todayIn(user.timeZone));
+    const cheques: BouncedChequeView[] = [];
+    for (const row of rows) {
+      const live = row.replacedBy.filter(
+        (entry) => entry.currency === row.currency && !NOT_COVERING.includes(entry.status),
+      );
+      const covered = sumMoney(live.map((entry) => entry.amount));
+      const remaining = row.amount.minus(covered);
+      if (remaining.lte(0)) continue;
+
+      const when = row.events[0]?.eventDate ?? row.updatedAt;
+      const bouncedOn = todayIn(user.timeZone, when);
+      const outgoing = row.direction === ChequeDirection.OUTGOING;
+      cheques.push({
+        id: row.id,
+        chequeNumber: row.chequeNumber,
+        status: row.status,
+        direction: row.direction,
+        amount: moneyToString(row.amount),
+        currency: row.currency,
+        contactId: outgoing ? row.currentRecipientId : row.originalSourceId,
+        contactName: (outgoing ? row.currentRecipient?.name : row.originalSource?.name) ?? null,
+        bankName: row.bank?.name ?? null,
+        dueDate: row.dueDate.toISOString().slice(0, 10),
+        bouncedOn,
+        daysSince: Math.max(
+          0,
+          Math.round((today.getTime() - toDateOnly(bouncedOn).getTime()) / 86_400_000),
+        ),
+        bounceReason: row.bounceReason,
+        covered: moneyToString(covered),
+        remaining: moneyToString(remaining),
+        replacements: row.replacedBy.map((entry) => ({
+          id: entry.id,
+          chequeNumber: entry.chequeNumber,
+          status: entry.status,
+          amount: moneyToString(entry.amount),
+          currency: entry.currency,
+        })),
+      });
+    }
+
+    cheques.sort(
+      (a, b) => b.daysSince - a.daysSince || a.chequeNumber.localeCompare(b.chequeNumber),
+    );
+    const byCurrency = new Map<string, { count: number; remaining: Prisma.Decimal[] }>();
+    for (const cheque of cheques) {
+      const entry = byCurrency.get(cheque.currency) ?? { count: 0, remaining: [] };
+      entry.count += 1;
+      entry.remaining.push(toMoney(cheque.remaining));
+      byCurrency.set(cheque.currency, entry);
+    }
+
+    return {
+      count: cheques.length,
+      byCurrency: [...byCurrency.entries()]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([currency, entry]) => ({
+          currency,
+          count: entry.count,
+          remaining: moneyToString(sumMoney(entry.remaining)),
+        })),
+      cheques,
+    };
   }
 
   /** Who or what currently holds the company's cheques. */

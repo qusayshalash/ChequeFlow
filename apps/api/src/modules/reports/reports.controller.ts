@@ -74,6 +74,13 @@ export class ReportsController {
     return this.reports.depositSlip(user, query);
   }
 
+  @Get('reports/bounced')
+  @RequirePermissions(Permission.REPORT_VIEW)
+  @ApiOperation({ summary: 'Bounced or returned cheques not yet covered by replacements' })
+  bounced(@CurrentUser() user: RequestUser) {
+    return this.reports.bounced(user);
+  }
+
   @Get('reports/custody')
   @RequirePermissions(Permission.REPORT_VIEW)
   @ApiOperation({ summary: 'Which safe or employee currently holds each cheque' })

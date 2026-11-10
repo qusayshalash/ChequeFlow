@@ -2,6 +2,7 @@ import type {
   AuthTokens,
   BankSettingsView,
   BankView,
+  BouncedReportView,
   BranchView,
   ChequeDetailView,
   ChequeEventView,
@@ -270,6 +271,10 @@ export class ChequeFlowApiClient {
   }
 
   /** The day's deposit run: cheques in hand and due, grouped by bank. */
+  getBouncedReport() {
+    return this.request<BouncedReportView>('/reports/bounced');
+  }
+
   getDepositSlip(query: { on?: string; branchId?: string; bankId?: string } = {}) {
     return this.request<DepositSlipView>('/reports/deposit-slip', { query });
   }
@@ -482,8 +487,11 @@ export class ChequeFlowApiClient {
     return this.request<ContactView>('/contacts', { method: 'POST', body: input });
   }
 
-  getContactStatement(id: string) {
-    return this.request<ContactStatementView>(`/contacts/${id}/statement`);
+  /** `full` lists every cheque, for a printed statement; the screen shows the latest. */
+  getContactStatement(id: string, options: { full?: boolean } = {}) {
+    return this.request<ContactStatementView>(`/contacts/${id}/statement`, {
+      query: options.full ? { full: 'true' } : {},
+    });
   }
 
   deleteContact(id: string) {

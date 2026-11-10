@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
 import {
@@ -12,7 +13,7 @@ import {
 } from '@cheque-flow/shared-types';
 import { EmptyState, ErrorState, LoadingState } from '@cheque-flow/ui';
 
-import { IconAlert, IconCalendar, IconSafe } from '@/components/icons';
+import { IconAlert, IconCalendar, IconReturn, IconSafe } from '@/components/icons';
 import { loadErrorRequestId, loadErrorTitle } from '@/lib/query-error';
 import { LineChart } from '@/components/line-chart';
 import { PageHeader } from '@/components/page-header';
@@ -110,6 +111,10 @@ function ReportsPageBody() {
     queryKey: ['reports', 'cash-flow', from, to, grain],
     queryFn: () => api.getCashFlowReport({ from, to, granularity: grain }),
   });
+  const bounced = useQuery({
+    queryKey: ['reports', 'bounced'],
+    queryFn: () => api.getBouncedReport(),
+  });
   const custody = useQuery({
     queryKey: ['reports', 'custody'],
     queryFn: () => api.getCustodyReport(),
@@ -170,6 +175,34 @@ function ReportsPageBody() {
     const totalIn = addMoney(rows.map((entry) => entry.row?.inflow));
     const totalOut = addMoney(rows.map((entry) => entry.row?.outflow));
 
+    // The question the lines leave the reader to work out: which periods
+    // pay out more than they take in, and where the running total stands.
+    // Only periods with a cheque in them; a quarter of empty days is noise.
+    let running = '0.00';
+    const table = rows.flatMap((entry) => {
+      const inflow = entry.row?.inflow ?? '0.00';
+      const outflow = entry.row?.outflow ?? '0.00';
+      const net = subtractMoney(inflow, outflow);
+      running = addMoney([running, net]);
+      if (isZeroMoney(inflow) && isZeroMoney(outflow)) return [];
+      return [
+        {
+          period: entry.period,
+          label:
+            grain === 'month'
+              ? entry.period.slice(0, 7)
+              : grain === 'week'
+                ? `${formatDayMonth(locale, entry.period)} – ${formatDayMonth(locale, addDays(entry.period, 6))}`
+                : formatDate(locale, entry.period),
+          inflow,
+          outflow,
+          net,
+          running,
+          short: isNegativeMoney(net),
+        },
+      ];
+    });
+
     return {
       labels: rows.map((entry) =>
         grain === 'month' ? entry.period.slice(0, 7) : formatDayMonth(locale, entry.period),
@@ -189,6 +222,7 @@ function ReportsPageBody() {
         },
       ],
       totals: { inflow: totalIn, outflow: totalOut, net: subtractMoney(totalIn, totalOut) },
+      table,
       empty: isZeroMoney(totalIn) && isZeroMoney(totalOut),
     };
   }, [cashFlow.data, shown, grain, from, to, today, locale, t]);
@@ -314,9 +348,26 @@ function ReportsPageBody() {
                 tone={isNegativeMoney(chart.totals.net) ? 'text-danger' : 'text-primary-ink'}
               />
             </div>
+
+            {chart.table.length > 0 ? <ForecastTable rows={chart.table} currency={shown!} /> : null}
           </>
         ) : null}
       </Panel>
+
+      {/* ── Bounced, still to be recovered ────────────────────────────── */}
+      {bounced.data ? (
+        <Link href="/reports/bounced" className="block rounded-2xl hover:shadow-md">
+          <Callout
+            Icon={IconReturn}
+            tone="red"
+            count={bounced.data.count}
+            label={t('bounced.title')}
+            lines={bounced.data.byCurrency.map((entry) =>
+              money(locale, entry.remaining, entry.currency),
+            )}
+          />
+        </Link>
+      ) : null}
 
       {/* ── Due in the window ─────────────────────────────────────────── */}
       <Panel title={t('reports.dueTitle')}>
@@ -400,6 +451,83 @@ function ReportsPageBody() {
           })}
         </div>
       </Panel>
+    </div>
+  );
+}
+
+function ForecastTable({
+  rows,
+  currency,
+}: {
+  rows: Array<{
+    period: string;
+    label: string;
+    inflow: string;
+    outflow: string;
+    net: string;
+    running: string;
+    short: boolean;
+  }>;
+  currency: string;
+}) {
+  const t = useTranslator();
+  const { locale } = useApp();
+  const shortCount = rows.filter((row) => row.short).length;
+  return (
+    <div className="mt-5">
+      <p
+        className={`mb-2 text-sm font-semibold ${shortCount > 0 ? 'text-danger' : 'text-ink-muted'}`}
+      >
+        {shortCount > 0
+          ? t('reports.shortPeriods', { count: shortCount })
+          : t('reports.noShortPeriods')}
+      </p>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[560px] border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-line text-xs text-ink-muted">
+              <th className="py-2 text-start font-semibold">{t('reports.period')}</th>
+              <th className="py-2 text-end font-semibold">{t('reports.inflow')}</th>
+              <th className="py-2 text-end font-semibold">{t('reports.outflow')}</th>
+              <th className="py-2 text-end font-semibold">{t('reports.net')}</th>
+              <th className="py-2 text-end font-semibold">{t('reports.running')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr
+                key={row.period}
+                className={`border-b border-line/60 ${row.short ? 'bg-danger-soft/50' : ''}`}
+              >
+                <td className="py-2">
+                  <span className="tabular-nums">{row.label}</span>
+                  {row.short ? (
+                    <span className="ms-2 rounded-full bg-danger-soft px-2 py-0.5 text-[11px] font-bold text-danger">
+                      {t('reports.short')}
+                    </span>
+                  ) : null}
+                </td>
+                <td className="py-2 text-end tabular-nums text-primary-ink">
+                  {money(locale, row.inflow, currency)}
+                </td>
+                <td className="py-2 text-end tabular-nums text-danger">
+                  {money(locale, row.outflow, currency)}
+                </td>
+                <td
+                  className={`py-2 text-end font-bold tabular-nums ${row.short ? 'text-danger' : 'text-ink'}`}
+                >
+                  {money(locale, row.net, currency)}
+                </td>
+                <td
+                  className={`py-2 text-end tabular-nums ${isNegativeMoney(row.running) ? 'text-danger' : 'text-ink-soft'}`}
+                >
+                  {money(locale, row.running, currency)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

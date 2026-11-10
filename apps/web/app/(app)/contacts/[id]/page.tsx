@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { use, useState } from 'react';
 
@@ -91,15 +92,23 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
         title={contact.name}
         subtitle={t(`contactType.${contact.type}`)}
         actions={
-          canManage ? (
-            <Button
-              variant="secondary"
-              className="border-danger-line text-danger hover:border-danger-line hover:bg-danger-soft"
-              onClick={() => setConfirmDelete(true)}
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href={`/contacts/${id}/statement`}
+              className="inline-flex min-h-11 items-center rounded-xl border border-line bg-surface px-4 text-sm font-semibold text-ink hover:border-line-strong"
             >
-              {t('common.delete')}
-            </Button>
-          ) : undefined
+              {t('contact.printStatement')}
+            </Link>
+            {canManage ? (
+              <Button
+                variant="secondary"
+                className="border-danger-line text-danger hover:border-danger-line hover:bg-danger-soft"
+                onClick={() => setConfirmDelete(true)}
+              >
+                {t('common.delete')}
+              </Button>
+            ) : null}
+          </div>
         }
       />
 
