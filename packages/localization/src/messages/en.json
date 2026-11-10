@@ -61,7 +61,11 @@
     "unlockFailed": "Verification failed — try again",
     "username": "User name",
     "usernameHint": "User name or email address",
-    "welcome": "Welcome"
+    "welcome": "Welcome",
+    "welcomeBack": "Welcome back",
+    "featureForecast": "Day-by-day liquidity",
+    "featureReminders": "WhatsApp reminders",
+    "featureRisk": "Contacts to watch"
   },
   "backup": {
     "restoreKeyMismatch": "Not restored: this backup was encrypted with a different key from this server's, and restoring it would leave every account number unreadable. Set the server's FIELD_ENCRYPTION_KEY to the value it had when the backup was taken, then try again.",

@@ -59,6 +59,15 @@ export function IconSearch(props: IconProps) {
   );
 }
 
+export function IconMessage(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.1A8 8 0 1 1 20 12Z" />
+      <path d="M9 11h6M9 14h4" />
+    </Icon>
+  );
+}
+
 export function IconCalendar(props: IconProps) {
   return (
     <Icon {...props}>

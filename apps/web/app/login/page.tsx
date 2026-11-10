@@ -6,7 +6,7 @@ import { useState, type FormEvent } from 'react';
 import { ApiClientError } from '@cheque-flow/api-client';
 import { Button, Field, inputClassName } from '@cheque-flow/ui';
 
-import { IconCheque, IconClock, IconLogo, IconShield } from '@/components/icons';
+import { IconCalendar, IconLogo, IconMessage, IconShield } from '@/components/icons';
 import { useApi, useTranslator } from '@/components/providers';
 
 export default function LoginPage() {
@@ -53,7 +53,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <div className="relative max-w-xl py-12">
+        <div className="relative max-w-xl py-10">
           <p className="mb-4 text-xs font-semibold tracking-[0.18em] text-hero-accent">
             ENTERPRISE WORKSPACE
           </p>
@@ -64,30 +64,76 @@ export default function LoginPage() {
             {t('auth.productSubtitle')}
           </p>
 
-          <ul className="mt-10 grid gap-3">
-            {[
-              { Icon: IconCheque, labelKey: 'auth.featureTracking' },
-              { Icon: IconClock, labelKey: 'auth.featureOperations' },
-              { Icon: IconShield, labelKey: 'auth.featureSecurity' },
-            ].map(({ Icon: FeatureIcon, labelKey }) => (
-              <li
-                key={labelKey}
-                className="flex items-center gap-3 rounded-2xl border border-hero-ink/[0.07] bg-hero-ink/[0.04] p-3.5 text-sm text-hero-ink/75"
-              >
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-hero-accent/10 text-hero-accent">
-                  <FeatureIcon width="18" height="18" />
+          {/* A picture of the product rather than a list about it: the
+              projected-balance curve the dashboard opens on, with its low
+              point marked. Decorative, so it carries no figures that could be
+              read as someone's books, and is hidden from screen readers. */}
+          <div
+            aria-hidden="true"
+            className="mt-10 rounded-3xl border border-hero-ink/[0.08] bg-hero-ink/[0.04] p-5 backdrop-blur"
+          >
+            <div className="mb-3 flex items-center gap-2">
+              <span className="h-2 w-16 rounded-full bg-hero-ink/20" />
+              <span className="ms-auto h-2 w-10 rounded-full bg-hero-accent/50" />
+            </div>
+            <svg viewBox="0 0 400 120" className="h-28 w-full" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="loginCurve" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--app-hero-accent)" stopOpacity="0.35" />
+                  <stop offset="100%" stopColor="var(--app-hero-accent)" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              <line
+                x1="0"
+                x2="400"
+                y1="84"
+                y2="84"
+                stroke="var(--app-hero-ink)"
+                strokeOpacity="0.18"
+                strokeDasharray="4 6"
+              />
+              <path
+                d="M400,30 L360,26 L320,40 L280,34 L240,58 L200,96 L160,88 L120,54 L80,46 L40,30 L0,22 L0,120 L400,120 Z"
+                fill="url(#loginCurve)"
+              />
+              <path
+                d="M400,30 L360,26 L320,40 L280,34 L240,58 L200,96 L160,88 L120,54 L80,46 L40,30 L0,22"
+                fill="none"
+                stroke="var(--app-hero-accent)"
+                strokeWidth="3"
+                strokeLinejoin="round"
+              />
+              <circle cx="200" cy="96" r="5" fill="var(--app-danger-solid)" />
+            </svg>
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              {[
+                { Icon: IconCalendar, labelKey: 'auth.featureForecast' },
+                { Icon: IconMessage, labelKey: 'auth.featureReminders' },
+                { Icon: IconShield, labelKey: 'auth.featureRisk' },
+              ].map(({ Icon: FeatureIcon, labelKey }) => (
+                <span
+                  key={labelKey}
+                  className="flex flex-col items-start gap-2 rounded-2xl bg-hero-ink/[0.05] p-3 text-xs text-hero-ink/75"
+                >
+                  <span className="flex size-8 items-center justify-center rounded-xl bg-hero-accent/10 text-hero-accent">
+                    <FeatureIcon width="16" height="16" />
+                  </span>
+                  {t(labelKey)}
                 </span>
-                {t(labelKey)}
-              </li>
-            ))}
-          </ul>
+              ))}
+            </div>
+          </div>
         </div>
 
         <p className="relative text-xs text-hero-ink/30">© 2026 {t('common.appName')}</p>
       </aside>
 
-      <section className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-10 lg:px-16">
-        <div className="w-full max-w-[460px]">
+      <section className="relative flex min-h-screen items-center justify-center overflow-hidden px-5 py-10 sm:px-10 lg:px-16">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,color-mix(in_srgb,var(--app-primary)_14%,transparent),transparent_45%)]"
+        />
+        <div className="relative w-full max-w-[460px]">
           <div className="mb-10 flex items-center gap-3 lg:hidden">
             <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-on-primary">
               <IconLogo width="22" height="22" />
@@ -98,7 +144,7 @@ export default function LoginPage() {
           <div className="rounded-3xl border border-line/90 bg-surface p-6 shadow-[0_24px_60px_-42px_rgb(16_24_40/0.5)] sm:p-8">
             <span className="mb-4 block h-1 w-9 rounded-full bg-primary" />
             <h2 className="text-3xl font-bold tracking-[-0.03em] text-ink">
-              {t('auth.loginTitle')}
+              {t('auth.welcomeBack')}
             </h2>
             <p className="mt-2 mb-8 text-sm leading-6 text-ink-muted">{t('auth.loginSubtitle')}</p>
 
