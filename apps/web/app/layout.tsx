@@ -21,7 +21,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const locale = defaultLocale();
 
   return (
-    <html lang={locale} dir={getDirection(locale)}>
+    // The theme script below sets data-theme on this element before React
+    // hydrates; the server cannot know it, so the difference is expected here
+    // and only here (the flag covers this element's attributes, not its tree).
+    <html lang={locale} dir={getDirection(locale)} suppressHydrationWarning>
       <head>
         {/*
           Runs before the first paint, which is the whole point: a theme

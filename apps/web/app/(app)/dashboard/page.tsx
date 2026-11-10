@@ -4,15 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
-import {
-  ChequeStatus,
-  headlineTotal,
-  addMoney,
-  type DashboardSummary,
-} from '@cheque-flow/shared-types';
+import { headlineTotal, addMoney, type DashboardSummary } from '@cheque-flow/shared-types';
 import { EmptyState, ErrorState, LoadingState } from '@cheque-flow/ui';
 
-import { AttentionList } from '@/components/attention-list';
 import { loadErrorRequestId, loadErrorTitle } from '@/lib/query-error';
 import { BankMark } from '@/components/bank-mark';
 import {
@@ -22,20 +16,19 @@ import {
   IconChevronEnd,
   IconClock,
   IconDots,
-  IconReturn,
 } from '@/components/icons';
-import { LineChart } from '@/components/line-chart';
+import { BalanceCurve } from '@/components/balance-curve';
 import { PageHeader } from '@/components/page-header';
 import { StatCard } from '@/components/stat-card';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import { formatDate, formatDayMonth, money } from '@/lib/format';
 import { useToday } from '@/lib/today';
 
-/** Windows the chart offers, in days back from today. */
-const WINDOWS = [
-  { days: 30, labelKey: 'dashboard.last30Days' },
-  { days: 7, labelKey: 'dashboard.last7Days' },
-  { days: 90, labelKey: 'dashboard.last90Days' },
+/** How far ahead the projected balance looks, in days from today. */
+const HORIZONS = [
+  { days: 30, labelKey: 'dashboard.next30Days' },
+  { days: 7, labelKey: 'dashboard.next7Days' },
+  { days: 90, labelKey: 'dashboard.next90Days' },
 ] as const;
 
 /** `YYYY-MM-DD` shifted by whole days. */
@@ -79,45 +72,32 @@ export default function DashboardPage() {
       // Private mode or blocked storage: the choice simply lasts this visit.
     }
   };
-  const [windowDays, setWindowDays] = useState<number>(30);
-
-  // Centred on today: half the window behind, half ahead. The chart's job is
-  // to put what has happened next to what is coming, and a window that ends
-  // today would show only the first of those.
-  const chartFrom = addDays(today, -Math.round(windowDays * 0.7));
-  const chartTo = addDays(today, Math.round(windowDays * 0.3));
+  const [horizon, setHorizon] = useState<number>(30);
+  const forecastTo = addDays(today, horizon);
 
   const dashboard = useQuery<DashboardSummary>({
     queryKey: ['dashboard'],
     queryFn: () => api.getDashboard(),
   });
 
-  const cashFlow = useQuery({
-    queryKey: ['dashboard-cash-flow', chartFrom, chartTo],
-    queryFn: () => api.getCashFlowReport({ from: chartFrom, to: chartTo, granularity: 'day' }),
+  // What is coming, day by day: the projected balance and the net figure at
+  // the top are both read off it. It starts today; cheques already overdue
+  // are on the cards below, not folded into a forecast as if they were dated.
+  const forecast = useQuery({
+    queryKey: ['dashboard-forecast', today, forecastTo],
+    queryFn: () => api.getCashFlowReport({ from: today, to: forecastTo, granularity: 'day' }),
   });
 
-  // Deliberately not tied to the chart's window. "What is coming" is a
-  // separate question from "what does the last month look like", and pinning
-  // it to a seven-day chart emptied the table on a book whose next cheque is
-  // three weeks out.
+  // Deliberately not tied to the forecast's horizon. "What is coming" in the
+  // table is the next few cheques, however far out the first one is.
   const due = useQuery({
     queryKey: ['dashboard-due'],
     queryFn: () => api.getDueReport({ from: today, to: addDays(today, 90), includeOverdue: false }),
   });
 
-  // The red series. Bounced cheques are real records with real dates, so the
-  // line is read off them rather than modelled — there is no cash-flow series
-  // for refusals, and inventing one on a finance dashboard is not an option.
-  const bounced = useQuery({
-    queryKey: ['dashboard-bounced', chartFrom, chartTo],
-    queryFn: () =>
-      api.listCheques({
-        status: [ChequeStatus.BOUNCED],
-        dueFrom: chartFrom,
-        dueTo: chartTo,
-        pageSize: 100,
-      }),
+  const risk = useQuery({
+    queryKey: ['dashboard-contact-risk'],
+    queryFn: () => api.getContactRisk(),
   });
 
   const currencies = useMemo(
@@ -136,7 +116,9 @@ export default function DashboardPage() {
     const blocks = dashboard.data?.currencies ?? [];
     const chosen = currency ? blocks.filter((entry) => entry.currency === currency) : blocks;
 
-    const bucket = (key: 'draft' | 'dueWithin7Days' | 'overdue' | 'bounced' | 'cleared') => ({
+    const bucket = (
+      key: 'draft' | 'dueWithin7Days' | 'overdue' | 'bounced' | 'cleared' | 'deposited',
+    ) => ({
       count: chosen.reduce((sum, entry) => sum + entry[key].count, 0),
       money: chosen
         .filter((entry) => entry[key].count > 0)
@@ -150,74 +132,58 @@ export default function DashboardPage() {
       overdue: bucket('overdue'),
       bounced: bucket('bounced'),
       cleared: bucket('cleared'),
+      deposited: bucket('deposited'),
     };
   }, [dashboard.data, currency, locale]);
 
   /**
-   * The chart, one point per day across the window.
+   * The projected balance, one point per day from today to the horizon.
    *
-   * Days are generated from the calendar rather than taken from the response:
-   * the report only returns days that contain cheques, so a quiet fortnight
-   * would collapse into a few stray points instead of showing the flat stretch
-   * that is the actual news.
-   *
-   * Everything from tomorrow on is drawn dashed. Those cheques are due, not
-   * banked, and one stroke for both would state more than the data supports.
+   * Days come from the calendar, not the response: the report returns only
+   * days with cheques on them, and a quiet stretch is a flat line, not a gap.
+   * The running total is kept as a money string; the numbers handed to the
+   * curve are for drawing only.
    */
-  const chart = useMemo(() => {
-    const pick = currency ?? currencies[0];
+  const projection = useMemo(() => {
+    // With "all" chosen, the currency the coming weeks are actually in: the
+    // first listed one may have nothing ahead, and a forecast of zero dollars
+    // beside a month of shekel cheques reads as "nothing coming".
+    const ahead = new Set(
+      (forecast.data?.periods ?? []).flatMap((period) =>
+        period.byCurrency.map((row) => row.currency),
+      ),
+    );
+    const pick =
+      currency ??
+      currencies.find((code) => ahead.has(code)) ??
+      dashboard.data?.defaultCurrency ??
+      currencies[0];
     if (!pick) return null;
-
-    const inflowByDay = new Map(
-      (cashFlow.data?.periods ?? []).map((period) => [
+    const byDay = new Map(
+      (forecast.data?.periods ?? []).map((period) => [
         period.period,
         period.byCurrency.find((row) => row.currency === pick),
       ]),
     );
-
-    const bouncedByDay = new Map<string, number>();
-    for (const cheque of bounced.data?.data ?? []) {
-      if (cheque.currency !== pick) continue;
-      bouncedByDay.set(
-        cheque.dueDate,
-        (bouncedByDay.get(cheque.dueDate) ?? 0) + Number(cheque.amount),
-      );
-    }
-
-    const days = daysBetween(chartFrom, chartTo);
-    const futureFrom = days.findIndex((day) => day > today);
-
+    const days = daysBetween(today, forecastTo);
+    let running = '0.00';
+    const points = days.map((day) => {
+      running = addMoney([running, byDay.get(day)?.net ?? '0.00']);
+      return { day, balance: running };
+    });
+    const low = points.reduce(
+      (lowest, point) => (Number(point.balance) < Number(lowest.balance) ? point : lowest),
+      points[0] ?? { day: today, balance: '0.00' },
+    );
     return {
       currency: pick,
-      days,
-      labels: days.map((day) => formatDayMonth(locale, day)),
-      series: [
-        {
-          label: t('dashboard.expectedFlow'),
-          values: days.map((day) => Number(inflowByDay.get(day)?.inflow ?? 0)),
-          color: 'var(--app-primary)',
-          fill: 'url(#flowFill)',
-          ...(futureFrom >= 0 ? { dashedFrom: futureFrom } : {}),
-        },
-        {
-          label: t('dashboard.collectedSeries'),
-          values: days.map((day) => Number(inflowByDay.get(day)?.outflow ?? 0)),
-          color: 'var(--app-success)',
-        },
-        {
-          label: t('dashboard.bouncedSeries'),
-          values: days.map((day) => bouncedByDay.get(day) ?? 0),
-          color: 'var(--app-danger-solid)',
-        },
-      ],
-      // Summed as strings: the series above are floats for drawing only.
-      netTotal: addMoney(
-        (cashFlow.data?.periods ?? []).map(
-          (period) => period.byCurrency.find((row) => row.currency === pick)?.net,
-        ),
-      ),
+      points,
+      low,
+      inflow: addMoney(days.map((day) => byDay.get(day)?.inflow)),
+      outflow: addMoney(days.map((day) => byDay.get(day)?.outflow)),
+      net: running,
     };
-  }, [cashFlow.data, bounced.data, currency, currencies, chartFrom, chartTo, today, locale, t]);
+  }, [forecast.data, currency, currencies, dashboard.data, today, forecastTo]);
 
   const upcomingAll = (due.data?.cheques ?? []).filter((cheque) =>
     currency ? cheque.currency === currency : true,
@@ -267,6 +233,49 @@ export default function DashboardPage() {
           ) : undefined
         }
       />
+
+      {/* The liquidity line: what the coming weeks add up to, in one figure,
+          with what makes it up beside it. */}
+      {projection ? (
+        <section className="mb-4 grid grid-cols-3 gap-x-3 gap-y-4 rounded-2xl border border-line/90 bg-gradient-to-bl from-surface-raised to-surface p-4 sm:grid-cols-[1.4fr_1fr_1fr_1fr] sm:gap-5 sm:p-5">
+          <div className="col-span-3 sm:col-span-1">
+            <p className="text-xs text-ink-muted">{t('dashboard.netAhead', { days: horizon })}</p>
+            <p
+              dir="ltr"
+              className={`mt-1 text-end text-3xl font-bold tabular-nums sm:text-4xl ${
+                projection.net.startsWith('-') ? 'text-danger' : 'text-primary-ink'
+              }`}
+            >
+              {money(locale, projection.net, projection.currency)}
+            </p>
+            <p className="mt-1 text-xs text-ink-muted">
+              {t('dashboard.netParts', {
+                inflow: money(locale, projection.inflow, projection.currency),
+                outflow: money(locale, projection.outflow, projection.currency),
+              })}
+            </p>
+          </div>
+          <HeroFigure
+            label={t('dashboard.dueWithin7Days')}
+            value={String(totals.dueSoon.count)}
+            note={totals.dueSoon.money || '—'}
+            tone="text-warning"
+          />
+          <HeroFigure
+            label={t('dashboard.atBank')}
+            value={String(totals.deposited.count)}
+            note={totals.deposited.money || '—'}
+            tone="text-ink-muted"
+          />
+          <HeroFigure
+            label={t('dashboard.bouncedCheques')}
+            value={String(totals.bounced.count)}
+            note={totals.bounced.money || '—'}
+            tone="text-danger"
+            valueTone={totals.bounced.count > 0 ? 'text-danger' : undefined}
+          />
+        </section>
+      ) : null}
 
       {/* Four headline figures, largest scope first: everything, then what is
           coming, then what is late, then what is not yet confirmed. */}
@@ -332,132 +341,108 @@ export default function DashboardPage() {
         />
       </div>
 
-      <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(320px,1fr)_minmax(0,1.75fr)] xl:items-stretch">
-        <AttentionList
-          items={[
-            {
-              key: 'overdue',
-              label: t('dashboard.overdueCheques'),
-              count: totals.overdue.count,
-              amount: totals.overdue.money,
-              tone: 'red',
-              Icon: IconAlert,
-              href: '/cheques/due',
-            },
-            {
-              key: 'due-soon',
-              label: t('dashboard.chequesWithin7'),
-              count: totals.dueSoon.count,
-              amount: totals.dueSoon.money,
-              tone: 'amber',
-              Icon: IconCalendar,
-              href: '/cheques/due',
-            },
-            {
-              key: 'bounced',
-              label: t('dashboard.bouncedCheques'),
-              count: totals.bounced.count,
-              amount: totals.bounced.money,
-              tone: 'teal',
-              Icon: IconReturn,
-              href: '/cheques/bounced',
-            },
-            {
-              key: 'pending',
-              label: t('dashboard.pendingConfirm'),
-              count: totals.draft.count,
-              amount: totals.draft.money,
-              tone: 'slate',
-              Icon: IconClock,
-              href: '/cheques/review',
-            },
-          ]}
-        />
-
-        <section className="min-w-0 rounded-2xl border border-line/90 bg-surface p-4 shadow-[0_1px_2px_rgb(16_24_40/0.04)]">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.75fr)_minmax(320px,1fr)] xl:items-stretch">
+        <section className="min-w-0 rounded-2xl border border-line/90 bg-surface p-4 sm:p-5">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-[15px] font-bold text-ink">{t('dashboard.projectedTitle')}</h2>
+              <p className="mt-0.5 text-xs text-ink-muted">{t('dashboard.projectedHint')}</p>
+            </div>
             <label className="inline-flex h-9 items-center gap-2 rounded-xl border border-line px-3 text-[13px] font-semibold text-ink-soft hover:border-line-strong">
               <IconCalendar width="15" height="15" className="text-ink-muted" />
               <select
                 className="bg-transparent pe-1 outline-none"
-                value={windowDays}
-                onChange={(event) => setWindowDays(Number(event.target.value))}
+                value={horizon}
+                onChange={(event) => setHorizon(Number(event.target.value))}
                 aria-label={t('common.period')}
               >
-                {WINDOWS.map((entry) => (
+                {HORIZONS.map((entry) => (
                   <option key={entry.days} value={entry.days}>
                     {t(entry.labelKey)}
                   </option>
                 ))}
               </select>
             </label>
-
-            {chart ? (
-              <div className="flex flex-wrap items-center gap-4 text-[11px] text-ink-muted">
-                {chart.series.map((entry) => (
-                  <Legend key={entry.label} color={entry.color} label={entry.label} />
-                ))}
-              </div>
-            ) : null}
           </div>
 
-          {cashFlow.isPending ? <LoadingState label={t('common.loading')} /> : null}
-
-          {chart ? (
+          {forecast.isPending ? <LoadingState label={t('common.loading')} /> : null}
+          {projection && !forecast.isPending ? (
             <>
-              <svg width="0" height="0" aria-hidden="true" className="absolute">
-                <defs>
-                  <linearGradient id="flowFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--app-primary)" stopOpacity="0.16" />
-                    <stop offset="100%" stopColor="var(--app-primary)" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-              </svg>
-
-              <LineChart
-                series={chart.series}
-                labels={chart.labels}
-                axisLabel={`${t('dashboard.amountAxisShort')} (${chart.currency})`}
-                height={230}
-                showPoints={false}
-                // Six dates across the axis, whatever the window length.
-                labelEvery={Math.max(1, Math.round(chart.labels.length / 6))}
+              <BalanceCurve
+                values={projection.points.map((point) => Number(point.balance))}
+                ariaLabel={t('dashboard.projectedTitle')}
               />
-
-              {/* The chart is hidden from screen readers; this is the same
-                  information as text. */}
-              <p className="sr-only">
-                {chart.series
-                  .map(
-                    (entry) =>
-                      `${entry.label}: ${entry.values
-                        .map((value, index) => `${chart.labels[index]} ${value}`)
-                        .join('، ')}`,
-                  )
-                  .join(' — ')}
-              </p>
-
-              <div className="mt-4 grid grid-cols-1 divide-line/70 rounded-xl bg-subtle/70 p-3 text-center sm:grid-cols-3 sm:divide-x sm:divide-x-reverse">
-                <Summary
-                  label={t('dashboard.totalCollected')}
-                  value={totals.cleared.money || money(locale, '0', chart.currency)}
-                  tone="text-primary-ink"
-                />
-                <Summary
-                  label={t('dashboard.totalBounced')}
-                  value={totals.bounced.money || money(locale, '0', chart.currency)}
-                  tone="text-danger"
-                />
-                <Summary
-                  label={t('dashboard.netExpected')}
-                  value={money(locale, chart.netTotal, chart.currency)}
-                  tone="text-primary-ink"
-                />
+              <div className="mt-1 flex justify-between text-[11px] text-ink-muted tabular-nums">
+                <span>{formatDayMonth(locale, today)}</span>
+                <span>{formatDayMonth(locale, forecastTo)}</span>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                {Number(projection.low.balance) < 0 ? (
+                  <span className="rounded-lg bg-danger-soft px-2.5 py-1.5 font-bold text-danger">
+                    {t('dashboard.lowestPoint', { date: formatDate(locale, projection.low.day) })}{' '}
+                    <span dir="ltr">
+                      {money(locale, projection.low.balance, projection.currency)}
+                    </span>
+                  </span>
+                ) : (
+                  <span className="rounded-lg bg-success-soft px-2.5 py-1.5 font-bold text-success">
+                    {t('dashboard.neverShort')}
+                  </span>
+                )}
+                <span className="text-ink-muted">{t('dashboard.zeroLine')}</span>
               </div>
             </>
-          ) : cashFlow.isPending ? null : (
-            <EmptyState title={t('reports.empty')} />
-          )}
+          ) : null}
+        </section>
+
+        <section className="min-w-0 rounded-2xl border border-line/90 bg-surface p-4 sm:p-5">
+          <div className="mb-2 flex items-baseline justify-between gap-2">
+            <h2 className="text-[15px] font-bold text-ink">{t('dashboard.riskTitle')}</h2>
+            <span className="text-xs text-ink-muted">{t('dashboard.riskOrder')}</span>
+          </div>
+          {risk.isPending ? <LoadingState label={t('common.loading')} /> : null}
+          {risk.data && risk.data.length === 0 ? (
+            <p className="py-6 text-center text-sm text-ink-muted">{t('dashboard.riskEmpty')}</p>
+          ) : null}
+          <ul className="divide-y divide-line">
+            {(risk.data ?? []).map((entry) => (
+              <li key={entry.contactId}>
+                <Link
+                  href={`/contacts/${entry.contactId}`}
+                  className="flex items-center gap-3 py-3 hover:bg-subtle/40"
+                >
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-subtle text-sm font-bold text-ink-soft">
+                    {entry.name.trim().charAt(0)}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[13px] font-semibold text-ink">
+                      {entry.name}
+                    </span>
+                    <span className="block text-[11px] text-ink-muted">
+                      {entry.decided > 0
+                        ? t('dashboard.riskLine', {
+                            rate: Math.round((entry.bounced / entry.decided) * 100),
+                            open: entry.openBounced,
+                          })
+                        : t('dashboard.riskNew')}
+                    </span>
+                    <span
+                      className={`mt-1 inline-block rounded-md px-1.5 py-0.5 text-[10px] font-bold ${RISK_TONE[entry.level]}`}
+                    >
+                      {t(`dashboard.risk.${entry.level}`)}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-end text-[13px] font-bold text-ink tabular-nums">
+                    {entry.outstanding.map((row) => (
+                      <span key={row.currency} className="block" dir="ltr">
+                        {money(locale, row.total, row.currency)}
+                      </span>
+                    ))}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </section>
       </div>
 
@@ -604,24 +589,34 @@ function CurrencyChip({
   );
 }
 
-function Legend({ color, label }: { color: string; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <span
-        className="inline-block h-[3px] w-4 rounded-full"
-        style={{ backgroundColor: color }}
-        aria-hidden="true"
-      />
-      {label}
-    </span>
-  );
-}
+const RISK_TONE = {
+  high: 'bg-danger-soft text-danger',
+  medium: 'bg-warning-soft text-warning',
+  low: 'bg-success-soft text-success',
+} as const;
 
-function Summary({ label, value, tone }: { label: string; value: string; tone: string }) {
+function HeroFigure({
+  label,
+  value,
+  note,
+  tone,
+  valueTone,
+}: {
+  label: string;
+  value: string;
+  note: string;
+  tone: string;
+  valueTone?: string;
+}) {
   return (
-    <div className="px-2 py-1">
-      <p className="text-[11px] font-medium text-ink-muted">{label}</p>
-      <p className={`mt-1 text-[15px] font-bold tabular-nums ${tone}`}>{value}</p>
+    <div className="min-w-0">
+      <p className="truncate text-[11px] text-ink-muted sm:text-xs">{label}</p>
+      <p className={`mt-1 text-2xl font-bold tabular-nums sm:text-3xl ${valueTone ?? 'text-ink'}`}>
+        {value}
+      </p>
+      <p className={`mt-1 truncate text-[11px] tabular-nums sm:text-xs ${tone}`} title={note}>
+        {note}
+      </p>
     </div>
   );
 }

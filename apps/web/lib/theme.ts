@@ -16,7 +16,12 @@ export const THEME_CHOICES = ['system', 'light', 'dark'] as const;
 
 export type ThemeChoice = (typeof THEME_CHOICES)[number];
 
-export const DEFAULT_THEME_CHOICE: ThemeChoice = 'system';
+/**
+ * Dark, unless someone has chosen otherwise: the product's look is the dark
+ * one, and light remains a choice in the settings, as does following the
+ * system.
+ */
+export const DEFAULT_THEME_CHOICE: ThemeChoice = 'dark';
 
 /** Where the choice is kept. Also written into the pre-paint script below. */
 export const THEME_STORAGE_KEY = 'chequeflow.theme';
@@ -69,4 +74,4 @@ export function storeThemeChoice(choice: ThemeChoice): void {
  * sees the system's theme flash before their own replaces it. That flash is
  * the entire reason this string exists rather than a `useEffect`.
  */
-export const THEME_BOOT_SCRIPT = `try{var c=localStorage.getItem('${THEME_STORAGE_KEY}');if(c==='light'||c==='dark')document.documentElement.setAttribute('data-theme',c)}catch(e){}`;
+export const THEME_BOOT_SCRIPT = `try{var c=localStorage.getItem('${THEME_STORAGE_KEY}');if(c!=='system')document.documentElement.setAttribute('data-theme',c==='light'?'light':'dark')}catch(e){document.documentElement.setAttribute('data-theme','dark')}`;

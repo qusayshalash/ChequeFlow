@@ -6,6 +6,7 @@ import {
   OUTSTANDING_CHEQUE_STATUSES,
   todayIn,
   type BouncedChequeView,
+  type ContactRiskView,
   type BouncedReportView,
   type Bucket,
   type DashboardCurrencyTotals,
@@ -556,6 +557,100 @@ export class ReportsService {
         })),
       cheques,
     };
+  }
+
+  /**
+   * The contacts most worth watching: those we still expect money from, or
+   * who have a returned cheque open, riskiest first.
+   *
+   * Counted the way a contact's own page counts it (incoming cheques with it
+   * as the source; one that bounced and later cleared is one outcome that came
+   * back), in one query rather than one per contact.
+   */
+  async contactRisk(user: RequestUser, limit = 6): Promise<ContactRiskView[]> {
+    const rows = await this.prisma.db.$queryRaw<
+      Array<{
+        contact_id: string;
+        name: string;
+        decided: bigint;
+        bounced: bigint;
+        open_bounced: bigint;
+        open_count: bigint;
+      }>
+    >`
+      SELECT k.id AS contact_id, k.name,
+             COUNT(*) FILTER (WHERE c.status = 'CLEARED' OR came.back) AS decided,
+             COUNT(*) FILTER (WHERE came.back) AS bounced,
+             COUNT(*) FILTER (WHERE c.status IN ('BOUNCED', 'RETURNED')) AS open_bounced,
+             COUNT(*) FILTER (
+               WHERE c.status = ANY(${OUTSTANDING_CHEQUE_STATUSES}::"ChequeStatus"[])
+             ) AS open_count
+      FROM cheques c
+      JOIN contacts k ON k.id = c.original_source_id
+      CROSS JOIN LATERAL (
+        SELECT EXISTS (
+          SELECT 1 FROM cheque_events e
+          WHERE e.cheque_id = c.id AND e.to_status IN ('BOUNCED', 'RETURNED')
+        ) AS back
+      ) came
+      WHERE c.organization_id = ${user.organizationId}::uuid
+        AND c.deleted_at IS NULL
+        AND c.direction = 'INCOMING'
+      GROUP BY k.id, k.name
+    `;
+
+    const watched = rows.filter((row) => row.open_count > 0n || row.open_bounced > 0n);
+    if (watched.length === 0) return [];
+
+    const sums = await this.prisma.db.cheque.groupBy({
+      by: ['originalSourceId', 'currency'],
+      where: {
+        organizationId: user.organizationId,
+        deletedAt: null,
+        direction: ChequeDirection.INCOMING,
+        status: { in: [...OUTSTANDING] },
+        originalSourceId: { in: watched.map((row) => row.contact_id) },
+      },
+      _sum: { amount: true },
+    });
+
+    const levelOf = (decided: number, bounced: number, open: number): ContactRiskView['level'] =>
+      open > 0 || (decided >= 3 && bounced / decided >= 0.3)
+        ? 'high'
+        : bounced > 0
+          ? 'medium'
+          : 'low';
+    const rank = { high: 0, medium: 1, low: 2 } as const;
+
+    return watched
+      .map((row) => {
+        const decided = Number(row.decided);
+        const bounced = Number(row.bounced);
+        const openBounced = Number(row.open_bounced);
+        return {
+          contactId: row.contact_id,
+          name: row.name,
+          level: levelOf(decided, bounced, openBounced),
+          decided,
+          bounced,
+          openBounced,
+          outstanding: sums
+            .filter((entry) => entry.originalSourceId === row.contact_id)
+            .sort((a, b) => a.currency.localeCompare(b.currency))
+            .map((entry) => ({
+              currency: entry.currency,
+              total: moneyToString(entry._sum.amount ?? toMoney('0')),
+            })),
+        };
+      })
+      .sort(
+        (a, b) =>
+          rank[a.level] - rank[b.level] ||
+          b.openBounced - a.openBounced ||
+          b.bounced - a.bounced ||
+          a.name.localeCompare(b.name),
+      )
+      .slice(0, limit);
   }
 
   /** Who or what currently holds the company's cheques. */

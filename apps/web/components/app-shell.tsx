@@ -30,6 +30,7 @@ import {
 } from '@/components/icons';
 
 import { useTranslator } from '@/components/providers';
+import { BottomNav } from '@/components/bottom-nav';
 import { TopBar } from '@/components/top-bar';
 import { useSession } from '@/components/session';
 
@@ -313,10 +314,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="min-w-0 flex-1">
         <TopBar onOpenMenu={() => setMenuOpen(true)} />
 
-        <main id="main-content" className="min-w-0 px-4 py-6 lg:px-7 lg:py-7 xl:px-9">
+        {/* Room at the bottom on a phone, so the last row is not under the bar. */}
+        <main id="main-content" className="min-w-0 px-4 pt-6 pb-28 lg:px-7 lg:py-7 xl:px-9">
           {children}
         </main>
       </div>
+      <BottomNav onOpenMenu={() => setMenuOpen(true)} />
     </div>
   );
 }

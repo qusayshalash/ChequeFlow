@@ -211,65 +211,65 @@
     color-scheme: dark;
 
     /* Surfaces, from the page up to a raised card */
-    --app-bg: #0d1414;
-    --app-surface: #131d1c;
-    --app-surface-subtle: #172321;
-    --app-surface-sunken: #101a19;
-    --app-surface-raised: #1a2725;
+    --app-bg: #0d1117;
+    --app-surface: #151b24;
+    --app-surface-subtle: #1b2330;
+    --app-surface-sunken: #10151d;
+    --app-surface-raised: #1f2836;
 
     /* Lines: a hairline, the ordinary rule, and a deliberate edge */
-    --app-border-soft: #1e2c2a;
-    --app-border: #2a3836;
-    --app-border-strong: #3a4a47;
+    --app-border-soft: #1c2532;
+    --app-border: #253042;
+    --app-border-strong: #34415a;
 
     /* Ink, from the heading down to what the eye may skip */
-    --app-text: #edf4f2;
-    --app-text-secondary: #b4c1be;
-    --app-text-muted: #94a3a0;
-    --app-text-faint: #7d8b87;
+    --app-text: #e8edf5;
+    --app-text-secondary: #b3bdcc;
+    --app-text-muted: #94a0b4;
+    --app-text-faint: #7e8aa0;
 
     /* The brand, and what may be written on top of it */
-    --app-primary: #42b9a3;
-    --app-primary-hover: #58c7b2;
-    --app-primary-soft: #153e37;
-    --app-primary-ink: #6fd8bf;
-    --app-on-primary: #04211c;
+    --app-primary: #34d3a6;
+    --app-primary-hover: #4fe0b7;
+    --app-primary-soft: #12352d;
+    --app-primary-ink: #5fe3bd;
+    --app-on-primary: #06231d;
 
     /* The four things the product has to say about a state */
-    --app-danger: #f5989b;
-    --app-danger-soft: #35191b;
-    --app-danger-line: #50272a;
-    --app-danger-solid: #e2686c;
-    --app-on-danger: #1a0b0c;
-    --app-warning: #e5b263;
-    --app-warning-soft: #322413;
-    --app-warning-line: #4b381c;
-    --app-success: #5bcda2;
+    --app-danger: #ff7a6e;
+    --app-danger-soft: #381a1a;
+    --app-danger-line: #5a2a28;
+    --app-danger-solid: #ff6b5e;
+    --app-on-danger: #1f0705;
+    --app-warning: #f4b740;
+    --app-warning-soft: #33270f;
+    --app-warning-line: #4d3a14;
+    --app-success: #4fd39b;
     --app-success-soft: #0f2f25;
     --app-success-line: #1d4a3a;
     --app-on-success: #04211c;
-    --app-info: #7cb8ec;
-    --app-info-soft: #12283d;
-    --app-info-line: #1f4160;
+    --app-info: #7cb4ff;
+    --app-info-soft: #13233d;
+    --app-info-line: #213a60;
 
     /* What a dialog is pushed forward from */
     --app-scrim: #000000;
 
     /* The sign-in slab, dark by design rather than by setting */
-    --app-hero: #0a1211;
-    --app-hero-ink: #edf4f2;
-    --app-hero-accent: #6ee7b7;
-    --app-hero-glow: #34d399;
+    --app-hero: #0a0e14;
+    --app-hero-ink: #e8edf5;
+    --app-hero-accent: #34d3a6;
+    --app-hero-glow: #34d3a6;
 
     /* The sidebar, which is its own surface in both themes */
-    --app-sidebar: #0d1514;
-    --app-sidebar-text: #edf4f2;
-    --app-sidebar-muted: #a7b6b3;
-    --app-sidebar-section: #93a29f;
-    --app-sidebar-line: #223230;
-    --app-sidebar-hover: #16211f;
-    --app-sidebar-active-bg: #14332d;
-    --app-sidebar-active-text: #6fd8bf;
+    --app-sidebar: #10151d;
+    --app-sidebar-text: #e8edf5;
+    --app-sidebar-muted: #a3aec0;
+    --app-sidebar-section: #8b97ab;
+    --app-sidebar-line: #1f2836;
+    --app-sidebar-hover: #18202b;
+    --app-sidebar-active-bg: #12352d;
+    --app-sidebar-active-text: #5fe3bd;
 
     /* Identity marks — a name always gets the same hue */
     --app-mark-teal: #123c36;
@@ -301,65 +301,65 @@
   color-scheme: dark;
 
   /* Surfaces, from the page up to a raised card */
-  --app-bg: #0d1414;
-  --app-surface: #131d1c;
-  --app-surface-subtle: #172321;
-  --app-surface-sunken: #101a19;
-  --app-surface-raised: #1a2725;
+  --app-bg: #0d1117;
+  --app-surface: #151b24;
+  --app-surface-subtle: #1b2330;
+  --app-surface-sunken: #10151d;
+  --app-surface-raised: #1f2836;
 
   /* Lines: a hairline, the ordinary rule, and a deliberate edge */
-  --app-border-soft: #1e2c2a;
-  --app-border: #2a3836;
-  --app-border-strong: #3a4a47;
+  --app-border-soft: #1c2532;
+  --app-border: #253042;
+  --app-border-strong: #34415a;
 
   /* Ink, from the heading down to what the eye may skip */
-  --app-text: #edf4f2;
-  --app-text-secondary: #b4c1be;
-  --app-text-muted: #94a3a0;
-  --app-text-faint: #7d8b87;
+  --app-text: #e8edf5;
+  --app-text-secondary: #b3bdcc;
+  --app-text-muted: #94a0b4;
+  --app-text-faint: #7e8aa0;
 
   /* The brand, and what may be written on top of it */
-  --app-primary: #42b9a3;
-  --app-primary-hover: #58c7b2;
-  --app-primary-soft: #153e37;
-  --app-primary-ink: #6fd8bf;
-  --app-on-primary: #04211c;
+  --app-primary: #34d3a6;
+  --app-primary-hover: #4fe0b7;
+  --app-primary-soft: #12352d;
+  --app-primary-ink: #5fe3bd;
+  --app-on-primary: #06231d;
 
   /* The four things the product has to say about a state */
-  --app-danger: #f5989b;
-  --app-danger-soft: #35191b;
-  --app-danger-line: #50272a;
-  --app-danger-solid: #e2686c;
-  --app-on-danger: #1a0b0c;
-  --app-warning: #e5b263;
-  --app-warning-soft: #322413;
-  --app-warning-line: #4b381c;
-  --app-success: #5bcda2;
+  --app-danger: #ff7a6e;
+  --app-danger-soft: #381a1a;
+  --app-danger-line: #5a2a28;
+  --app-danger-solid: #ff6b5e;
+  --app-on-danger: #1f0705;
+  --app-warning: #f4b740;
+  --app-warning-soft: #33270f;
+  --app-warning-line: #4d3a14;
+  --app-success: #4fd39b;
   --app-success-soft: #0f2f25;
   --app-success-line: #1d4a3a;
   --app-on-success: #04211c;
-  --app-info: #7cb8ec;
-  --app-info-soft: #12283d;
-  --app-info-line: #1f4160;
+  --app-info: #7cb4ff;
+  --app-info-soft: #13233d;
+  --app-info-line: #213a60;
 
   /* What a dialog is pushed forward from */
   --app-scrim: #000000;
 
   /* The sign-in slab, dark by design rather than by setting */
-  --app-hero: #0a1211;
-  --app-hero-ink: #edf4f2;
-  --app-hero-accent: #6ee7b7;
-  --app-hero-glow: #34d399;
+  --app-hero: #0a0e14;
+  --app-hero-ink: #e8edf5;
+  --app-hero-accent: #34d3a6;
+  --app-hero-glow: #34d3a6;
 
   /* The sidebar, which is its own surface in both themes */
-  --app-sidebar: #0d1514;
-  --app-sidebar-text: #edf4f2;
-  --app-sidebar-muted: #a7b6b3;
-  --app-sidebar-section: #93a29f;
-  --app-sidebar-line: #223230;
-  --app-sidebar-hover: #16211f;
-  --app-sidebar-active-bg: #14332d;
-  --app-sidebar-active-text: #6fd8bf;
+  --app-sidebar: #10151d;
+  --app-sidebar-text: #e8edf5;
+  --app-sidebar-muted: #a3aec0;
+  --app-sidebar-section: #8b97ab;
+  --app-sidebar-line: #1f2836;
+  --app-sidebar-hover: #18202b;
+  --app-sidebar-active-bg: #12352d;
+  --app-sidebar-active-text: #5fe3bd;
 
   /* Identity marks — a name always gets the same hue */
   --app-mark-teal: #123c36;

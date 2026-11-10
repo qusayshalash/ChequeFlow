@@ -382,6 +382,22 @@ export interface BouncedChequeView {
   replacements: ChequeLinkView[];
 }
 
+/** One contact on the dashboard's risk list. */
+export interface ContactRiskView {
+  contactId: string;
+  name: string;
+  /**
+   * high: a returned cheque still open, or three in ten coming back;
+   * medium: has bounced before; low: a clean record so far.
+   */
+  level: 'high' | 'medium' | 'low';
+  decided: number;
+  bounced: number;
+  openBounced: number;
+  /** Incoming cheques from them still to be collected, per currency. */
+  outstanding: Array<{ currency: string; total: MoneyString }>;
+}
+
 export interface BouncedReportView {
   count: number;
   /** What is still to be recovered, per currency; never summed across them. */

@@ -9,6 +9,7 @@ import type {
   ChequeImageView,
   ChequeSummaryView,
   ContactReliabilityView,
+  ContactRiskView,
   ContactStatementView,
   ContactListItemView,
   ContactView,
@@ -272,6 +273,10 @@ export class ChequeFlowApiClient {
   }
 
   /** The day's deposit run: cheques in hand and due, grouped by bank. */
+  getContactRisk() {
+    return this.request<ContactRiskView[]>('/reports/contact-risk');
+  }
+
   getBouncedReport() {
     return this.request<BouncedReportView>('/reports/bounced');
   }

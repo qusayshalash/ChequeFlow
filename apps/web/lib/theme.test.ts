@@ -234,9 +234,17 @@ function fakeRoot() {
 }
 
 describe('choosing a theme by hand', () => {
-  it('offers the system as an answer, not as the absence of one', () => {
+  it('offers the system as an answer, and starts in dark', () => {
     expect(THEME_CHOICES).toEqual(['system', 'light', 'dark']);
-    expect(DEFAULT_THEME_CHOICE).toBe('system');
+    // Dark is the product's look; light and "follow the system" are choices.
+    expect(DEFAULT_THEME_CHOICE).toBe('dark');
+  });
+
+  it('paints dark before the first paint when nothing is stored', () => {
+    // A stored "system" leaves the attribute off; anything else that is not
+    // "light", nothing stored included, is dark.
+    expect(LIB).toContain("if(c!=='system')");
+    expect(LIB).toContain("c==='light'?'light':'dark'");
   });
 
   it('hands the question back to the stylesheet for "system"', () => {

@@ -465,7 +465,28 @@
     "viewAllAlerts": "عرض جميع التنبيهات",
     "viewAllCheques": "عرض جميع الشيكات",
     "totalIncoming": "إجمالي الشيكات الواردة",
-    "totalOutgoing": "إجمالي الشيكات الصادرة"
+    "totalOutgoing": "إجمالي الشيكات الصادرة",
+    "next30Days": "الـ 30 يومًا القادمة",
+    "next7Days": "الـ 7 أيام القادمة",
+    "next90Days": "الـ 90 يومًا القادمة",
+    "projectedTitle": "الرصيد المتوقع يومًا بيوم",
+    "projectedHint": "ما يدخل ناقص ما يخرج من اليوم فصاعدًا، حسب تواريخ الاستحقاق",
+    "lowestPoint": "أدنى نقطة: {date}",
+    "neverShort": "لا يوجد يوم يخرج فيه أكثر مما دخل",
+    "zeroLine": "الخط المتقطع = صفر",
+    "riskTitle": "جهات تحتاج متابعة",
+    "riskOrder": "حسب الخطر",
+    "riskEmpty": "لا توجد جهات عليها شيكات مفتوحة",
+    "riskLine": "نسبة إرجاع {rate}% · {open} راجع مفتوح",
+    "riskNew": "لا سجل بعد",
+    "risk": {
+      "high": "مرتفع",
+      "medium": "متوسط",
+      "low": "منخفض"
+    },
+    "netAhead": "صافي المتوقع خلال {days} يومًا",
+    "netParts": "وارد {inflow} − صادر {outflow}",
+    "atBank": "في البنك"
   },
   "diagnostics": {
     "database": "قاعدة البيانات",
@@ -604,7 +625,10 @@
     "users": "المستخدمون",
     "workspace": "مساحة العمل",
     "banks": "البنوك",
-    "chequeImport": "استيراد من Excel"
+    "chequeImport": "استيراد من Excel",
+    "today": "اليوم",
+    "more": "المزيد",
+    "mainNavigation": "التنقل الرئيسي"
   },
   "ocr": {
     "confidence": "درجة الثقة",

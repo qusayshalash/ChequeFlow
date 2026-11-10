@@ -81,6 +81,13 @@ export class ReportsController {
     return this.reports.bounced(user);
   }
 
+  @Get('reports/contact-risk')
+  @RequirePermissions(Permission.CHEQUE_VIEW)
+  @ApiOperation({ summary: 'The contacts most worth watching, riskiest first' })
+  contactRisk(@CurrentUser() user: RequestUser) {
+    return this.reports.contactRisk(user);
+  }
+
   @Get('reports/custody')
   @RequirePermissions(Permission.REPORT_VIEW)
   @ApiOperation({ summary: 'Which safe or employee currently holds each cheque' })

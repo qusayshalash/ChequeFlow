@@ -465,7 +465,28 @@
     "viewAllAlerts": "View all alerts",
     "viewAllCheques": "View all cheques",
     "totalIncoming": "Incoming cheques",
-    "totalOutgoing": "Outgoing cheques"
+    "totalOutgoing": "Outgoing cheques",
+    "next30Days": "Next 30 days",
+    "next7Days": "Next 7 days",
+    "next90Days": "Next 90 days",
+    "projectedTitle": "Projected balance, day by day",
+    "projectedHint": "What comes in minus what goes out from today, by due date",
+    "lowestPoint": "Lowest point: {date}",
+    "neverShort": "No day pays out more than has come in",
+    "zeroLine": "Dashed line = zero",
+    "riskTitle": "Contacts to watch",
+    "riskOrder": "By risk",
+    "riskEmpty": "No contact has open cheques",
+    "riskLine": "{rate}% bounce rate · {open} open returned",
+    "riskNew": "No history yet",
+    "risk": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "netAhead": "Net expected over {days} days",
+    "netParts": "In {inflow} − out {outflow}",
+    "atBank": "At the bank"
   },
   "diagnostics": {
     "database": "Database",
@@ -604,7 +625,10 @@
     "users": "Users",
     "workspace": "Workspace",
     "banks": "Banks",
-    "chequeImport": "Import from Excel"
+    "chequeImport": "Import from Excel",
+    "today": "Today",
+    "more": "More",
+    "mainNavigation": "Main navigation"
   },
   "ocr": {
     "confidence": "Confidence",

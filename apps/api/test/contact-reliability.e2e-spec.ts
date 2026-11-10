@@ -142,4 +142,32 @@ describeWithDb('contact reliability (e2e)', () => {
       .set({ Authorization: `Bearer ${otherToken}` })
       .expect(404);
   });
+
+  it('lists the contact on the risk report by the same counts, and only for its organization', async () => {
+    const risk = (token: string) =>
+      request(app.getHttpServer())
+        .get(`${API}/reports/contact-risk`)
+        .set({ Authorization: `Bearer ${token}` })
+        .expect(200);
+
+    const mine = (await risk(token)).body as Array<{
+      contactId: string;
+      level: string;
+      decided: number;
+      bounced: number;
+      openBounced: number;
+      outstanding: Array<{ currency: string; total: string }>;
+    }>;
+    const entry = mine.find((row) => row.contactId === fixtures.customerId);
+    // Bounced once, since paid: it came back, but nothing is open.
+    expect(entry).toMatchObject({
+      level: 'medium',
+      decided: 2,
+      bounced: 1,
+      openBounced: 0,
+      outstanding: [{ currency: 'USD', total: '100.00' }],
+    });
+
+    expect((await risk(otherToken)).body).toEqual([]);
+  });
 });
