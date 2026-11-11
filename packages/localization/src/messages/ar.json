@@ -266,7 +266,8 @@
     "to": "إلى",
     "updateSuccess": "تم تحديث بيانات الشيك",
     "withCompany": "بحوزة الشركة",
-    "resultsCount": "{count} شيك"
+    "resultsCount": "{count} شيك",
+    "currencyChangeHint": "عند تغيير العملة يُحذف سعر الصرف السابق، لأنه يخص العملة القديمة."
   },
   "common": {
     "actions": "الإجراءات",

@@ -547,12 +547,17 @@ export class ChequeService {
       );
     }
 
+    // The currency is part of the value: 1,000 dinars changed to 1,000 shekels
+    // is as much a change of what the cheque is worth as a new amount, so it
+    // is held to the same rule, and recorded the same way.
     const amountChanged =
-      input.amount !== undefined && moneyToString(existing.amount) !== input.amount;
+      (input.amount !== undefined && moneyToString(existing.amount) !== input.amount) ||
+      (input.currency !== undefined && input.currency !== existing.currency);
     const dueDateChanged =
       input.dueDate !== undefined && existing.dueDate.toISOString().slice(0, 10) !== input.dueDate;
 
-    // Changing the amount of an already reviewed cheque is a sensitive action.
+    // Changing the amount (or currency) of an already reviewed cheque is a
+    // sensitive action.
     if (amountChanged && existing.reviewedAt !== null) {
       if (!user.permissions.includes('cheque.cancel')) {
         throw AppError.forbidden('Changing the amount after review requires cheque.cancel', {

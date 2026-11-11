@@ -266,7 +266,8 @@
     "to": "To",
     "updateSuccess": "Cheque updated",
     "withCompany": "With the company",
-    "resultsCount": "{count} cheques"
+    "resultsCount": "{count} cheques",
+    "currencyChangeHint": "Changing the currency clears the old exchange rate, which belonged to the old currency."
   },
   "common": {
     "actions": "Actions",

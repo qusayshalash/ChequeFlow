@@ -8,14 +8,20 @@ import {
   type ChequeDetailView,
   type DuplicateChequeMatch,
 } from '@cheque-flow/shared-types';
-import { updateChequeSchema } from '@cheque-flow/validation';
+import { COMMON_CURRENCIES, updateChequeSchema } from '@cheque-flow/validation';
 
 import { DuplicatePrompt } from '@/components/duplicate-prompt';
 import { FormScreen } from '@/components/form-screen';
 import { useApi, useApp, useTranslator } from '@/components/providers';
-import { Banner, DateField, ErrorView, Field, LoadingView, Section } from '@/components/ui';
+import { Banner, DateField, ErrorView, Field, LoadingView, Picker, Section } from '@/components/ui';
 import { fieldErrorsFrom, validateForm, type FieldErrors } from '@/lib/form';
 import * as haptics from '@/lib/haptics';
+
+/**
+ * The currencies offered, with the cheque's own first if it is not one of
+ * them, so a cheque in an unusual currency can still be saved unchanged.
+ */
+const CURRENCIES: readonly string[] = COMMON_CURRENCIES;
 
 /**
  * Corrects cheque data.
@@ -41,6 +47,7 @@ export default function EditChequeScreen() {
 
   const [chequeNumber, setChequeNumber] = useState('');
   const [amount, setAmount] = useState('');
+  const [currency, setCurrency] = useState('');
   const [amountInWords, setAmountInWords] = useState('');
   const [issueDate, setIssueDate] = useState('');
   const [dueDate, setDueDate] = useState('');
@@ -60,6 +67,7 @@ export default function EditChequeScreen() {
     if (!cheque) return;
     setChequeNumber(cheque.chequeNumber);
     setAmount(cheque.amount);
+    setCurrency(cheque.currency);
     setAmountInWords(cheque.amountInWords ?? '');
     setIssueDate(cheque.issueDate ?? '');
     setDueDate(cheque.dueDate);
@@ -71,7 +79,9 @@ export default function EditChequeScreen() {
 
   // As an amount, not as text: `500` typed over a stored `500.00` is no change,
   // and asking for a reason for it was asking to justify nothing.
-  const amountChanged = Boolean(cheque) && !sameMoney(amount, cheque?.amount);
+  // The currency counts as the value too: the server asks the same reason for it.
+  const amountChanged =
+    Boolean(cheque) && (!sameMoney(amount, cheque?.amount) || currency !== cheque?.currency);
   const reasonRequired = amountChanged && cheque?.reviewedAt !== null;
 
   const mutation = useMutation({
@@ -81,6 +91,8 @@ export default function EditChequeScreen() {
       const validated = validateForm(updateChequeSchema, {
         chequeNumber: chequeNumber.trim(),
         amount: amount.trim(),
+        // Only when it moved: an unchanged currency must not reset the rate.
+        ...(currency !== cheque.currency ? { currency } : {}),
         amountInWords: amountInWords.trim() || null,
         issueDate: issueDate || null,
         dueDate,
@@ -174,8 +186,18 @@ export default function EditChequeScreen() {
           error={error('amount')}
           keyboardType="numeric"
           ltr
-          hint={amount ? money(amount, cheque.currency) : undefined}
+          hint={amount && currency ? money(amount, currency) : undefined}
         />
+        <Picker
+          label={t('cheque.currency')}
+          options={(CURRENCIES.includes(cheque.currency)
+            ? CURRENCIES
+            : [cheque.currency, ...CURRENCIES]
+          ).map((code) => ({ value: code, label: code }))}
+          value={currency}
+          onChange={setCurrency}
+        />
+        {currency !== cheque.currency ? <Banner text={t('cheque.currencyChangeHint')} /> : null}
         <Field
           label={t('cheque.amountInWords')}
           value={amountInWords}
