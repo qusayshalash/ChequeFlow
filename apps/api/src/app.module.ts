@@ -16,6 +16,7 @@ import { BackupModule } from './modules/backup/backup.module';
 import { ChequeImagesModule } from './modules/cheque-images/cheque-images.module';
 import { ChequesModule } from './modules/cheques/cheques.module';
 import { ContactsModule } from './modules/contacts/contacts.module';
+import { StatementLinksModule } from './modules/statement-links/statement-links.module';
 import { DiagnosticsModule } from './modules/diagnostics/diagnostics.module';
 import { HealthModule } from './modules/health/health.module';
 import { OcrModule } from './modules/ocr/ocr.module';
@@ -66,6 +67,7 @@ import { UsersModule } from './modules/users/users.module';
     }),
     AuthModule,
     ContactsModule,
+    StatementLinksModule,
     ChequesModule,
     ChequeImagesModule,
     OcrModule,

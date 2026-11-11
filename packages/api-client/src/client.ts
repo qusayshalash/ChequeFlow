@@ -19,7 +19,9 @@ import type {
   DuplicateChequeMatch,
   LocationView,
   Paginated,
+  PublicStatementView,
   RoleView,
+  StatementLinkView,
   UserView,
 } from '@cheque-flow/shared-types';
 import type {
@@ -492,6 +494,32 @@ export class ChequeFlowApiClient {
 
   createContact(input: CreateContactInput) {
     return this.request<ContactView>('/contacts', { method: 'POST', body: input });
+  }
+
+  /** A link that shows this contact its statement. The token comes back once. */
+  createStatementLink(contactId: string, days: 1 | 7 | 14 | 30) {
+    return this.request<StatementLinkView & { token: string }>(
+      `/contacts/${contactId}/statement-links`,
+      { method: 'POST', body: { days } },
+    );
+  }
+
+  listStatementLinks(contactId: string) {
+    return this.request<StatementLinkView[]>(`/contacts/${contactId}/statement-links`);
+  }
+
+  revokeStatementLink(contactId: string, linkId: string) {
+    return this.request<StatementLinkView>(`/contacts/${contactId}/statement-links/${linkId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  /** The statement behind a share link: no account, no token of ours involved. */
+  getPublicStatement(token: string) {
+    return this.request<PublicStatementView>(`/public/statements/${encodeURIComponent(token)}`, {
+      // Sent without the staff member's token, even when one is signed in.
+      anonymous: true,
+    });
   }
 
   getContactReliability(id: string) {

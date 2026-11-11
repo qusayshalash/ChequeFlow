@@ -993,7 +993,9 @@
     "bank_created": "Bank added",
     "bank_updated": "Bank edited",
     "bank_deleted": "Bank deleted",
-    "role_permissions_changed": "Role permissions changed"
+    "role_permissions_changed": "Role permissions changed",
+    "statement_link_created": "Statement link created",
+    "statement_link_revoked": "Statement link revoked"
   },
   "auditEntity": {
     "cheque": "Cheque",
@@ -1003,7 +1005,8 @@
     "session": "Session",
     "user": "User",
     "bank": "Bank",
-    "role": "Role"
+    "role": "Role",
+    "statement_link": "Statement link"
   },
   "bank": {
     "add": "Add bank",
@@ -1112,5 +1115,40 @@
     "users": "Staff accounts and their roles",
     "roles": "What each role may do",
     "audit": "A record of everything done in the system"
+  },
+  "statementLinks": {
+    "title": "Statement link",
+    "hint": "A link where the contact sees only their own statement and cheques, without an account. It ends on its own, and you can revoke it at any time.",
+    "validFor": "Valid for",
+    "days": {
+      "1": "One day",
+      "7": "A week",
+      "14": "Two weeks",
+      "30": "A month"
+    },
+    "create": "Create link",
+    "shownOnce": "This link is shown only once: copy or send it now.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "sendWhatsapp": "Send on WhatsApp",
+    "message": "Here is the link to your statement with us, valid until {date}:",
+    "state": {
+      "active": "Active",
+      "expired": "Expired",
+      "revoked": "Revoked"
+    },
+    "until": "Until {date}",
+    "views": "Opened {count} times",
+    "revoke": "Revoke"
+  },
+  "sharedStatement": {
+    "unavailableTitle": "Link unavailable",
+    "unavailable": "This link has expired, was revoked, or is wrong. Ask whoever sent it for a new one.",
+    "validUntil": "Valid until",
+    "owedByYou": "Owed by you",
+    "owedToYou": "Owed to you",
+    "part": "Part",
+    "fromYou": "From you",
+    "toYou": "To you"
   }
 }

@@ -51,6 +51,26 @@ describe('ChequeFlowApiClient', () => {
     expect((init.headers as Record<string, string>).Authorization).toBeUndefined();
   });
 
+  it('reads a shared statement without the signed-in token', async () => {
+    // A staff member opening a share link must not hand the API their own
+    // session with it: the link is the only credential that page has.
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({ cheques: [] }));
+    const store = new MemoryTokenStore();
+    await store.setTokens(tokens);
+
+    const client = new ChequeFlowApiClient({
+      baseUrl: 'http://api.test',
+      tokenStore: store,
+      fetchImpl,
+    });
+    await client.getPublicStatement('a-token/with?odd&chars');
+
+    const [url, init] = fetchImpl.mock.calls[0] as [string, RequestInit];
+    expect((init.headers as Record<string, string>).Authorization).toBeUndefined();
+    // The token is a path segment, encoded, never a query parameter.
+    expect(url).toBe('http://api.test/public/statements/a-token%2Fwith%3Fodd%26chars');
+  });
+
   it('serializes array and scalar query parameters', async () => {
     const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({ data: [], meta: {} }));
     const client = new ChequeFlowApiClient({ baseUrl: 'http://api.test', fetchImpl });

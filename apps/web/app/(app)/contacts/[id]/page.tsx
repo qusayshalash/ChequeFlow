@@ -16,6 +16,7 @@ import {
 import { Badge, Button, ErrorState, LoadingState, SuccessBanner } from '@cheque-flow/ui';
 
 import { ChequeTable } from '@/components/cheque-table';
+import { StatementLinksPanel } from '@/components/statement-links-panel';
 import { ReliabilitySummary } from '@/components/contact-reliability';
 import { WhatsAppReminder } from '@/components/whatsapp-reminder';
 import { useToday } from '@/lib/today';
@@ -398,6 +399,11 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
             })}
           </div>
         </Panel>
+      ) : null}
+
+      {/* Managing contacts is what sharing their statement needs, as on the server. */}
+      {canManage ? (
+        <StatementLinksPanel contactId={id} contactName={contact.name} phone={contact.phone} />
       ) : null}
 
       <Panel title={t('reliability.title')}>

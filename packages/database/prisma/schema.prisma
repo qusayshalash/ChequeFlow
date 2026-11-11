@@ -135,15 +135,16 @@ model Organization {
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  branches     Branch[]
-  users        User[]
-  roles        Role[]
-  contacts     Contact[]
-  bankAccounts BankAccount[]
-  banks        Bank[]
-  locations    Location[]
-  cheques      Cheque[]
-  auditLogs    AuditLog[]
+  branches       Branch[]
+  users          User[]
+  roles          Role[]
+  contacts       Contact[]
+  bankAccounts   BankAccount[]
+  banks          Bank[]
+  statementLinks StatementLink[]
+  locations      Location[]
+  cheques        Cheque[]
+  auditLogs      AuditLog[]
 
   @@map("organizations")
 }
@@ -171,23 +172,23 @@ model Branch {
 }
 
 model User {
-  id             String     @id @default(uuid()) @db.Uuid
-  organizationId String     @map("organization_id") @db.Uuid
-  branchId       String?    @map("branch_id") @db.Uuid
-  name           String
-  email          String
-  phone          String?
-  passwordHash   String     @map("password_hash")
-  status         UserStatus @default(ACTIVE)
-  lastLoginAt    DateTime?  @map("last_login_at") @db.Timestamptz(3)
+  id               String     @id @default(uuid()) @db.Uuid
+  organizationId   String     @map("organization_id") @db.Uuid
+  branchId         String?    @map("branch_id") @db.Uuid
+  name             String
+  email            String
+  phone            String?
+  passwordHash     String     @map("password_hash")
+  status           UserStatus @default(ACTIVE)
+  lastLoginAt      DateTime?  @map("last_login_at") @db.Timestamptz(3)
   /// Consecutive failed sign-ins since the last success. Reset on success,
   /// and when the account is locked, so a lock that expires starts afresh.
-  failedLoginCount Int       @default(0) @map("failed_login_count")
+  failedLoginCount Int        @default(0) @map("failed_login_count")
   /// Sign-in is refused until this moment, without the password being
   /// checked — so a guess made during the lock cannot be told right or wrong.
-  lockedUntil      DateTime? @map("locked_until") @db.Timestamptz(3)
-  createdAt      DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt      DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  lockedUntil      DateTime?  @map("locked_until") @db.Timestamptz(3)
+  createdAt        DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   branch        Branch?        @relation(fields: [branchId], references: [id], onDelete: SetNull)
@@ -204,9 +205,10 @@ model User {
   eventsFromUser  ChequeEvent[] @relation("EventFromUser")
   eventsToUser    ChequeEvent[] @relation("EventToUser")
 
-  uploadedImages ChequeImage[] @relation("ImageUploadedBy")
+  uploadedImages ChequeImage[]   @relation("ImageUploadedBy")
   reminders      Reminder[]
   devices        DeviceToken[]
+  statementLinks StatementLink[]
 
   @@unique([organizationId, email])
   @@index([organizationId])
@@ -290,32 +292,33 @@ model RefreshToken {
 }
 
 model Contact {
-  id             String      @id @default(uuid()) @db.Uuid
-  organizationId String      @map("organization_id") @db.Uuid
-  type           ContactType
-  name           String
-  companyName    String?     @map("company_name")
-  phone          String?
-  email          String?
-  taxNumber      String?     @map("tax_number")
-  nationalId     String?     @map("national_id")
-  address        String?
-  notes          String?
+  id                  String      @id @default(uuid()) @db.Uuid
+  organizationId      String      @map("organization_id") @db.Uuid
+  type                ContactType
+  name                String
+  companyName         String?     @map("company_name")
+  phone               String?
+  email               String?
+  taxNumber           String?     @map("tax_number")
+  nationalId          String?     @map("national_id")
+  address             String?
+  notes               String?
   /// Ceiling of uncollected cheques the business will hold from this contact.
   /// NULL means nobody has decided yet — never "unlimited".
-  creditLimit         Decimal? @map("credit_limit") @db.Decimal(18, 2)
+  creditLimit         Decimal?    @map("credit_limit") @db.Decimal(18, 2)
   /// A ceiling means nothing without a currency, so the two travel together.
-  creditLimitCurrency String?  @map("credit_limit_currency") @db.Char(3)
-  isActive       Boolean     @default(true) @map("is_active")
-  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt      DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+  creditLimitCurrency String?     @map("credit_limit_currency") @db.Char(3)
+  isActive            Boolean     @default(true) @map("is_active")
+  createdAt           DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  sourcedCheques   Cheque[] @relation("ChequeOriginalSource")
-  receivedCheques  Cheque[] @relation("ChequeCurrentRecipient")
-  eventsFromContact ChequeEvent[] @relation("EventFromContact")
-  eventsToContact   ChequeEvent[] @relation("EventToContact")
+  sourcedCheques    Cheque[]        @relation("ChequeOriginalSource")
+  receivedCheques   Cheque[]        @relation("ChequeCurrentRecipient")
+  eventsFromContact ChequeEvent[]   @relation("EventFromContact")
+  eventsToContact   ChequeEvent[]   @relation("EventToContact")
+  statementLinks    StatementLink[]
 
   @@index([organizationId, type])
   @@index([organizationId, name])
@@ -328,15 +331,15 @@ model Contact {
 /// it alone. Codes are unique among the reference banks and within each
 /// organization, by partial indexes in the migration that added this.
 model Bank {
-  id             String   @id @default(uuid()) @db.Uuid
-  organizationId String?  @map("organization_id") @db.Uuid
-  country        String   @db.Char(2)
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String?   @map("organization_id") @db.Uuid
+  country        String    @db.Char(2)
   name           String
   code           String
-  logoUrl        String?  @map("logo_url")
+  logoUrl        String?   @map("logo_url")
   /// Hidden from the pickers; cheques already drawn on it keep it.
-  isActive       Boolean  @default(true) @map("is_active")
-  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  isActive       Boolean   @default(true) @map("is_active")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   /// Only an organization's own bank with no cheques is ever deleted.
   deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(3)
 
@@ -384,7 +387,7 @@ model Location {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   branch       Branch?      @relation(fields: [branchId], references: [id], onDelete: SetNull)
 
-  cheques           Cheque[]      @relation("ChequeCurrentLocation")
+  cheques            Cheque[]      @relation("ChequeCurrentLocation")
   eventsFromLocation ChequeEvent[] @relation("EventFromLocation")
   eventsToLocation   ChequeEvent[] @relation("EventToLocation")
 
@@ -423,12 +426,12 @@ model Cheque {
   /// The bounced or returned cheque this one was written to replace.
   /// Without it, three replacements for one debt read as three unrelated
   /// cheques and the customer's history looks cleaner than it was.
-  replacesChequeId    String? @map("replaces_cheque_id") @db.Uuid
-  originalSourceId    String? @map("original_source_id") @db.Uuid
-  originalPayeeName   String? @map("original_payee_name")
-  currentHolderId     String? @map("current_holder_id") @db.Uuid
-  currentRecipientId  String? @map("current_recipient_id") @db.Uuid
-  currentLocationId   String? @map("current_location_id") @db.Uuid
+  replacesChequeId   String? @map("replaces_cheque_id") @db.Uuid
+  originalSourceId   String? @map("original_source_id") @db.Uuid
+  originalPayeeName  String? @map("original_payee_name")
+  currentHolderId    String? @map("current_holder_id") @db.Uuid
+  currentRecipientId String? @map("current_recipient_id") @db.Uuid
+  currentLocationId  String? @map("current_location_id") @db.Uuid
 
   status          ChequeStatus @default(DRAFT)
   /// Reason the bank gave for refusing payment, and the fee it charged.
@@ -439,8 +442,8 @@ model Cheque {
   referenceNumber String?      @map("reference_number")
   notes           String?
 
-  ocrStatus             OcrStatus @default(NOT_STARTED) @map("ocr_status")
-  ocrOverallConfidence  Decimal?  @map("ocr_overall_confidence") @db.Decimal(5, 4)
+  ocrStatus            OcrStatus @default(NOT_STARTED) @map("ocr_status")
+  ocrOverallConfidence Decimal?  @map("ocr_overall_confidence") @db.Decimal(5, 4)
 
   createdBy  String?   @map("created_by") @db.Uuid
   reviewedBy String?   @map("reviewed_by") @db.Uuid
@@ -526,23 +529,23 @@ model OcrExtraction {
 /// Append-only ledger of everything that happened to a cheque.
 /// UPDATE and DELETE are blocked by a database trigger.
 model ChequeEvent {
-  id             String          @id @default(uuid()) @db.Uuid
-  chequeId       String          @map("cheque_id") @db.Uuid
-  eventType      ChequeEventType @map("event_type")
-  fromStatus     ChequeStatus?   @map("from_status")
-  toStatus       ChequeStatus?   @map("to_status")
-  fromContactId  String?         @map("from_contact_id") @db.Uuid
-  toContactId    String?         @map("to_contact_id") @db.Uuid
-  fromUserId     String?         @map("from_user_id") @db.Uuid
-  toUserId       String?         @map("to_user_id") @db.Uuid
-  fromLocationId String?         @map("from_location_id") @db.Uuid
-  toLocationId   String?         @map("to_location_id") @db.Uuid
-  eventDate      DateTime        @default(now()) @map("event_date") @db.Timestamptz(3)
-  notes          String?
-  proofAttachmentId String?      @map("proof_attachment_id") @db.Uuid
-  performedBy    String?         @map("performed_by") @db.Uuid
-  approvedBy     String?         @map("approved_by") @db.Uuid
-  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  id                String          @id @default(uuid()) @db.Uuid
+  chequeId          String          @map("cheque_id") @db.Uuid
+  eventType         ChequeEventType @map("event_type")
+  fromStatus        ChequeStatus?   @map("from_status")
+  toStatus          ChequeStatus?   @map("to_status")
+  fromContactId     String?         @map("from_contact_id") @db.Uuid
+  toContactId       String?         @map("to_contact_id") @db.Uuid
+  fromUserId        String?         @map("from_user_id") @db.Uuid
+  toUserId          String?         @map("to_user_id") @db.Uuid
+  fromLocationId    String?         @map("from_location_id") @db.Uuid
+  toLocationId      String?         @map("to_location_id") @db.Uuid
+  eventDate         DateTime        @default(now()) @map("event_date") @db.Timestamptz(3)
+  notes             String?
+  proofAttachmentId String?         @map("proof_attachment_id") @db.Uuid
+  performedBy       String?         @map("performed_by") @db.Uuid
+  approvedBy        String?         @map("approved_by") @db.Uuid
+  createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
 
   cheque       Cheque    @relation(fields: [chequeId], references: [id], onDelete: Cascade)
   fromContact  Contact?  @relation("EventFromContact", fields: [fromContactId], references: [id], onDelete: SetNull)
@@ -629,4 +632,27 @@ model AuditLog {
   @@index([organizationId, entityType, entityId])
   @@index([userId])
   @@map("audit_logs")
+}
+
+/// A link that shows one contact its own statement, without an account.
+/// Only a SHA-256 of the token is stored: a copy of the database does not
+/// hand out working links. It expires on its own and can be revoked.
+model StatementLink {
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  contactId      String    @map("contact_id") @db.Uuid
+  tokenHash      String    @unique @map("token_hash")
+  createdBy      String?   @map("created_by") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt      DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt      DateTime? @map("revoked_at") @db.Timestamptz(3)
+  viewCount      Int       @default(0) @map("view_count")
+  lastViewedAt   DateTime? @map("last_viewed_at") @db.Timestamptz(3)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact      Contact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  creator      User?        @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, contactId])
+  @@map("statement_links")
 }

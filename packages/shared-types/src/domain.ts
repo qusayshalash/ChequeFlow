@@ -408,6 +408,46 @@ export interface ChequeListResult {
   }>;
 }
 
+/** A share link as its own contact page lists it. The token is never in it. */
+export interface StatementLinkView {
+  id: string;
+  createdAt: IsoDateTimeString;
+  expiresAt: IsoDateTimeString;
+  revokedAt: IsoDateTimeString | null;
+  viewCount: number;
+  lastViewedAt: IsoDateTimeString | null;
+}
+
+/**
+ * What the person holding a share link sees: their own account and nothing
+ * else. No account numbers, notes, storage places, staff, or the names of
+ * other contacts; a cheque is described by its part in the account
+ * (given by them, or handed to them), not by who else held it.
+ */
+export interface PublicStatementView {
+  organizationName: string;
+  contactName: string;
+  issuedOn: IsoDateString;
+  expiresAt: IsoDateTimeString;
+  currencies: Array<{
+    currency: string;
+    net: MoneyString;
+    pending: Bucket;
+    collected: Bucket;
+    bounced: Bucket;
+    returned: Bucket;
+  }>;
+  cheques: Array<{
+    chequeNumber: string;
+    amount: MoneyString;
+    currency: string;
+    dueDate: IsoDateString;
+    status: ChequeStatus;
+    bankName: string | null;
+    part: 'FROM_THEM' | 'TO_THEM';
+  }>;
+}
+
 /** One contact on the dashboard's risk list. */
 export interface ContactRiskView {
   contactId: string;
