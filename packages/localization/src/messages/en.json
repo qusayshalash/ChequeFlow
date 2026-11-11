@@ -267,7 +267,14 @@
     "updateSuccess": "Cheque updated",
     "withCompany": "With the company",
     "resultsCount": "{count} cheques",
-    "currencyChangeHint": "Changing the currency clears the old exchange rate, which belonged to the old currency."
+    "currencyChangeHint": "Changing the currency clears the old exchange rate, which belonged to the old currency.",
+    "addImage": "Add a photo",
+    "takePhoto": "Take photo",
+    "fromGallery": "From gallery",
+    "imageAdded": "Photo added",
+    "cameraDenied": "The camera cannot open: allow the app to use it in the phone settings.",
+    "imageDuplicate": "This photo is already on another cheque. Upload it anyway?",
+    "uploadAnyway": "Upload anyway"
   },
   "common": {
     "actions": "Actions",

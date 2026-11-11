@@ -3,10 +3,11 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { ChequeAction, type ChequeDetailView } from '@cheque-flow/shared-types';
+import { ChequeAction, Permission, type ChequeDetailView } from '@cheque-flow/shared-types';
 
 import { IconAlert, IconCalendar } from '@/components/icons';
 import { ChequeJourney } from '@/components/journey';
+import { AddChequeImage } from '@/components/add-cheque-image';
 import { ImageViewer } from '@/components/image-viewer';
 import { useApi, useApp, useTranslator } from '@/components/providers';
 import {
@@ -47,6 +48,10 @@ export default function ChequeDetailScreen() {
   const router = useRouter();
 
   const today = useToday();
+
+  // Adding a photograph needs the same permission as recording a cheque.
+  const session = useQuery({ queryKey: ['session'], queryFn: () => api.me() });
+  const canAddImages = session.data?.permissions.includes(Permission.CHEQUE_CREATE) ?? false;
 
   const query = useQuery<ChequeDetailView>({
     queryKey: ['cheque', id],
@@ -125,7 +130,7 @@ export default function ChequeDetailScreen() {
         />
       ) : null}
 
-      <ChequeImages chequeId={cheque.id} images={cheque.images} />
+      <ChequeImages chequeId={cheque.id} images={cheque.images} canAdd={canAddImages} />
 
       {/* The journey first, because it is the question the record is opened
           for: where did this cheque come from, where is it, where did it go.
@@ -246,9 +251,12 @@ export default function ChequeDetailScreen() {
 function ChequeImages({
   chequeId,
   images,
+  canAdd,
 }: {
   chequeId: string;
   images: ChequeDetailView['images'];
+  /** Uploading needs the create permission, as on the web. */
+  canAdd: boolean;
 }) {
   const styles = useStyles(makeStyles);
   const api = useApi();
@@ -278,6 +286,7 @@ function ChequeImages({
     return (
       <Card>
         <Body muted>{t('cheque.noImages')}</Body>
+        {canAdd ? <AddChequeImage chequeId={chequeId} /> : null}
       </Card>
     );
   }
@@ -323,6 +332,8 @@ function ChequeImages({
           );
         })}
       </ScrollView>
+
+      {canAdd ? <AddChequeImage chequeId={chequeId} /> : null}
 
       <ImageViewer
         url={opened ? (urls.data?.[opened] ?? null) : null}

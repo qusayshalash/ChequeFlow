@@ -43,6 +43,13 @@
         }
       ],
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "يستخدم التطبيق معرض الصور لإرفاق صورة الشيك.",
+          "cameraPermission": "يستخدم التطبيق الكاميرا لتصوير الشيكات."
+        }
+      ],
+      [
         "expo-local-authentication",
         {
           "faceIDPermission": "لفتح التطبيق باستخدام التعرف على الوجه."
