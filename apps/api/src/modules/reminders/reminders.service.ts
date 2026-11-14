@@ -233,6 +233,12 @@ export class RemindersService {
    * Reminders whose moment has arrived come first — those are the ones that
    * need action today — followed by the upcoming ones in date order.
    * Acknowledged reminders drop out of the feed entirely.
+   *
+   * One cheque is one entry: its automatic schedule (three days before, the
+   * day before, the day itself) is folded so the feed shows the latest alert
+   * that has arrived, or else the next one coming. A reminder someone set by
+   * hand keeps its own entry, since it carries their note. WhatsApp rows are
+   * records of a message already sent, not alerts, and stay out.
    */
   async listForUser(userId: string, limit = 50): Promise<ReminderView[]> {
     const rows = await this.prisma.db.reminder.findMany({
@@ -240,20 +246,71 @@ export class RemindersService {
         recipientUserId: userId,
         status: { in: ['SCHEDULED', 'SENT'] },
         acknowledgedAt: null,
+        channel: { not: 'WHATSAPP' },
         cheque: { deletedAt: null },
       },
       include: reminderInclude,
       orderBy: { remindAt: 'asc' },
-      take: limit,
+      // Folding drops rows, so read past the limit before cutting to it.
+      take: limit * 4,
     });
 
     const now = Date.now();
-    const views = rows.map((row) => toReminderView(row, now));
+    return RemindersService.fold(rows.map((row) => toReminderView(row, now))).slice(0, limit);
+  }
+
+  /**
+   * One entry per cheque for its automatic reminders, ordered for the feed.
+   *
+   * Pure, so the rule is unit tested without a database.
+   */
+  static fold(views: readonly ReminderView[]): ReminderView[] {
+    const kept = new Map<string, ReminderView>();
+    const custom: ReminderView[] = [];
+    for (const view of views) {
+      if (view.custom) {
+        custom.push(view);
+        continue;
+      }
+      const current = kept.get(view.cheque.id);
+      const better =
+        !current ||
+        // An alert that has arrived beats one still to come; among arrived
+        // ones the latest wins, among upcoming ones the nearest.
+        (view.isDue && !current.isDue) ||
+        (view.isDue && current.isDue && view.remindAt > current.remindAt) ||
+        (!view.isDue && !current.isDue && view.remindAt < current.remindAt);
+      if (better) kept.set(view.cheque.id, view);
+    }
 
     // Due first (most overdue at the top), then everything still upcoming.
-    return views.sort((a, b) => {
+    return [...kept.values(), ...custom].sort((a, b) => {
       if (a.isDue !== b.isDue) return a.isDue ? -1 : 1;
       return a.remindAt.localeCompare(b.remindAt);
+    });
+  }
+
+  /**
+   * Settles the automatic alerts on a cheque that came before this one.
+   *
+   * The feed shows a cheque's latest alert and hides the earlier ones behind
+   * it. Dealing with it, or putting it off, deals with those too: otherwise
+   * the alert from three days ago would surface in its place.
+   */
+  private async settleEarlier(
+    userId: string,
+    reminder: { chequeId: string; remindAt: Date; custom: boolean },
+  ): Promise<void> {
+    if (reminder.custom) return;
+    await this.prisma.db.reminder.updateMany({
+      where: {
+        chequeId: reminder.chequeId,
+        recipientUserId: userId,
+        custom: false,
+        acknowledgedAt: null,
+        remindAt: { lt: reminder.remindAt },
+      },
+      data: { acknowledgedAt: new Date(), status: 'READ' },
     });
   }
 
@@ -272,6 +329,7 @@ export class RemindersService {
     // Snooze from now, not from the original time: snoozing an alert that is
     // already three days late by "one day" must not leave it still in the past.
     const base = Math.max(Date.now(), reminder.remindAt.getTime());
+    await this.settleEarlier(userId, reminder);
     await this.prisma.db.reminder.update({
       where: { id: reminderId },
       data: { remindAt: new Date(base + minutes * 60_000), status: 'SCHEDULED' },
@@ -294,6 +352,12 @@ export class RemindersService {
 
   /** Marks a reminder as dealt with, removing it from the feed. */
   async acknowledge(userId: string, reminderId: string): Promise<boolean> {
+    const reminder = await this.prisma.db.reminder.findFirst({
+      where: { id: reminderId, recipientUserId: userId, acknowledgedAt: null },
+      select: { chequeId: true, remindAt: true, custom: true },
+    });
+    if (!reminder) return false;
+    await this.settleEarlier(userId, reminder);
     const result = await this.prisma.db.reminder.updateMany({
       where: { id: reminderId, recipientUserId: userId, acknowledgedAt: null },
       data: { acknowledgedAt: new Date(), status: 'READ' },

@@ -735,6 +735,48 @@ describeWithDb('phase 2 surface (e2e)', () => {
       );
     });
 
+    it('shows a cheque once however many of its alerts have arrived', async () => {
+      const { id } = await createCheque();
+      const cheque = await prisma.db.cheque.findUniqueOrThrow({ where: { id } });
+      // The alerts three days and one day before the due date, both arrived,
+      // and the one on the day, still to come.
+      const alert = (daysFromNow: number) =>
+        prisma.db.reminder.create({
+          data: {
+            chequeId: id,
+            type: 'BEFORE_DUE',
+            channel: 'IN_APP',
+            remindAt: new Date(Date.now() + daysFromNow * 86_400_000),
+            recipientUserId: cheque.createdBy!,
+          },
+        });
+      const early = await alert(-3);
+      const late = await alert(-1);
+      await alert(1);
+
+      const ofCheque = async () =>
+        (
+          await request(app.getHttpServer()).get(`${API}/notifications`).set(auth()).expect(200)
+        ).body.data.filter((entry: { cheque: { id: string } }) => entry.cheque.id === id) as Array<{
+          id: string;
+          isDue: boolean;
+        }>;
+
+      const feed = await ofCheque();
+      expect(feed.map((entry) => entry.id)).toEqual([late.id]);
+      expect(feed[0]?.isDue).toBe(true);
+
+      // Dealing with it deals with the earlier alert behind it, which must not
+      // surface in its place.
+      await request(app.getHttpServer())
+        .post(`${API}/notifications/${late.id}/acknowledge`)
+        .set(auth())
+        .expect(200);
+      const after = await ofCheque();
+      expect(after.map((entry) => entry.id)).not.toContain(early.id);
+      expect(after.every((entry) => !entry.isDue)).toBe(true);
+    });
+
     it('keeps a manual reminder when the cheque moves', async () => {
       const { id, version } = await createCheque();
 

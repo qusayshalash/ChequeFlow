@@ -1,6 +1,6 @@
 import { ReminderType } from '@cheque-flow/shared-types';
 
-import { RemindersService } from './reminders.service';
+import { RemindersService, type ReminderView } from './reminders.service';
 
 describe('RemindersService.plan', () => {
   const due = new Date('2026-09-30T00:00:00.000Z');
@@ -66,5 +66,51 @@ describe('RemindersService.plan', () => {
     );
     // 7 March is still standard time (UTC-5): eight is 13:00 UTC.
     expect(planned[0]?.remindAt.toISOString()).toBe('2026-03-07T13:00:00.000Z');
+  });
+});
+
+describe('RemindersService.fold', () => {
+  // A cheque due on the 15th, alerted three days before and the day before
+  // (both arrived) and on the day (still to come): it showed as three cards.
+  const view = (
+    id: string,
+    chequeId: string,
+    remindAt: string,
+    isDue: boolean,
+    custom = false,
+  ): ReminderView =>
+    ({
+      id,
+      remindAt,
+      isDue,
+      custom,
+      cheque: { id: chequeId },
+    }) as unknown as ReminderView;
+
+  it('shows a cheque once, by its latest alert that has arrived', () => {
+    const folded = RemindersService.fold([
+      view('d3', 'c1', '2026-11-12T06:00:00.000Z', true),
+      view('d1', 'c1', '2026-11-14T06:00:00.000Z', true),
+      view('d0', 'c1', '2026-11-15T06:00:00.000Z', false),
+    ]);
+    expect(folded.map((row) => row.id)).toEqual(['d1']);
+  });
+
+  it('shows the nearest upcoming alert when none has arrived', () => {
+    const folded = RemindersService.fold([
+      view('d0', 'c1', '2026-11-15T06:00:00.000Z', false),
+      view('d1', 'c1', '2026-11-14T06:00:00.000Z', false),
+    ]);
+    expect(folded.map((row) => row.id)).toEqual(['d1']);
+  });
+
+  it('keeps cheques apart, and a hand-set reminder as its own entry', () => {
+    const folded = RemindersService.fold([
+      view('a', 'c1', '2026-11-14T06:00:00.000Z', true),
+      view('b', 'c2', '2026-11-13T06:00:00.000Z', true),
+      view('mine', 'c1', '2026-11-13T09:00:00.000Z', true, true),
+      view('later', 'c3', '2026-11-20T06:00:00.000Z', false),
+    ]);
+    expect(folded.map((row) => row.id)).toEqual(['b', 'mine', 'a', 'later']);
   });
 });
