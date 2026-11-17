@@ -89,7 +89,14 @@ export class ReminderDispatchService implements OnModuleInit, OnModuleDestroy {
       const deliverable = due.filter((row) => tokensByUser.has(row.recipientUserId as string));
       if (deliverable.length === 0) return 0;
 
-      const claimed = await this.claim(deliverable, now);
+      // A backlog holds several alerts per cheque — three days before, the day
+      // before, the day itself, overdue — and a phone registering for the
+      // first time received them all in one burst. Send the latest; the older
+      // ones are retired unsent, as the feed already folds them.
+      const { send, superseded } = ReminderDispatchService.latestPerCheque(deliverable);
+      await this.retire(superseded);
+
+      const claimed = await this.claim(send, now);
       return await this.deliver(claimed, tokensByUser);
     } catch (caught) {
       this.logger.error(`Reminder sweep failed: ${String(caught)}`);
@@ -116,10 +123,63 @@ export class ReminderDispatchService implements OnModuleInit, OnModuleDestroy {
         type: true,
         remindAt: true,
         recipientUserId: true,
+        custom: true,
         cheque: {
           select: { id: true, chequeNumber: true, amount: true, currency: true, dueDate: true },
         },
       },
+    });
+  }
+
+  /**
+   * One alert per cheque and recipient: the latest of its automatic ones.
+   *
+   * The same rule the in-app feed folds by. A reminder someone set by hand
+   * carries their own note and is always sent. Pure, so it is unit tested
+   * without a database.
+   */
+  static latestPerCheque<
+    T extends {
+      remindAt: Date;
+      recipientUserId: string | null;
+      custom: boolean;
+      cheque: { id: string };
+    },
+  >(rows: readonly T[]): { send: T[]; superseded: T[] } {
+    const latest = new Map<string, T>();
+    const send: T[] = [];
+    const superseded: T[] = [];
+    for (const row of rows) {
+      if (row.custom) {
+        send.push(row);
+        continue;
+      }
+      const key = `${row.recipientUserId ?? ''}:${row.cheque.id}`;
+      const current = latest.get(key);
+      if (!current) {
+        latest.set(key, row);
+      } else if (row.remindAt >= current.remindAt) {
+        superseded.push(current);
+        latest.set(key, row);
+      } else {
+        superseded.push(row);
+      }
+    }
+    return { send: [...send, ...latest.values()], superseded };
+  }
+
+  /**
+   * Retires alerts a later one on the same cheque has overtaken.
+   *
+   * CANCELLED, not SENT: nothing was delivered, and the record should say so.
+   * Only rows still SCHEDULED are touched, so a row another sweep has already
+   * claimed keeps its status.
+   */
+  private async retire(rows: ReadonlyArray<{ id: string }>): Promise<void> {
+    if (rows.length === 0) return;
+    await this.prisma.db.reminder.updateMany({
+      where: { id: { in: rows.map((row) => row.id) }, status: 'SCHEDULED' },
+      data: { status: 'CANCELLED' },
     });
   }
 

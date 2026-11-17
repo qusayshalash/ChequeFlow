@@ -18,21 +18,28 @@ import type { PrismaService } from '../../prisma/prisma.service';
 
 interface Row {
   id: string;
-  status: 'SCHEDULED' | 'SENT';
+  status: 'SCHEDULED' | 'SENT' | 'CANCELLED';
+  /** Defaults to a cheque of its own. */
+  chequeId?: string;
+  type?: string;
+  remindAt?: string;
+  custom?: boolean;
 }
 
 /**
  * A Prisma stand-in holding reminder rows, with `updateMany` behaving as the
- * database does: it only touches rows that still match the `where`.
+ * database does: it only touches rows that still match the `where`, and
+ * writes the status it is given.
  */
 function fakePrisma(rows: Row[], onUpdate?: () => void) {
   const due = rows.map((row) => ({
     id: row.id,
-    type: 'ON_DUE',
-    remindAt: new Date('2026-09-20T08:00:00.000Z'),
+    type: row.type ?? 'ON_DUE',
+    remindAt: new Date(row.remindAt ?? '2026-09-20T08:00:00.000Z'),
     recipientUserId: 'u1',
+    custom: row.custom ?? false,
     cheque: {
-      id: `c-${row.id}`,
+      id: row.chequeId ?? `c-${row.id}`,
       chequeNumber: '4410',
       amount: '1500.00',
       currency: 'ILS',
@@ -43,13 +50,19 @@ function fakePrisma(rows: Row[], onUpdate?: () => void) {
   const reminder = {
     findMany: async () =>
       due.filter((row) => rows.find((r) => r.id === row.id)?.status === 'SCHEDULED'),
-    updateMany: async ({ where }: { where: { id: { in: string[] } } }) => {
+    updateMany: async ({
+      where,
+      data,
+    }: {
+      where: { id: { in: string[] } };
+      data: { status: Row['status'] };
+    }) => {
       onUpdate?.();
       let count = 0;
       for (const id of where.id.in) {
         const row = rows.find((r) => r.id === id);
         if (row && row.status === 'SCHEDULED') {
-          row.status = 'SENT';
+          row.status = data.status;
           count += 1;
         }
       }
@@ -240,6 +253,56 @@ describe('ReminderDispatchService.sweep', () => {
 
     expect(await service.sweep(now)).toBe(0);
     expect(push.sent).toHaveLength(0);
+  });
+
+  it('sends one alert per cheque from a backlog, the latest', async () => {
+    // A phone registering after alerts piled up got every one of them at
+    // once: three days before, the day before, the day itself, overdue — the
+    // same cheque up to five times in one burst.
+    const rows: Row[] = [
+      { id: 'd3', status: 'SCHEDULED', chequeId: 'c1', remindAt: '2026-09-17T06:00:00.000Z' },
+      { id: 'd1', status: 'SCHEDULED', chequeId: 'c1', remindAt: '2026-09-19T06:00:00.000Z' },
+      { id: 'd0', status: 'SCHEDULED', chequeId: 'c1', remindAt: '2026-09-20T06:00:00.000Z' },
+      { id: 'other', status: 'SCHEDULED', chequeId: 'c2', remindAt: '2026-09-18T06:00:00.000Z' },
+    ];
+    const push = fakePush(delivered);
+    const service = new ReminderDispatchService(
+      fakePrisma(rows),
+      config,
+      fakeDevices(['ExponentPushToken[aaa]']).service,
+      push.service,
+    );
+
+    expect(await service.sweep(now)).toBe(2);
+    const sentIds = push.sent[0]?.map((message) => message.data?.reminderId).sort();
+    expect(sentIds).toEqual(['d0', 'other']);
+    // Retired unsent, so they never surface later on their own.
+    expect(rows.map((row) => row.status)).toEqual(['CANCELLED', 'CANCELLED', 'SENT', 'SENT']);
+    expect(await service.sweep(now)).toBe(0);
+  });
+
+  it('still sends a hand-set reminder beside the automatic one', async () => {
+    // It carries the note someone wrote; folding it away would lose that.
+    const rows: Row[] = [
+      { id: 'auto', status: 'SCHEDULED', chequeId: 'c1', remindAt: '2026-09-20T06:00:00.000Z' },
+      {
+        id: 'mine',
+        status: 'SCHEDULED',
+        chequeId: 'c1',
+        remindAt: '2026-09-19T06:00:00.000Z',
+        custom: true,
+      },
+    ];
+    const push = fakePush(delivered);
+    const service = new ReminderDispatchService(
+      fakePrisma(rows),
+      config,
+      fakeDevices(['ExponentPushToken[aaa]']).service,
+      push.service,
+    );
+
+    expect(await service.sweep(now)).toBe(2);
+    expect(rows.map((row) => row.status)).toEqual(['SENT', 'SENT']);
   });
 
   it('survives a push service that throws', async () => {
